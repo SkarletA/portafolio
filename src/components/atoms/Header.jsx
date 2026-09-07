@@ -1,3 +1,5 @@
+import { Menu } from '../../components/molecules/Menu'
+
 const links = [
   { href: '#about', label: 'About' },
   { href: '#experience', label: 'Experience' },
@@ -20,17 +22,7 @@ export function Header() {
         <a href="#top" className="font-display text-lg tracking-tight text-paper">
           Portfolio
         </a>
-        <nav aria-label="Primary">
-          <ul className="flex max-w-[60vw] gap-5 overflow-x-auto text-sm text-paper-muted md:max-w-none md:gap-7">
-            {links.map((link) => (
-              <li key={link.href} className="shrink-0">
-                <a className="transition-colors hover:text-paper" href={link.href}>
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <Menu links={links} />
       </div>
     </header>
   )

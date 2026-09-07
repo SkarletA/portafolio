@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-finora-display: 'Fraunces', Georgia, serif;
+  --color-finora-bg: #101820;
+  --color-finora-ink: #eef2f6;
+  --color-finora-ink-muted: #9fb0c0;
+  --color-finora-accent: #3ddc97;
+}

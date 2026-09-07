@@ -1,4 +1,4 @@
-import { Portrait } from '../components/Portrait'
+import { Portrait } from '../components/atoms/Portrait'
 import { profile } from '../data/profile'
 
 export function Hero() {

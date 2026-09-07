@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { finora } from '../projects/finora/meta'
 
 export function Projects() {
@@ -24,6 +25,12 @@ export function Projects() {
               </li>
             ))}
           </ul>
+          <Link
+            to="/finora"
+            className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-ember transition-colors hover:text-ember-soft"
+          >
+            View project →
+          </Link>
         </article>
       </div>
     </section>
