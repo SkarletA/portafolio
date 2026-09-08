@@ -1,0 +1,25 @@
+@reference '../styles/theme.css';
+
+.section {
+  @apply mx-auto max-w-3xl px-6 py-20 text-center;
+}
+
+.eyebrow {
+  @apply text-sm font-medium uppercase tracking-finora-eyebrow text-finora-accent;
+}
+
+.title {
+  @apply mt-4 font-finora-display text-4xl text-finora-ink md:text-5xl;
+}
+
+.subtitle {
+  @apply mt-6 text-lg text-finora-ink-muted;
+}
+
+.actions {
+  @apply mt-10 flex flex-col items-center gap-4;
+}
+
+.link {
+  @apply text-sm font-semibold text-finora-primary underline;
+}

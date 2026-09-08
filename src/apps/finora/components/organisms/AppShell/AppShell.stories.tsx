@@ -1,13 +1,16 @@
 import { MemoryRouter } from 'react-router-dom'
 import { AppShell } from './AppShell'
+import { AuthProvider } from '../../../context/AuthContext'
 
 export default {
   title: 'Finora/Organisms/AppShell',
   component: AppShell,
   decorators: [
-    (Story) => (
-      <MemoryRouter>
-        <Story />
+    (Story: () => React.ReactElement) => (
+      <MemoryRouter initialEntries={['/finora']}>
+        <AuthProvider>
+          <Story />
+        </AuthProvider>
       </MemoryRouter>
     ),
   ],

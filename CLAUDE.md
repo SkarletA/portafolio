@@ -683,6 +683,49 @@ Use subagents only when they provide clear value, such as:
 
 For simple sequential tasks, work directly.
 
+
+### Styling
+
+* **DO NOT** use Tailwind classes directly in the JSX `className`.
+* Each component must have its own `ComponentName.module.css` file next to the component file.
+* Always import it as:
+  `import s from './ComponentName.module.css'`
+* Inside the `.module.css`, compose styles using `@apply` with the Tailwind utilities and tokens already configured (`primary`, `primarydark`, `ink`, `muted`, `bordercol`, `bg`, `success`, `danger`).
+* For conditional or combined classes, use `clsx`, always imported as:
+  `import cn from 'clsx'`
+  `className={cn(s.button, isActive && s.buttonActive)}`
+* Install `clsx` if it is not already included as a dependency.
+* **DO NOT** use arbitrary Tailwind values in brackets for common typography and spacing (e.g. `text-[10.5px]`, `text-[13.5px]`, `p-[19px]`, `gap-[16px]`).
+* Always use Tailwind's native scales:
+
+  * Typography: `text-xs`, `text-sm`, `text-base`, `text-lg`, etc.
+  * Spacing: `p-1`, `p-2`, `p-4`, `gap-2`, `gap-4`, etc.
+* If a design value does not exactly match the native scale, round it to the nearest native value instead of creating an arbitrary value, unless the difference is visually significant. In that case, define the value once in `tailwind.config` (`theme.extend`) so it can be reused rather than using an isolated arbitrary value.
+
+### Unique Identifiers
+
+* Every button, link, input, and interactive icon must have a unique and descriptive `data-testid`.
+* Format: `[component]-[element]-[role]`.
+* Examples:
+
+  * `"login-email-input"`
+  * `"transaction-item-delete-icon"`
+  * `"dashboard-add-transaction-button"`
+
+### Callbacks
+
+* **DO NOT** pass anonymous inline functions to `onClick`, `onChange`, or `onSubmit`.
+* Handlers must be defined as named functions (use `useCallback` when they depend on props or state) and passed by reference:
+  `onClick={handleDelete}`
+  **Never:**
+  `onClick={() => onDelete(id)}`
+
+## Agent and Token Usage
+
+* Use the subagents already defined in `.claude/agents/` when the task matches their purpose, instead of solving everything with the main agent.
+* Be efficient with context: do not reread files that have already been reviewed during the session unless they have changed; do not explore folders outside the scope of the task; avoid long responses when a focused change is sufficient.
+
+
 ---
 
 # Git

@@ -2,8 +2,17 @@
 
 @theme {
   --font-finora-display: 'Fraunces', Georgia, serif;
-  --color-finora-bg: #101820;
-  --color-finora-ink: #eef2f6;
-  --color-finora-ink-muted: #9fb0c0;
+  --font-finora-sans: 'Inter', system-ui, sans-serif;
+
+  --color-finora-bg: #f8fafc;
+  --color-finora-ink: #0f172a;
+  --color-finora-ink-muted: #64748b;
+  --color-finora-border: #e2e8f0;
+  --color-finora-primary: #2563eb;
+  --color-finora-primary-dark: #1e3a8a;
+  --color-finora-success: #16a34a;
+  --color-finora-danger: #dc2626;
   --color-finora-accent: #3ddc97;
+
+  --tracking-finora-eyebrow: 0.2em;
 }

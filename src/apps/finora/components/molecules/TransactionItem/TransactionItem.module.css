@@ -1,0 +1,41 @@
+@reference '../../../styles/theme.css';
+
+.row {
+  @apply grid grid-cols-[1fr_auto] items-center gap-3 border-b border-finora-border px-1 py-3 last:border-b-0 sm:grid-cols-[2.2fr_1fr_1fr];
+}
+
+.main {
+  @apply flex min-w-0 items-center gap-3;
+}
+
+.icon {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm text-finora-ink-muted;
+}
+
+.info {
+  @apply min-w-0;
+}
+
+.description {
+  @apply truncate text-sm font-semibold text-finora-ink;
+}
+
+.meta {
+  @apply truncate text-xs text-finora-ink-muted;
+}
+
+.date {
+  @apply hidden text-sm text-finora-ink-muted sm:block;
+}
+
+.amount {
+  @apply text-right text-sm font-bold;
+}
+
+.income {
+  @apply text-finora-success;
+}
+
+.expense {
+  @apply text-finora-danger;
+}

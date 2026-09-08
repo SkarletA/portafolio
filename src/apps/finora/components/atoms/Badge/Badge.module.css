@@ -1,0 +1,13 @@
+@reference '../../../styles/theme.css';
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+.success {
+  @apply bg-green-50 text-finora-success;
+}
+
+.neutral {
+  @apply bg-slate-100 text-finora-ink-muted;
+}
