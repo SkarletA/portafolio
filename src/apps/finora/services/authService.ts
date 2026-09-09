@@ -21,3 +21,13 @@ export function signOut() {
 export function getSession() {
   return supabase.auth.getSession()
 }
+
+export function requestPasswordReset(email: string) {
+  return supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/finora/reset-password`,
+  })
+}
+
+export function updatePassword(newPassword: string) {
+  return supabase.auth.updateUser({ password: newPassword })
+}

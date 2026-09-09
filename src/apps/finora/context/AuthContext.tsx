@@ -11,6 +11,8 @@ interface AuthContextValue {
   signIn: typeof authService.signIn
   signUp: typeof authService.signUp
   signOut: typeof authService.signOut
+  requestPasswordReset: typeof authService.requestPasswordReset
+  updatePassword: typeof authService.updatePassword
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -48,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn: authService.signIn,
     signUp: authService.signUp,
     signOut: authService.signOut,
+    requestPasswordReset: authService.requestPasswordReset,
+    updatePassword: authService.updatePassword,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -81,6 +81,10 @@ export function Login() {
       </form>
 
       <p className={s.footer}>
+        <Link to="/finora/forgot-password" data-testid="login-forgot-password-link">¿Olvidaste tu contraseña?</Link>
+      </p>
+
+      <p className={s.footer}>
         ¿No tenés cuenta? <Link to="/finora/register" data-testid="login-register-link">Crear cuenta</Link>
       </p>
     </section>
