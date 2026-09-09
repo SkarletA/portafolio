@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom'
+import { AddTransaction } from '../pages/AddTransaction'
 import { Dashboard } from '../pages/Dashboard'
 import { Login } from '../pages/Login'
 import { Register } from '../pages/Register'
@@ -21,6 +22,14 @@ export function FinoraRoutes() {
         element={
           <ProtectedRoute>
             <Transactions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="add-transaction"
+        element={
+          <ProtectedRoute>
+            <AddTransaction />
           </ProtectedRoute>
         }
       />

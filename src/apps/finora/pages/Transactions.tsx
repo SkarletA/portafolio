@@ -1,3 +1,5 @@
+import { useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTransactions } from '../hooks/useTransactions'
 import { TransactionItem } from '../components/molecules/TransactionItem/TransactionItem'
 import { Button } from '../components/atoms/Button/Button'
@@ -6,6 +8,11 @@ import s from './Transactions.module.css'
 
 export function Transactions() {
   const { transactions, loading, error } = useTransactions()
+  const navigate = useNavigate()
+
+  const handleAddTransactionClick = useCallback(() => {
+    navigate('/finora/add-transaction')
+  }, [navigate])
 
   return (
     <section className={s.section}>
@@ -14,7 +21,11 @@ export function Transactions() {
           <h1 className={s.title}>Transactions</h1>
           <p className={s.subtitle}>All your account activity in one place</p>
         </div>
-        <Button id="transactions-add-button" data-testid="transactions-add-button" disabled title="Coming soon">
+        <Button
+          id="transactions-add-button"
+          data-testid="transactions-add-button"
+          onClick={handleAddTransactionClick}
+        >
           <PlusIcon /> Add transaction
         </Button>
       </div>
