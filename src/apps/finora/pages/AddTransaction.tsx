@@ -199,7 +199,7 @@ export function AddTransaction() {
             required
             value={categoryId}
             onChange={handleCategoryChange}
-            className={s.input}
+            className={s.select}
             disabled={categoriesLoading}
             aria-invalid={!!errors.category_id}
             aria-describedby={errors.category_id ? 'add-transaction-category-error' : undefined}
@@ -236,7 +236,7 @@ export function AddTransaction() {
           <select
             value={paymentMethod}
             onChange={handlePaymentMethodChange}
-            className={s.input}
+            className={s.select}
             data-testid="add-transaction-payment-method-select"
           >
             {PAYMENT_METHODS.map((method) => (

@@ -1,8 +1,15 @@
 import { Link } from 'react-router-dom'
 import { Button } from '../components/atoms/Button/Button'
+import { useTransactions } from '../hooks/useTransactions'
+import { TransactionItem } from '../components/molecules/TransactionItem/TransactionItem'
 import s from './Dashboard.module.css'
 
+const RECENT_TRANSACTIONS_LIMIT = 5
+
 export function Dashboard() {
+  const { transactions, loading, error } = useTransactions()
+  const recentTransactions = transactions.slice(0, RECENT_TRANSACTIONS_LIMIT)
+
   return (
     <section className={s.section}>
       <p className={s.eyebrow}>Finora</p>
@@ -15,9 +22,44 @@ export function Dashboard() {
         <Button id="dashboard-get-notified-button" data-testid="dashboard-get-notified-button">
           Get notified
         </Button>
-        <Link to="/finora/transactions" className={s.link} data-testid="dashboard-transactions-link">
-          View transactions
-        </Link>
+      </div>
+
+      <div className={s.recentSection}>
+        <div className={s.recentHeader}>
+          <h2 className={s.recentTitle}>Recent transactions</h2>
+          <Link
+            to="/finora/transactions"
+            className={s.link}
+            data-testid="dashboard-view-all-transactions-link"
+          >
+            View all transactions
+          </Link>
+        </div>
+
+        <div className={s.card}>
+          {loading && (
+            <div role="status" aria-live="polite" className={s.skeletonWrap}>
+              <span className={s.srOnly}>Loading transactions…</span>
+              {[0, 1, 2].map((key) => (
+                <div key={key} className={s.skeletonRow} />
+              ))}
+            </div>
+          )}
+
+          {!loading && error && (
+            <p className={s.errorMessage}>We couldn&apos;t load your transactions.</p>
+          )}
+
+          {!loading && !error && recentTransactions.length === 0 && (
+            <p className={s.stateMessage}>You don&apos;t have any transactions yet.</p>
+          )}
+
+          {!loading &&
+            !error &&
+            recentTransactions.map((transaction) => (
+              <TransactionItem key={transaction.id} transaction={transaction} />
+            ))}
+        </div>
       </div>
     </section>
   )

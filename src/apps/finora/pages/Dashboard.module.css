@@ -23,3 +23,39 @@
 .link {
   @apply text-sm font-semibold text-finora-primary underline;
 }
+
+.recentSection {
+  @apply mt-16 text-left;
+}
+
+.recentHeader {
+  @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+}
+
+.recentTitle {
+  @apply text-lg font-bold tracking-tight text-finora-ink;
+}
+
+.card {
+  @apply rounded-xl border border-finora-border bg-white px-2 py-1 shadow-sm sm:px-5;
+}
+
+.skeletonWrap {
+  @apply flex flex-col gap-3 py-4;
+}
+
+.skeletonRow {
+  @apply h-12 animate-pulse rounded-lg bg-slate-100;
+}
+
+.stateMessage {
+  @apply py-10 text-center text-sm text-finora-ink-muted;
+}
+
+.errorMessage {
+  @apply py-10 text-center text-sm text-finora-danger;
+}
+
+.srOnly {
+  @apply sr-only;
+}

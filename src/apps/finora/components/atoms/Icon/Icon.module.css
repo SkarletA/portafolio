@@ -1,0 +1,5 @@
+@reference '../../../styles/theme.css';
+
+.icon {
+  @apply shrink-0;
+}

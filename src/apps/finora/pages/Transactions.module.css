@@ -29,7 +29,15 @@
 }
 
 .select {
-  @apply rounded-lg border border-finora-border bg-white px-3 py-2.5 text-sm font-medium text-finora-ink;
+  @apply rounded-lg border border-finora-border bg-white py-2.5 pl-3 pr-8 text-sm font-medium text-finora-ink;
+}
+
+.addIcon {
+  @apply h-4 w-4;
+}
+
+.searchIcon {
+  @apply h-4 w-4 shrink-0 text-finora-ink-muted;
 }
 
 .card {

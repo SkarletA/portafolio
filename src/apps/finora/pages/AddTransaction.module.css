@@ -20,6 +20,10 @@
   @apply rounded-lg border border-finora-border px-3 py-2;
 }
 
+.select {
+  @apply rounded-lg border border-finora-border py-2 pl-3 pr-8 text-finora-ink;
+}
+
 .textarea {
   @apply rounded-lg border border-finora-border px-3 py-2;
 }
