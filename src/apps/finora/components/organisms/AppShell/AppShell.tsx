@@ -12,8 +12,8 @@ const BOTTOM_NAV_LEFT = [
 
 const BOTTOM_NAV_RIGHT = [
   { label: 'Budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
-  { label: 'Analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
-  { label: 'Goals', icon: <Icon name="goals" className={s.navIcon} /> },
+  { label: 'Analytics', to: '/finora/analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
+  { label: 'Goals', to: '/finora/goals', icon: <Icon name="goals" className={s.navIcon} /> },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {

@@ -50,25 +50,33 @@ function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
+export function getCurrentMonthRange() {
+  const now = new Date()
+  const year = now.getUTCFullYear()
+  const month = now.getUTCMonth()
+
+  return {
+    start: toIsoDate(new Date(Date.UTC(year, month, 1))),
+    end: toIsoDate(new Date(Date.UTC(year, month + 1, 0))),
+    dayOfMonth: now.getUTCDate(),
+  }
+}
+
 export async function getExpensesByCategoryForCurrentMonth() {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
-  const now = new Date()
-  const year = now.getUTCFullYear()
-  const month = now.getUTCMonth()
-  const firstDayOfMonth = toIsoDate(new Date(Date.UTC(year, month, 1)))
-  const lastDayOfMonth = toIsoDate(new Date(Date.UTC(year, month + 1, 0)))
+  const { start, end } = getCurrentMonthRange()
 
   const { data, error } = await supabase
     .from('transactions')
     .select('category_id, amount')
     .eq('user_id', userData.user.id)
     .eq('type', 'expense')
-    .gte('date', firstDayOfMonth)
-    .lte('date', lastDayOfMonth)
+    .gte('date', start)
+    .lte('date', end)
 
   if (error) return { data: null, error }
 

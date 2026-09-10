@@ -1,9 +1,11 @@
 import { Route, Routes } from 'react-router-dom'
 import { AddBudget } from '../pages/AddBudget'
 import { AddTransaction } from '../pages/AddTransaction'
+import { Analytics } from '../pages/Analytics'
 import { Budgets } from '../pages/Budgets'
 import { Dashboard } from '../pages/Dashboard'
 import { ForgotPassword } from '../pages/ForgotPassword'
+import { Goals } from '../pages/Goals'
 import { Login } from '../pages/Login'
 import { Register } from '../pages/Register'
 import { ResetPassword } from '../pages/ResetPassword'
@@ -50,6 +52,22 @@ export function FinoraRoutes() {
         element={
           <ProtectedRoute>
             <AddBudget />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="analytics"
+        element={
+          <ProtectedRoute>
+            <Analytics />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="goals"
+        element={
+          <ProtectedRoute>
+            <Goals />
           </ProtectedRoute>
         }
       />
