@@ -720,6 +720,13 @@ For simple sequential tasks, work directly.
   **Never:**
   `onClick={() => onDelete(id)}`
 
+### UI Language
+
+* Finora's UI copy must be in a single consistent language. Today that language is **English** — all visible text (labels, buttons, empty states, error messages, headings) must be in English.
+* If a task's instructions quote a specific string in another language for a label or message, treat that as the *intent*, not literal copy to paste in verbatim — translate it to match the app's current UI language before using it, and flag the translation in your summary so it can be corrected if the literal wording mattered.
+* This does not apply to code identifiers, `data-testid`s, comments, or conversation with the user — only to strings rendered in the UI.
+* Proper internationalization (a language switcher, locale-aware currency formatting, etc.) is a separate, explicit future task — do not build it speculatively while fixing a language-consistency issue.
+
 ## Agent and Token Usage
 
 * Use the subagents already defined in `.claude/agents/` when the task matches their purpose, instead of solving everything with the main agent.

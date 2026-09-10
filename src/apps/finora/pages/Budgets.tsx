@@ -21,7 +21,7 @@ export function Budgets() {
           <p className={s.subtitle}>Track how much you've spent against your monthly limits</p>
         </div>
         <Button id="budgets-new-button" data-testid="budgets-new-button" onClick={handleNewBudgetClick}>
-          Nuevo presupuesto
+          New budget
         </Button>
       </div>
 
@@ -39,7 +39,7 @@ export function Budgets() {
       )}
 
       {!loading && !error && budgets.length === 0 && (
-        <p className={s.stateMessage}>Aún no tienes presupuestos configurados</p>
+        <p className={s.stateMessage}>You don&apos;t have any budgets set up yet.</p>
       )}
 
       {!loading && !error && budgets.length > 0 && (

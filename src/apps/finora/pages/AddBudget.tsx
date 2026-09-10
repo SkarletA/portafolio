@@ -162,7 +162,7 @@ export function AddBudget() {
           type="submit"
           disabled={submitting || noAvailableCategories}
         >
-          {submitting ? 'Guardando...' : 'Save budget'}
+          {submitting ? 'Saving…' : 'Save budget'}
         </Button>
       </form>
     </section>

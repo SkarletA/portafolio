@@ -90,7 +90,7 @@ export function Dashboard() {
         )}
 
         {!budgetsLoading && !budgetsError && previewBudgets.length === 0 && (
-          <p className={s.stateMessage}>Aún no tienes presupuestos configurados</p>
+          <p className={s.stateMessage}>You don&apos;t have any budgets set up yet.</p>
         )}
 
         {!budgetsLoading && !budgetsError && previewBudgets.length > 0 && (
