@@ -8,7 +8,7 @@ import s from './Sidebar.module.css'
 const NAV_ITEMS = [
   { label: 'Dashboard', to: '/finora', icon: <Icon name="dashboard" className={s.navIcon} /> },
   { label: 'Transactions', to: '/finora/transactions', icon: <Icon name="transactions" className={s.navIcon} /> },
-  { label: 'Budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
+  { label: 'Budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
   { label: 'Analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
   { label: 'Goals', icon: <Icon name="goals" className={s.navIcon} /> },
 ]

@@ -1,0 +1,73 @@
+@reference '../../../styles/theme.css';
+
+.card {
+  @apply rounded-xl border border-finora-border bg-white p-4 shadow-sm;
+}
+
+.header {
+  @apply flex items-center gap-3;
+}
+
+.icon {
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm text-white;
+}
+
+.iconFallbackBg {
+  @apply bg-slate-400 text-finora-ink-muted;
+}
+
+.categoryIcon {
+  @apply h-4 w-4;
+}
+
+.info {
+  @apply min-w-0 flex-1;
+}
+
+.categoryName {
+  @apply truncate text-sm font-semibold text-finora-ink;
+}
+
+.amounts {
+  @apply truncate text-xs text-finora-ink-muted;
+}
+
+.statusBadge {
+  @apply inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+.statusOnTrack {
+  @apply bg-green-50 text-finora-success;
+}
+
+.statusNearLimit {
+  @apply bg-amber-50 text-amber-600;
+}
+
+.statusExceeded {
+  @apply bg-red-50 text-finora-danger;
+}
+
+.progressTrack {
+  @apply mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100;
+}
+
+.progressFill {
+  @apply h-full rounded-full transition-all;
+}
+
+.fillOnTrack {
+  @apply bg-finora-success;
+}
+
+.fillNearLimit {
+  @apply bg-amber-500;
+}
+
+.fillExceeded {
+  @apply bg-finora-danger;
+}
+
+.percentageLabel {
+  @apply mt-2 text-xs text-finora-ink-muted;
+}

@@ -45,3 +45,39 @@ export async function createTransaction(data: NewTransactionInput) {
 export function deleteTransaction(id: string) {
   return supabase.from('transactions').delete().eq('id', id)
 }
+
+function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+export async function getExpensesByCategoryForCurrentMonth() {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+
+  if (userError) return { data: null, error: userError }
+  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
+
+  const now = new Date()
+  const year = now.getUTCFullYear()
+  const month = now.getUTCMonth()
+  const firstDayOfMonth = toIsoDate(new Date(Date.UTC(year, month, 1)))
+  const lastDayOfMonth = toIsoDate(new Date(Date.UTC(year, month + 1, 0)))
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('category_id, amount')
+    .eq('user_id', userData.user.id)
+    .eq('type', 'expense')
+    .gte('date', firstDayOfMonth)
+    .lte('date', lastDayOfMonth)
+
+  if (error) return { data: null, error }
+
+  const totalsByCategory = (data ?? []).reduce<Record<string, number>>((totals, row) => {
+    if (!row.category_id) return totals
+
+    totals[row.category_id] = (totals[row.category_id] ?? 0) + row.amount
+    return totals
+  }, {})
+
+  return { data: totalsByCategory, error: null }
+}

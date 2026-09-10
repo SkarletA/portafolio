@@ -6,11 +6,12 @@ import { Icon } from '../../atoms/Icon/Icon'
 import s from './AppShell.module.css'
 
 const BOTTOM_NAV_LEFT = [
-  { label: 'Home', to: '/finora', icon: <Icon name="dashboard" className={s.navIcon} /> },
-  { label: 'Activity', to: '/finora/transactions', icon: <Icon name="transactions" className={s.navIcon} /> },
+  { label: 'Dashboard', to: '/finora', icon: <Icon name="dashboard" className={s.navIcon} /> },
+  { label: 'Transactions', to: '/finora/transactions', icon: <Icon name="transactions" className={s.navIcon} /> },
 ]
 
 const BOTTOM_NAV_RIGHT = [
+  { label: 'Budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
   { label: 'Analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
   { label: 'Goals', icon: <Icon name="goals" className={s.navIcon} /> },
 ]
@@ -52,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </button>
 
         {BOTTOM_NAV_RIGHT.map((item) => (
-          <NavItem key={item.label} variant="bottom" label={item.label} icon={item.icon} />
+          <NavItem key={item.label} variant="bottom" label={item.label} icon={item.icon} to={item.to} />
         ))}
       </nav>
     </div>
