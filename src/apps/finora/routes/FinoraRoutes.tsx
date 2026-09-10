@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import { AddBudget } from '../pages/AddBudget'
+import { AddGoal } from '../pages/AddGoal'
 import { AddTransaction } from '../pages/AddTransaction'
 import { Analytics } from '../pages/Analytics'
 import { Budgets } from '../pages/Budgets'
@@ -68,6 +69,14 @@ export function FinoraRoutes() {
         element={
           <ProtectedRoute>
             <Goals />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="add-goal"
+        element={
+          <ProtectedRoute>
+            <AddGoal />
           </ProtectedRoute>
         }
       />
