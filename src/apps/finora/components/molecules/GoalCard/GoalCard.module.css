@@ -1,0 +1,81 @@
+@reference '../../../styles/theme.css';
+
+.card {
+  @apply flex flex-col rounded-xl border border-finora-border bg-white p-5 shadow-sm;
+}
+
+.top {
+  @apply mb-4 flex items-center gap-3;
+}
+
+.icon {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-finora-primary;
+}
+
+.goalIcon {
+  @apply h-5 w-5;
+}
+
+.name {
+  @apply text-sm font-semibold text-finora-ink;
+}
+
+.targetDate {
+  @apply text-xs text-finora-ink-muted;
+}
+
+.amounts {
+  @apply mb-2 flex items-baseline gap-1;
+}
+
+.current {
+  @apply text-xl font-bold text-finora-ink;
+}
+
+.of {
+  @apply text-sm text-finora-ink-muted;
+}
+
+.progressTrack {
+  @apply mb-2 h-2 w-full overflow-hidden rounded-full bg-slate-100;
+}
+
+.progressFill {
+  @apply h-full rounded-full bg-finora-primary transition-all;
+}
+
+.footer {
+  @apply flex items-center justify-between text-xs;
+}
+
+.remaining {
+  @apply text-finora-ink-muted;
+}
+
+.percentageBadge {
+  @apply font-bold text-finora-primary;
+}
+
+.addFundsButton {
+  @apply mt-4 w-full;
+}
+
+.addFundsForm {
+  @apply mt-4 flex flex-col gap-2;
+}
+
+.addFundsInput {
+  @apply rounded-lg border border-finora-border px-3 py-2 text-sm;
+}
+
+.addFundsActions {
+  @apply flex gap-2;
+}
+
+.actionButton {
+  @apply flex-1;
+}
+
+.error {
+  @apply text-sm text-finora-danger;
+}

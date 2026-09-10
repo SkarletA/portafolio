@@ -1,0 +1,41 @@
+@reference '../styles/theme.css';
+
+.section {
+  @apply mx-auto max-w-5xl px-4 py-8 sm:px-10;
+}
+
+.header {
+  @apply mb-7 flex flex-wrap items-start justify-between gap-5;
+}
+
+.title {
+  @apply text-xl font-bold tracking-tight text-finora-ink sm:text-2xl;
+}
+
+.subtitle {
+  @apply text-sm text-finora-ink-muted;
+}
+
+.grid {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+}
+
+.skeletonWrap {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+}
+
+.skeletonCard {
+  @apply h-40 animate-pulse rounded-xl bg-slate-100;
+}
+
+.stateMessage {
+  @apply rounded-xl border border-finora-border bg-white py-10 text-center text-sm text-finora-ink-muted;
+}
+
+.errorMessage {
+  @apply rounded-xl border border-finora-border bg-white py-10 text-center text-sm text-finora-danger;
+}
+
+.srOnly {
+  @apply sr-only;
+}
