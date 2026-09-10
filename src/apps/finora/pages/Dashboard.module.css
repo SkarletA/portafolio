@@ -55,15 +55,3 @@
 .skeletonRow {
   @apply h-12 animate-pulse rounded-lg bg-slate-100;
 }
-
-.stateMessage {
-  @apply py-10 text-center text-sm text-finora-ink-muted;
-}
-
-.errorMessage {
-  @apply py-10 text-center text-sm text-finora-danger;
-}
-
-.srOnly {
-  @apply sr-only;
-}

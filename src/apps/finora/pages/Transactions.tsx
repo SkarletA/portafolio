@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { TransactionItem } from '../components/molecules/TransactionItem/TransactionItem'
+import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
 import { Button } from '../components/atoms/Button/Button'
 import { Icon } from '../components/atoms/Icon/Icon'
 import s from './Transactions.module.css'
@@ -118,30 +119,25 @@ export function Transactions() {
           <span className={s.amountHead}>Amount</span>
         </div>
 
-        {loading && (
-          <div role="status" aria-live="polite" className={s.skeletonWrap}>
-            <span className={s.srOnly}>Loading transactions…</span>
-            {[0, 1, 2, 3].map((key) => (
-              <div key={key} className={s.skeletonRow} />
-            ))}
-          </div>
-        )}
-
-        {!loading && error && (
-          <p className={s.errorMessage}>We couldn&apos;t load your transactions. Please try again later.</p>
-        )}
-
-        {!loading && !error && transactions.length === 0 && (
-          <p className={s.stateMessage}>You don&apos;t have any transactions yet.</p>
-        )}
-
-        {!loading && !error && transactions.length > 0 && filteredTransactions.length === 0 && (
-          <p className={s.stateMessage}>No transactions match your filters.</p>
-        )}
-
-        {!loading &&
-          !error &&
-          filteredTransactions.map((transaction) => <TransactionItem key={transaction.id} transaction={transaction} />)}
+        <AsyncState
+          loading={loading}
+          error={error}
+          isEmpty={transactions.length === 0}
+          loadingLabel="Loading transactions…"
+          errorMessage="We couldn't load your transactions. Please try again later."
+          emptyMessage="You don't have any transactions yet."
+          skeletonCount={4}
+          skeletonWrapClassName={s.skeletonWrap}
+          skeletonItemClassName={s.skeletonRow}
+        >
+          {filteredTransactions.length === 0 ? (
+            <p className={s.stateMessage}>No transactions match your filters.</p>
+          ) : (
+            filteredTransactions.map((transaction) => (
+              <TransactionItem key={transaction.id} transaction={transaction} />
+            ))
+          )}
+        </AsyncState>
       </div>
     </section>
   )

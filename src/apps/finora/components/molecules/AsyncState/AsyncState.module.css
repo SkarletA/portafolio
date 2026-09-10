@@ -1,0 +1,17 @@
+@reference '../../../styles/theme.css';
+
+.errorMessage {
+  @apply py-10 text-center text-sm text-finora-danger;
+}
+
+.stateMessage {
+  @apply py-10 text-center text-sm text-finora-ink-muted;
+}
+
+.boxed {
+  @apply rounded-xl border border-finora-border bg-white;
+}
+
+.srOnly {
+  @apply sr-only;
+}

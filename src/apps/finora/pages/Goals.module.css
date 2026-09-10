@@ -27,15 +27,3 @@
 .skeletonCard {
   @apply h-40 animate-pulse rounded-xl bg-slate-100;
 }
-
-.stateMessage {
-  @apply rounded-xl border border-finora-border bg-white py-10 text-center text-sm text-finora-ink-muted;
-}
-
-.errorMessage {
-  @apply rounded-xl border border-finora-border bg-white py-10 text-center text-sm text-finora-danger;
-}
-
-.srOnly {
-  @apply sr-only;
-}

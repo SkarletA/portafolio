@@ -4,6 +4,7 @@ import { useTransactions } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
 import { TransactionItem } from '../components/molecules/TransactionItem/TransactionItem'
 import { BudgetCard } from '../components/molecules/BudgetCard/BudgetCard'
+import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
 import s from './Dashboard.module.css'
 
 const RECENT_TRANSACTIONS_LIMIT = 5
@@ -43,28 +44,21 @@ export function Dashboard() {
         </div>
 
         <div className={s.card}>
-          {loading && (
-            <div role="status" aria-live="polite" className={s.skeletonWrap}>
-              <span className={s.srOnly}>Loading transactions…</span>
-              {[0, 1, 2].map((key) => (
-                <div key={key} className={s.skeletonRow} />
-              ))}
-            </div>
-          )}
-
-          {!loading && error && (
-            <p className={s.errorMessage}>We couldn&apos;t load your transactions.</p>
-          )}
-
-          {!loading && !error && recentTransactions.length === 0 && (
-            <p className={s.stateMessage}>You don&apos;t have any transactions yet.</p>
-          )}
-
-          {!loading &&
-            !error &&
-            recentTransactions.map((transaction) => (
+          <AsyncState
+            loading={loading}
+            error={error}
+            isEmpty={recentTransactions.length === 0}
+            loadingLabel="Loading transactions…"
+            errorMessage="We couldn't load your transactions."
+            emptyMessage="You don't have any transactions yet."
+            skeletonCount={3}
+            skeletonWrapClassName={s.skeletonWrap}
+            skeletonItemClassName={s.skeletonRow}
+          >
+            {recentTransactions.map((transaction) => (
               <TransactionItem key={transaction.id} transaction={transaction} />
             ))}
+          </AsyncState>
         </div>
       </div>
 
@@ -76,30 +70,23 @@ export function Dashboard() {
           </Link>
         </div>
 
-        {budgetsLoading && (
-          <div role="status" aria-live="polite" className={s.skeletonWrap}>
-            <span className={s.srOnly}>Loading budgets…</span>
-            {[0, 1, 2].map((key) => (
-              <div key={key} className={s.skeletonRow} />
-            ))}
-          </div>
-        )}
-
-        {!budgetsLoading && budgetsError && (
-          <p className={s.errorMessage}>We couldn&apos;t load your budgets.</p>
-        )}
-
-        {!budgetsLoading && !budgetsError && previewBudgets.length === 0 && (
-          <p className={s.stateMessage}>You don&apos;t have any budgets set up yet.</p>
-        )}
-
-        {!budgetsLoading && !budgetsError && previewBudgets.length > 0 && (
+        <AsyncState
+          loading={budgetsLoading}
+          error={budgetsError}
+          isEmpty={previewBudgets.length === 0}
+          loadingLabel="Loading budgets…"
+          errorMessage="We couldn't load your budgets."
+          emptyMessage="You don't have any budgets set up yet."
+          skeletonCount={3}
+          skeletonWrapClassName={s.skeletonWrap}
+          skeletonItemClassName={s.skeletonRow}
+        >
           <div className={s.budgetsGrid}>
             {previewBudgets.map((budget) => (
               <BudgetCard key={budget.id} budget={budget} />
             ))}
           </div>
-        )}
+        </AsyncState>
       </div>
     </section>
   )
