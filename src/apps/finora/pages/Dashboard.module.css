@@ -1,0 +1,57 @@
+@reference '../styles/theme.css';
+
+.section {
+  @apply mx-auto max-w-3xl px-6 py-20 text-center;
+}
+
+.eyebrow {
+  @apply text-sm font-medium uppercase tracking-finora-eyebrow text-finora-accent;
+}
+
+.title {
+  @apply mt-4 font-finora-display text-4xl text-finora-ink md:text-5xl;
+}
+
+.subtitle {
+  @apply mt-6 text-lg text-finora-ink-muted;
+}
+
+.actions {
+  @apply mt-10 flex flex-col items-center gap-4;
+}
+
+.link {
+  @apply text-sm font-semibold text-finora-primary underline;
+}
+
+.recentSection {
+  @apply mt-16 text-left;
+}
+
+.budgetsSection {
+  @apply mt-16 text-left;
+}
+
+.budgetsGrid {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.recentHeader {
+  @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+}
+
+.recentTitle {
+  @apply text-lg font-bold tracking-tight text-finora-ink;
+}
+
+.card {
+  @apply rounded-xl border border-finora-border bg-white px-2 py-1 shadow-sm sm:px-5;
+}
+
+.skeletonWrap {
+  @apply flex flex-col gap-3 py-4;
+}
+
+.skeletonRow {
+  @apply h-12 animate-pulse rounded-lg bg-slate-100;
+}

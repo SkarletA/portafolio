@@ -1,0 +1,53 @@
+@reference '../../../styles/theme.css';
+
+.sidebar {
+  @apply hidden w-60 shrink-0 flex-col border-r border-finora-border bg-white px-4 py-6 sm:flex;
+}
+
+.brand {
+  @apply flex items-center gap-2.5 px-2 pb-7;
+}
+
+.brandMark {
+  @apply flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-finora-primary to-finora-primary-dark;
+}
+
+.brandMarkIcon {
+  @apply h-4 w-4 text-white;
+}
+
+.navIcon {
+  @apply h-5 w-5;
+}
+
+.brandName {
+  @apply text-[17px] font-bold tracking-tight text-finora-ink;
+}
+
+.nav {
+  @apply flex flex-col gap-0.5;
+}
+
+.bottomSection {
+  @apply mt-auto flex flex-col gap-0.5;
+}
+
+.backLink {
+  @apply flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-finora-ink-muted transition-colors hover:text-finora-ink;
+}
+
+.profile {
+  @apply mt-2 flex items-center gap-2.5 rounded-lg border border-finora-border p-2.5;
+}
+
+.avatar {
+  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-finora-primary-dark text-sm font-semibold text-white;
+}
+
+.email {
+  @apply min-w-0 flex-1 truncate text-xs font-semibold text-finora-ink;
+}
+
+.signOutButton {
+  @apply shrink-0 text-xs font-medium text-finora-ink-muted hover:text-finora-danger;
+}

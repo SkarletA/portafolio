@@ -115,6 +115,21 @@ For significant features:
 
 Do not implement until the architecture is understood.
 
+## Component Reuse Audits
+
+Whenever asked to evaluate a specific component, pattern, or abstraction
+(e.g. "should we build a generic Modal?"), do not evaluate it in
+isolation. Proactively audit the rest of the current component
+inventory (atoms/molecules/organisms/pages) for other places that
+duplicate the same underlying concern, and call those out too — even
+though they were not named in the request.
+
+Apply the same premature-abstraction discipline to every candidate you
+surface this way: recommend unifying only where a concrete, current
+duplication already exists, never speculatively for a need that has not
+shown up yet. Report each candidate's verdict (justified now / premature)
+individually, since some may warrant action while others don't.
+
 ## ADRs
 
 When a decision has meaningful long-term consequences,

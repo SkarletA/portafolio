@@ -1,0 +1,121 @@
+@reference '../styles/theme.css';
+
+.section {
+  @apply mx-auto max-w-lg px-6 py-10 sm:py-20;
+}
+
+.title {
+  @apply font-finora-display text-3xl text-finora-ink;
+}
+
+.form {
+  @apply mt-8 flex flex-col gap-4;
+}
+
+.field {
+  @apply flex flex-col gap-1 text-sm text-finora-ink;
+}
+
+.input {
+  @apply rounded-lg border border-finora-border px-3 py-2;
+}
+
+.select {
+  @apply rounded-lg border border-finora-border py-2 pl-3 pr-8 text-finora-ink;
+}
+
+.textarea {
+  @apply rounded-lg border border-finora-border px-3 py-2;
+}
+
+.error {
+  @apply text-sm text-finora-danger;
+}
+
+.typeToggle {
+  @apply flex gap-2;
+}
+
+.typeButton {
+  @apply flex-1 rounded-lg border border-finora-border px-3 py-2 text-sm font-medium text-finora-ink-muted;
+}
+
+.typeButtonActiveExpense {
+  @apply border-finora-danger bg-finora-danger/10 text-finora-danger;
+}
+
+.typeButtonActiveIncome {
+  @apply border-finora-success bg-finora-success/10 text-finora-success;
+}
+
+.typeButtonActiveReimbursement {
+  @apply border-finora-primary bg-finora-primary/10 text-finora-primary;
+}
+
+.hint {
+  @apply text-sm font-normal text-finora-ink-muted;
+}
+
+.categoryCreate {
+  @apply flex flex-col gap-4 rounded-lg border border-finora-border bg-slate-50 p-4;
+}
+
+.categoryCreateActions {
+  @apply flex gap-2;
+}
+
+.actionButton {
+  @apply flex-1;
+}
+
+.colorPicker {
+  @apply mt-1 flex flex-wrap gap-2;
+}
+
+.colorSwatch {
+  @apply h-8 w-8 rounded-full border-2 border-transparent;
+}
+
+.colorSwatchActive {
+  @apply border-finora-ink;
+}
+
+.iconPicker {
+  @apply mt-1 flex flex-wrap gap-2;
+}
+
+.iconSwatch {
+  @apply flex h-9 w-9 items-center justify-center rounded-lg border border-finora-border bg-white text-finora-ink-muted;
+}
+
+.iconSwatchActive {
+  @apply border-finora-primary bg-finora-primary/10 text-finora-primary;
+}
+
+.iconSwatchIcon {
+  @apply h-4 w-4;
+}
+
+.paymentMethodList {
+  @apply mt-1 flex flex-col gap-2;
+}
+
+.paymentMethodRow {
+  @apply flex flex-wrap items-center gap-3;
+}
+
+.paymentMethodCheckboxLabel {
+  @apply flex items-center gap-2 text-sm font-normal text-finora-ink;
+}
+
+.paymentMethodAmountInput {
+  @apply w-28 rounded-lg border border-finora-border px-3 py-1.5 text-sm;
+}
+
+.paymentSummary {
+  @apply mt-2 text-sm text-finora-ink-muted;
+}
+
+.paymentSummaryMismatch {
+  @apply text-finora-danger;
+}

@@ -1,0 +1,97 @@
+@reference '../styles/theme.css';
+
+.section {
+  @apply mx-auto max-w-5xl px-4 py-8 sm:px-10;
+}
+
+.header {
+  @apply mb-7 flex flex-wrap items-start justify-between gap-5;
+}
+
+.title {
+  @apply text-xl font-bold tracking-tight text-finora-ink sm:text-2xl;
+}
+
+.subtitle {
+  @apply text-sm text-finora-ink-muted;
+}
+
+.periodPill {
+  @apply hidden items-center gap-2 rounded-full border border-finora-border bg-white px-4 py-2 text-sm font-medium text-finora-ink-muted sm:inline-flex;
+}
+
+.statGrid {
+  @apply mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3;
+}
+
+.analyticsRow {
+  @apply mb-4 grid grid-cols-1 gap-4 lg:grid-cols-5;
+}
+
+.card {
+  @apply rounded-xl border border-finora-border bg-white p-5 shadow-sm;
+}
+
+.chartCard {
+  @apply lg:col-span-3;
+}
+
+.sideCard {
+  @apply lg:col-span-2;
+}
+
+.cardTitle {
+  @apply mb-4 text-base font-semibold text-finora-ink;
+}
+
+.chartWrap {
+  @apply h-56;
+}
+
+.categoryList {
+  @apply flex flex-col gap-3;
+}
+
+.categoryRow {
+  @apply flex items-center gap-2 text-sm;
+}
+
+.categoryDot {
+  @apply h-2.5 w-2.5 shrink-0 rounded-full;
+}
+
+.categoryName {
+  @apply flex-1 truncate font-medium text-finora-ink;
+}
+
+.categoryPercentage {
+  @apply w-10 text-right text-xs text-finora-ink-muted;
+}
+
+.categoryAmount {
+  @apply text-right font-semibold text-finora-ink;
+}
+
+.topCategoryList {
+  @apply flex flex-col gap-3;
+}
+
+.topCategoryRow {
+  @apply flex items-center gap-3 text-sm;
+}
+
+.topCategoryRank {
+  @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-finora-ink-muted;
+}
+
+.skeletonWrap {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-3;
+}
+
+.skeletonCard {
+  @apply h-24 animate-pulse rounded-xl bg-slate-100;
+}
+
+.stateMessage {
+  @apply rounded-xl border border-finora-border bg-white py-10 text-center text-sm text-finora-ink-muted;
+}

@@ -1,0 +1,21 @@
+@reference '../../../styles/theme.css';
+
+.card {
+  @apply rounded-xl border border-finora-border bg-white p-5 shadow-sm;
+}
+
+.label {
+  @apply text-xs font-medium text-finora-ink-muted;
+}
+
+.value {
+  @apply mt-2 text-xl font-bold tracking-tight text-finora-ink sm:text-2xl;
+}
+
+.valueSuccess {
+  @apply text-finora-success;
+}
+
+.valueDanger {
+  @apply text-finora-danger;
+}

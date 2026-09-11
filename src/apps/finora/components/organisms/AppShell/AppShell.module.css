@@ -1,0 +1,37 @@
+@reference '../../../styles/theme.css';
+
+.shell {
+  @apply flex min-h-svh flex-col bg-finora-bg text-finora-ink font-finora-sans sm:flex-row;
+}
+
+.mobileHeader {
+  @apply flex items-center gap-2 border-b border-finora-border bg-white px-4 py-4 text-[15px] font-bold sm:hidden;
+}
+
+.brandMark {
+  @apply flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-finora-primary to-finora-primary-dark;
+}
+
+.brandMarkIcon {
+  @apply h-4 w-4 text-white;
+}
+
+.navIcon {
+  @apply h-5 w-5;
+}
+
+.addButtonIcon {
+  @apply h-4 w-4;
+}
+
+.main {
+  @apply min-w-0 flex-1 pb-24 sm:pb-10;
+}
+
+.bottomNav {
+  @apply fixed inset-x-0 bottom-0 z-50 flex items-center border-t border-finora-border bg-white px-2 py-2 sm:hidden;
+}
+
+.addButton {
+  @apply -mt-6 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 border-finora-bg bg-finora-primary text-white disabled:cursor-not-allowed disabled:opacity-60;
+}
