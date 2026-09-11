@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+
+# Lets the coverage-report step comment on the PR.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # No .nvmrc/engines field in the repo to read from - pinned to the
+          # Node major version this project is developed against.
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test with coverage
+        # supabaseClient.ts throws if these are unset, since it validates them
+        # eagerly at import time. No test hits Supabase for real - every
+        # service call is mocked - so placeholder values are enough. There's
+        # no .env.local in CI (correctly not committed), which is the actual
+        # gap this fills.
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+        run: npx vitest run --coverage
+
+      - name: Comment coverage on PR
+        uses: davelosert/vitest-coverage-report-action@v2
+
+      - name: Build
+        run: npm run build
