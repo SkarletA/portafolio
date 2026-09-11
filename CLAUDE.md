@@ -756,6 +756,24 @@ Do not commit secrets, API keys, credentials, or environment files containing se
 
 ---
 
+# Pull Request Convention
+
+Every pull request must fill in the following sections from `.github/PULL_REQUEST_TEMPLATE.md`:
+
+* Context
+* Description
+* Architecture
+* Modules created/modified
+* Tests
+
+When creating a PR — whether via `gh pr create` or any other method — the PR body must follow this full template structure, not a generic summary.
+
+Do not leave a section empty when it applies. If a section genuinely does not apply (e.g. no SQL migrations), state that explicitly instead of omitting the section.
+
+"Pending / out of scope" is optional and should only be filled when there is something meaningful to note.
+
+---
+
 # Deployment
 
 The application is intended to be deployed to Vercel.
