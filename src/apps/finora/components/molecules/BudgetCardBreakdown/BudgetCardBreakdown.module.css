@@ -1,0 +1,57 @@
+@reference '../../../styles/theme.css';
+
+.wrapper {
+  @apply rounded-b-xl border border-t-0 border-finora-border bg-white p-3;
+}
+
+.toggle {
+  @apply flex w-full items-center justify-between text-xs font-semibold text-finora-ink-muted;
+}
+
+.chevron {
+  @apply h-4 w-4 transition-transform;
+}
+
+.chevronOpen {
+  @apply rotate-180;
+}
+
+.list {
+  @apply mt-3 flex flex-col gap-3;
+}
+
+.row {
+  @apply flex flex-col gap-1.5;
+}
+
+.rowHeader {
+  @apply flex items-center gap-2;
+}
+
+.icon {
+  @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs text-white;
+}
+
+.iconFallbackBg {
+  @apply bg-slate-400 text-finora-ink-muted;
+}
+
+.categoryIcon {
+  @apply h-3 w-3;
+}
+
+.name {
+  @apply flex-1 truncate text-xs font-medium text-finora-ink;
+}
+
+.amount {
+  @apply text-xs font-semibold text-finora-ink;
+}
+
+.progressTrack {
+  @apply h-1.5 w-full overflow-hidden rounded-full bg-slate-100;
+}
+
+.progressFill {
+  @apply h-full rounded-full bg-finora-primary transition-all;
+}

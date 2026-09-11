@@ -17,6 +17,7 @@ export const OnTrack = {
       spent: 120,
       percentage: 30,
       status: 'on-track',
+      breakdown: [],
     },
   },
 }
@@ -33,6 +34,7 @@ export const NearLimit = {
       spent: 180,
       percentage: 90,
       status: 'near-limit',
+      breakdown: [],
     },
   },
 }
@@ -49,6 +51,7 @@ export const Exceeded = {
       spent: 210,
       percentage: 140,
       status: 'exceeded',
+      breakdown: [],
     },
   },
 }

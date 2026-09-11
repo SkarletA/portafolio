@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBudgets } from '../hooks/useBudgets'
 import { BudgetCard } from '../components/molecules/BudgetCard/BudgetCard'
+import { BudgetCardBreakdown } from '../components/molecules/BudgetCardBreakdown/BudgetCardBreakdown'
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
 import { Button } from '../components/atoms/Button/Button'
 import s from './Budgets.module.css'
@@ -40,7 +41,15 @@ export function Budgets() {
       >
         <div className={s.grid}>
           {budgets.map((budget) => (
-            <BudgetCard key={budget.id} budget={budget} />
+            <div key={budget.id} className={s.budgetGroup}>
+              <BudgetCard budget={budget} flush={budget.breakdown.length > 0} />
+              <BudgetCardBreakdown
+                categoryId={budget.category_id}
+                categoryName={budget.category?.name ?? 'Uncategorized'}
+                monthlyLimit={budget.monthly_limit}
+                items={budget.breakdown}
+              />
+            </div>
           ))}
         </div>
       </AsyncState>

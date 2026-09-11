@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildCategoryTree, getCategoryIdsForRollup, getNetSpendByCategory, type Category } from './category'
+import {
+  buildCategoryTree,
+  getCategoryIdsForRollup,
+  getNetSpendByCategory,
+  getRawNetSpendByCategory,
+  type Category,
+} from './category'
 
 const food: Category = { id: 'food', name: 'Food', icon: 'utensils', color: null, parent_id: null }
 const meat: Category = { id: 'meat', name: 'Carne', icon: 'beef', color: null, parent_id: 'food' }
@@ -25,6 +31,42 @@ describe('getCategoryIdsForRollup', () => {
   it('returns only its own id when the category has no children', () => {
     expect(getCategoryIdsForRollup(categories, 'meat')).toEqual(['meat'])
     expect(getCategoryIdsForRollup(categories, 'transport')).toEqual(['transport'])
+  })
+})
+
+describe('getRawNetSpendByCategory', () => {
+  it('sums net spend per category without rolling children into their parent', () => {
+    const entries = [
+      { category_id: 'meat', type: 'expense' as const, amount: 200 },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 50 },
+      { category_id: 'market', type: 'expense' as const, amount: 300 },
+      { category_id: 'food', type: 'expense' as const, amount: 20 },
+    ]
+
+    expect(getRawNetSpendByCategory(entries)).toEqual({
+      meat: 150,
+      market: 300,
+      food: 20,
+    })
+  })
+
+  it('ignores entries with no category and entries of type income', () => {
+    const entries = [
+      { category_id: null, type: 'expense' as const, amount: 999 },
+      { category_id: 'transport', type: 'income' as const, amount: 500 },
+      { category_id: 'transport', type: 'expense' as const, amount: 40 },
+    ]
+
+    expect(getRawNetSpendByCategory(entries)).toEqual({ transport: 40 })
+  })
+
+  it('does not clamp negative net spend (a category can show a net reimbursement)', () => {
+    const entries = [
+      { category_id: 'meat', type: 'expense' as const, amount: 100 },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 300 },
+    ]
+
+    expect(getRawNetSpendByCategory(entries)).toEqual({ meat: -200 })
   })
 })
 

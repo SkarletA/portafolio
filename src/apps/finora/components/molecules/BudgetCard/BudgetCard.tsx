@@ -5,6 +5,7 @@ import s from './BudgetCard.module.css'
 
 interface BudgetCardProps {
   budget: BudgetWithProgress
+  flush?: boolean
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -19,7 +20,7 @@ const STATUS_LABELS = {
   exceeded: 'Exceeded',
 } as const
 
-export function BudgetCard({ budget }: BudgetCardProps) {
+export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
   const { category, monthly_limit: monthlyLimit, spent, percentage, status } = budget
   const categoryName = category?.name ?? 'Uncategorized'
   const fallbackIcon = categoryName[0] || '•'
@@ -28,7 +29,7 @@ export function BudgetCard({ budget }: BudgetCardProps) {
   const iconStyle = category?.color ? { backgroundColor: category.color } : undefined
 
   return (
-    <div className={s.card} data-testid="budget-card">
+    <div className={cn(s.card, flush && s.cardFlush)} data-testid="budget-card">
       <div className={s.header}>
         <div className={cn(s.icon, !iconStyle && s.iconFallbackBg)} style={iconStyle}>
           <CategoryIcon name={category?.icon ?? null} fallbackLabel={fallbackIcon} className={s.categoryIcon} />
