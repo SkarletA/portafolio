@@ -138,13 +138,11 @@ export function getCurrentMonthRange() {
   }
 }
 
-export async function getExpensesByCategoryForCurrentMonth() {
+export async function getExpensesByCategory({ start, end }: { start: string; end: string }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
-  const { start, end } = getCurrentMonthRange()
 
   const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
     supabase
