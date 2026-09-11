@@ -16,4 +16,10 @@ describe('StatCard', () => {
 
     expect(screen.getByText('28%').className).toContain('valueSuccess')
   })
+
+  it('applies the danger variant styling', () => {
+    render(<StatCard label="Savings rate" value="-15%" testId="stat-card-savings-rate" variant="danger" />)
+
+    expect(screen.getByText('-15%').className).toContain('valueDanger')
+  })
 })

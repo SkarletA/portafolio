@@ -15,3 +15,7 @@
 .valueSuccess {
   @apply text-finora-success;
 }
+
+.valueDanger {
+  @apply text-finora-danger;
+}

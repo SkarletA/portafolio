@@ -80,7 +80,7 @@ export function Analytics() {
                 testId="analytics-savings-rate-stat"
                 label="Savings rate"
                 value={formatPercentage(stats.savingsRate)}
-                variant="success"
+                variant={stats.savingsRate >= 0 ? 'success' : 'danger'}
               />
             </div>
 

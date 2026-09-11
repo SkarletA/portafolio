@@ -21,3 +21,12 @@ export const Success = {
     variant: 'success',
   },
 }
+
+export const Danger = {
+  args: {
+    label: 'Savings rate',
+    value: '-15%',
+    testId: 'stat-card-savings-rate',
+    variant: 'danger',
+  },
+}
