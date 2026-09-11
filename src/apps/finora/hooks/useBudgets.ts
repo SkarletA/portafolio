@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getBudgets, type BudgetWithCategory } from '../services/budgetsService'
-import { getExpensesByCategoryForCurrentMonth } from '../services/transactionsService'
+import { getCurrentMonthRange, getExpensesByCategory } from '../services/transactionsService'
 import { getBudgetProgress, type BudgetStatus } from '../domain/budget'
 
 export type BudgetWithProgress = BudgetWithCategory & {
@@ -20,7 +20,7 @@ export function useBudgets() {
     setError(null)
 
     const [{ data: budgetsData, error: budgetsError }, { data: expensesData, error: expensesError }] =
-      await Promise.all([getBudgets(), getExpensesByCategoryForCurrentMonth()])
+      await Promise.all([getBudgets(), getExpensesByCategory(getCurrentMonthRange())])
 
     if (!mountedRef.current) return
 

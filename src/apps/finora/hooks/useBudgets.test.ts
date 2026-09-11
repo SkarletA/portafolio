@@ -2,20 +2,21 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBudgets } from './useBudgets'
 import { getBudgets } from '../services/budgetsService'
-import { getExpensesByCategoryForCurrentMonth } from '../services/transactionsService'
+import { getExpensesByCategory } from '../services/transactionsService'
 
 vi.mock('../services/budgetsService', () => ({
   getBudgets: vi.fn(),
 }))
 
 vi.mock('../services/transactionsService', () => ({
-  getExpensesByCategoryForCurrentMonth: vi.fn(),
+  getExpensesByCategory: vi.fn(),
+  getCurrentMonthRange: vi.fn(() => ({ start: '2026-09-01', end: '2026-09-30', dayOfMonth: 11 })),
 }))
 
 describe('useBudgets', () => {
   beforeEach(() => {
     vi.mocked(getBudgets).mockReset()
-    vi.mocked(getExpensesByCategoryForCurrentMonth).mockReset()
+    vi.mocked(getExpensesByCategory).mockReset()
   })
 
   it('loads budgets successfully', async () => {
@@ -23,7 +24,7 @@ describe('useBudgets', () => {
       data: [{ id: '1', category_id: 'c1', monthly_limit: 100 }],
       error: null,
     } as never)
-    vi.mocked(getExpensesByCategoryForCurrentMonth).mockResolvedValue({ data: {}, error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({ data: {}, error: null } as never)
 
     const { result } = renderHook(() => useBudgets())
 
@@ -37,7 +38,7 @@ describe('useBudgets', () => {
 
   it('treats an empty result as a valid, non-error state', async () => {
     vi.mocked(getBudgets).mockResolvedValue({ data: [], error: null } as never)
-    vi.mocked(getExpensesByCategoryForCurrentMonth).mockResolvedValue({ data: {}, error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({ data: {}, error: null } as never)
 
     const { result } = renderHook(() => useBudgets())
 
@@ -52,7 +53,7 @@ describe('useBudgets', () => {
       data: null,
       error: { message: 'Network error' },
     } as never)
-    vi.mocked(getExpensesByCategoryForCurrentMonth).mockResolvedValue({ data: {}, error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({ data: {}, error: null } as never)
 
     const { result } = renderHook(() => useBudgets())
 
@@ -67,7 +68,7 @@ describe('useBudgets', () => {
       data: [{ id: '1', category_id: 'c1', monthly_limit: 100 }],
       error: null,
     } as never)
-    vi.mocked(getExpensesByCategoryForCurrentMonth).mockResolvedValue({
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
       data: null,
       error: { message: 'Network error' },
     } as never)
@@ -85,7 +86,7 @@ describe('useBudgets', () => {
       data: [{ id: '1', category_id: 'c1', monthly_limit: 200 }],
       error: null,
     } as never)
-    vi.mocked(getExpensesByCategoryForCurrentMonth).mockResolvedValue({
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
       data: { c1: 180 },
       error: null,
     } as never)

@@ -95,3 +95,51 @@
 .stateMessage {
   @apply rounded-xl border border-finora-border bg-white py-10 text-center text-sm text-finora-ink-muted;
 }
+
+.periodToggle {
+  @apply mb-6 inline-flex gap-1 rounded-lg bg-slate-100 p-1;
+}
+
+.periodButton {
+  @apply rounded-md px-3 py-1.5 text-sm font-semibold text-finora-ink-muted;
+}
+
+.periodButtonActive {
+  @apply bg-white text-finora-ink shadow-sm;
+}
+
+.insightList {
+  @apply mb-4 flex flex-col gap-2;
+}
+
+.insightRow {
+  @apply rounded-lg bg-finora-primary/5 px-3 py-2 text-sm text-finora-ink;
+}
+
+.comparisonList {
+  @apply flex flex-col gap-3;
+}
+
+.comparisonRow {
+  @apply flex flex-wrap items-center gap-2 border-t border-finora-border pt-3 text-sm first:border-t-0 first:pt-0;
+}
+
+.comparisonAmounts {
+  @apply text-finora-ink-muted;
+}
+
+.comparisonChange {
+  @apply ml-auto text-right font-semibold text-finora-ink-muted;
+}
+
+.comparisonChangeUp {
+  @apply text-finora-danger;
+}
+
+.comparisonChangeDown {
+  @apply text-finora-success;
+}
+
+.comparisonChangeNew {
+  @apply text-finora-ink-muted;
+}
