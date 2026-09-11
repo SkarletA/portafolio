@@ -3,11 +3,6 @@ import cn from 'clsx'
 import s from './Icon.module.css'
 
 export type IconName =
-  | 'utensils'
-  | 'home'
-  | 'car'
-  | 'shopping-bag'
-  | 'tv'
   | 'brand-mark'
   | 'dashboard'
   | 'transactions'
@@ -17,58 +12,12 @@ export type IconName =
   | 'settings'
   | 'plus'
   | 'search'
+  | 'edit'
+  | 'trash'
 
 interface IconProps {
   name: IconName
   className?: string
-}
-
-function UtensilsGlyph() {
-  return (
-    <>
-      <path d="M7 2 V9 a2 2 0 0 0 4 0 V2" />
-      <path d="M9 11 V22" />
-      <path d="M17 2 C15 2 15 6 15 8 a2 2 0 0 0 2 2 V22" />
-    </>
-  )
-}
-
-function HomeGlyph() {
-  return (
-    <>
-      <path d="M3 11 L12 3 L21 11" />
-      <path d="M5 10 V21 H19 V10" />
-    </>
-  )
-}
-
-function CarGlyph() {
-  return (
-    <>
-      <path d="M3 13 L5 7 H19 L21 13" />
-      <rect x="2" y="13" width="20" height="6" rx="1.5" />
-      <circle cx="7" cy="19" r="1.5" />
-      <circle cx="17" cy="19" r="1.5" />
-    </>
-  )
-}
-
-function ShoppingBagGlyph() {
-  return (
-    <>
-      <path d="M6 8 H18 L17 21 H7 Z" />
-      <path d="M9 8 V6 a3 3 0 0 1 6 0 V8" />
-    </>
-  )
-}
-
-function TvGlyph() {
-  return (
-    <>
-      <rect x="3" y="5" width="18" height="13" rx="1.5" />
-      <path d="M9 21 H15" />
-    </>
-  )
 }
 
 function BrandMarkGlyph() {
@@ -161,12 +110,28 @@ function SearchGlyph() {
   )
 }
 
+function EditGlyph() {
+  return (
+    <>
+      <path d="M12 20 H21" />
+      <path d="M16.5 3.5 A2.121 2.121 0 0 1 19.5 6.5 L8 18 L4 19 L5 15 Z" />
+    </>
+  )
+}
+
+function TrashGlyph() {
+  return (
+    <>
+      <path d="M4 7 H20" />
+      <path d="M9 7 V4 H15 V7" />
+      <path d="M6 7 L7 21 H17 L18 7" />
+      <path d="M10 11 V17" />
+      <path d="M14 11 V17" />
+    </>
+  )
+}
+
 const GLYPHS: Record<IconName, () => ReactElement> = {
-  utensils: UtensilsGlyph,
-  home: HomeGlyph,
-  car: CarGlyph,
-  'shopping-bag': ShoppingBagGlyph,
-  tv: TvGlyph,
   'brand-mark': BrandMarkGlyph,
   dashboard: DashboardGlyph,
   transactions: TransactionsGlyph,
@@ -176,6 +141,8 @@ const GLYPHS: Record<IconName, () => ReactElement> = {
   settings: SettingsGlyph,
   plus: PlusGlyph,
   search: SearchGlyph,
+  edit: EditGlyph,
+  trash: TrashGlyph,
 }
 
 export function Icon({ name, className }: IconProps) {

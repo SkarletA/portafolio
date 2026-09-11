@@ -32,6 +32,8 @@ export async function getMonthlyStats() {
     (acc, row) => {
       if (row.type === 'expense') {
         acc.totalSpent += row.amount
+      } else if (row.type === 'reimbursement') {
+        acc.totalSpent -= row.amount
       } else {
         acc.totalIncome += row.amount
       }
@@ -39,6 +41,8 @@ export async function getMonthlyStats() {
     },
     { totalSpent: 0, totalIncome: 0 }
   )
+
+  totals.totalSpent = Math.max(totals.totalSpent, 0)
 
   const stats: MonthlyStats = {
     totalSpent: totals.totalSpent,
@@ -67,21 +71,26 @@ export async function getSpendingByCategory() {
   if (error) return { data: null, error }
 
   const categories = (categoriesData ?? []) as Category[]
-  const categoryById = new Map(categories.map((category) => [category.id, category]))
-  const totalSpent = Object.values(expensesByCategory ?? {}).reduce((sum, amount) => sum + amount, 0)
+  // Only top-level categories are listed: each one's amount already includes
+  // its subcategories via getNetSpendByCategory's rollup, so listing children
+  // as separate rows too would double-count spend and push percentages past 100%.
+  const topLevelCategories = categories.filter((category) => !category.parent_id)
+  const expensesMap = expensesByCategory ?? {}
+  const totalSpent = topLevelCategories.reduce((sum, category) => sum + (expensesMap[category.id] ?? 0), 0)
 
-  const spending: CategorySpending[] = Object.entries(expensesByCategory ?? {})
-    .map(([categoryId, amount]) => {
-      const category = categoryById.get(categoryId)
+  const spending: CategorySpending[] = topLevelCategories
+    .map((category) => {
+      const amount = expensesMap[category.id] ?? 0
       return {
-        category_id: categoryId,
-        name: category?.name ?? 'Uncategorized',
-        icon: category?.icon ?? null,
-        color: category?.color ?? null,
+        category_id: category.id,
+        name: category.name,
+        icon: category.icon,
+        color: category.color,
         amount,
         percentage: getCategoryPercentage(amount, totalSpent),
       }
     })
+    .filter((entry) => entry.amount > 0)
     .sort((a, b) => b.amount - a.amount)
 
   return { data: spending, error: null }

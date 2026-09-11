@@ -36,7 +36,15 @@ export function FinoraRoutes() {
         path="add-transaction"
         element={
           <ProtectedRoute>
-            <AddTransaction />
+            <AddTransaction mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="transactions/:id/edit"
+        element={
+          <ProtectedRoute>
+            <AddTransaction mode="edit" />
           </ProtectedRoute>
         }
       />

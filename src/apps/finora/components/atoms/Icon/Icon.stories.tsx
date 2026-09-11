@@ -5,27 +5,31 @@ export default {
   component: Icon,
 }
 
-export const Utensils = {
-  args: { name: 'utensils' },
+export const Dashboard = {
+  args: { name: 'dashboard' },
 }
 
-export const Home = {
-  args: { name: 'home' },
+export const Edit = {
+  args: { name: 'edit' },
 }
 
-export const Car = {
-  args: { name: 'car' },
+export const Trash = {
+  args: { name: 'trash' },
 }
 
-export const ShoppingBag = {
-  args: { name: 'shopping-bag' },
-}
-
-export const Tv = {
-  args: { name: 'tv' },
-}
-
-const ALL_ICON_NAMES: IconName[] = ['utensils', 'home', 'car', 'shopping-bag', 'tv']
+const ALL_ICON_NAMES: IconName[] = [
+  'brand-mark',
+  'dashboard',
+  'transactions',
+  'budgets',
+  'analytics',
+  'goals',
+  'settings',
+  'plus',
+  'search',
+  'edit',
+  'trash',
+]
 
 export const AllIcons = {
   render: () => (

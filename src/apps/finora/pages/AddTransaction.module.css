@@ -1,7 +1,7 @@
 @reference '../styles/theme.css';
 
 .section {
-  @apply mx-auto max-w-sm px-6 py-10 sm:py-20;
+  @apply mx-auto max-w-lg px-6 py-10 sm:py-20;
 }
 
 .title {
@@ -46,4 +46,76 @@
 
 .typeButtonActiveIncome {
   @apply border-finora-success bg-finora-success/10 text-finora-success;
+}
+
+.typeButtonActiveReimbursement {
+  @apply border-finora-primary bg-finora-primary/10 text-finora-primary;
+}
+
+.hint {
+  @apply text-sm font-normal text-finora-ink-muted;
+}
+
+.categoryCreate {
+  @apply flex flex-col gap-4 rounded-lg border border-finora-border bg-slate-50 p-4;
+}
+
+.categoryCreateActions {
+  @apply flex gap-2;
+}
+
+.actionButton {
+  @apply flex-1;
+}
+
+.colorPicker {
+  @apply mt-1 flex flex-wrap gap-2;
+}
+
+.colorSwatch {
+  @apply h-8 w-8 rounded-full border-2 border-transparent;
+}
+
+.colorSwatchActive {
+  @apply border-finora-ink;
+}
+
+.iconPicker {
+  @apply mt-1 flex flex-wrap gap-2;
+}
+
+.iconSwatch {
+  @apply flex h-9 w-9 items-center justify-center rounded-lg border border-finora-border bg-white text-finora-ink-muted;
+}
+
+.iconSwatchActive {
+  @apply border-finora-primary bg-finora-primary/10 text-finora-primary;
+}
+
+.iconSwatchIcon {
+  @apply h-4 w-4;
+}
+
+.paymentMethodList {
+  @apply mt-1 flex flex-col gap-2;
+}
+
+.paymentMethodRow {
+  @apply flex flex-wrap items-center gap-3;
+}
+
+.paymentMethodCheckboxLabel {
+  @apply flex items-center gap-2 text-sm font-normal text-finora-ink;
+}
+
+.paymentMethodAmountInput {
+  @apply w-28 rounded-lg border border-finora-border px-3 py-1.5 text-sm;
+}
+
+.paymentSummary {
+  @apply mt-2 text-sm text-finora-ink-muted;
+}
+
+.paymentSummaryMismatch {
+  @apply text-finora-danger;
 }

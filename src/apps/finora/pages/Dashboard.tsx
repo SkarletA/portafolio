@@ -11,7 +11,7 @@ const RECENT_TRANSACTIONS_LIMIT = 5
 const BUDGETS_PREVIEW_LIMIT = 3
 
 export function Dashboard() {
-  const { transactions, loading, error } = useTransactions()
+  const { transactions, loading, error, refetch } = useTransactions()
   const recentTransactions = transactions.slice(0, RECENT_TRANSACTIONS_LIMIT)
 
   const { budgets, loading: budgetsLoading, error: budgetsError } = useBudgets()
@@ -56,7 +56,7 @@ export function Dashboard() {
             skeletonItemClassName={s.skeletonRow}
           >
             {recentTransactions.map((transaction) => (
-              <TransactionItem key={transaction.id} transaction={transaction} />
+              <TransactionItem key={transaction.id} transaction={transaction} onDeleted={refetch} />
             ))}
           </AsyncState>
         </div>

@@ -1,10 +1,15 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '../domain/transaction'
 import type { Category } from '../domain/category'
+import { getNetSpendByCategory } from '../domain/category'
+import { getCategories } from './categoriesService'
 
 export type TransactionWithCategory = Transaction & {
   category: Pick<Category, 'id' | 'name' | 'icon' | 'color'> | null
 }
+
+const TRANSACTION_SELECT =
+  '*, category:categories(id, name, icon, color), payments:transaction_payments(id, transaction_id, payment_method, amount)'
 
 export async function getTransactions() {
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -14,9 +19,28 @@ export async function getTransactions() {
 
   return supabase
     .from('transactions')
-    .select('*, category:categories(id, name, icon, color)')
+    .select(TRANSACTION_SELECT)
     .eq('user_id', userData.user.id)
     .order('date', { ascending: false })
+}
+
+export async function getTransactionById(id: string) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+
+  if (userError) return { data: null, error: userError }
+  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
+
+  return supabase
+    .from('transactions')
+    .select(TRANSACTION_SELECT)
+    .eq('id', id)
+    .eq('user_id', userData.user.id)
+    .single()
+}
+
+export interface TransactionPaymentInput {
+  payment_method: string
+  amount: number
 }
 
 export interface NewTransactionInput {
@@ -24,9 +48,9 @@ export interface NewTransactionInput {
   amount: number
   type: TransactionType
   category_id: string | null
-  payment_method: string | null
   date: string
   notes: string | null
+  payments: TransactionPaymentInput[]
 }
 
 export async function createTransaction(data: NewTransactionInput) {
@@ -35,11 +59,63 @@ export async function createTransaction(data: NewTransactionInput) {
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
-  return supabase
+  const { payments, ...transactionFields } = data
+
+  const { data: transaction, error: transactionError } = await supabase
     .from('transactions')
-    .insert({ ...data, user_id: userData.user.id })
+    .insert({ ...transactionFields, user_id: userData.user.id })
     .select()
     .single()
+
+  if (transactionError) return { data: null, error: transactionError }
+
+  const { error: paymentsError } = await supabase.from('transaction_payments').insert(
+    payments.map((payment) => ({
+      ...payment,
+      transaction_id: transaction.id,
+      user_id: userData.user.id,
+    }))
+  )
+
+  if (paymentsError) return { data: null, error: paymentsError }
+
+  return { data: transaction, error: null }
+}
+
+export type UpdateTransactionInput = NewTransactionInput
+
+export async function updateTransaction(id: string, data: UpdateTransactionInput) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+
+  if (userError) return { data: null, error: userError }
+  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
+
+  const { payments, ...transactionFields } = data
+
+  const { data: transaction, error: transactionError } = await supabase
+    .from('transactions')
+    .update(transactionFields)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (transactionError) return { data: null, error: transactionError }
+
+  const { error: deleteError } = await supabase.from('transaction_payments').delete().eq('transaction_id', id)
+
+  if (deleteError) return { data: null, error: deleteError }
+
+  const { error: insertError } = await supabase.from('transaction_payments').insert(
+    payments.map((payment) => ({
+      ...payment,
+      transaction_id: id,
+      user_id: userData.user.id,
+    }))
+  )
+
+  if (insertError) return { data: null, error: insertError }
+
+  return { data: transaction, error: null }
 }
 
 export function deleteTransaction(id: string) {
@@ -70,22 +146,22 @@ export async function getExpensesByCategoryForCurrentMonth() {
 
   const { start, end } = getCurrentMonthRange()
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('category_id, amount')
-    .eq('user_id', userData.user.id)
-    .eq('type', 'expense')
-    .gte('date', start)
-    .lte('date', end)
+  const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('category_id, amount, type')
+      .eq('user_id', userData.user.id)
+      .in('type', ['expense', 'reimbursement'])
+      .gte('date', start)
+      .lte('date', end),
+    getCategories(),
+  ])
 
-  if (error) return { data: null, error }
+  if (rowsError) return { data: null, error: rowsError }
+  if (categoriesError) return { data: null, error: categoriesError }
 
-  const totalsByCategory = (data ?? []).reduce<Record<string, number>>((totals, row) => {
-    if (!row.category_id) return totals
-
-    totals[row.category_id] = (totals[row.category_id] ?? 0) + row.amount
-    return totals
-  }, {})
+  const categories = (categoriesData ?? []) as Category[]
+  const totalsByCategory = getNetSpendByCategory(rows ?? [], categories)
 
   return { data: totalsByCategory, error: null }
 }

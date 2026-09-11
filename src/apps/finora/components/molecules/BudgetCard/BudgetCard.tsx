@@ -1,6 +1,6 @@
 import cn from 'clsx'
 import type { BudgetWithProgress } from '../../../hooks/useBudgets'
-import { Icon, type IconName } from '../../atoms/Icon/Icon'
+import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCard.module.css'
 
 interface BudgetCardProps {
@@ -13,12 +13,6 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
-const ICON_NAMES: IconName[] = ['utensils', 'home', 'car', 'shopping-bag', 'tv']
-
-function isIconName(value: string): value is IconName {
-  return (ICON_NAMES as string[]).includes(value)
-}
-
 const STATUS_LABELS = {
   'on-track': 'On track',
   'near-limit': 'Near limit',
@@ -28,7 +22,6 @@ const STATUS_LABELS = {
 export function BudgetCard({ budget }: BudgetCardProps) {
   const { category, monthly_limit: monthlyLimit, spent, percentage, status } = budget
   const categoryName = category?.name ?? 'Uncategorized'
-  const iconName = category?.icon
   const fallbackIcon = categoryName[0] || '•'
   const cappedPercentage = Math.min(Math.max(percentage, 0), 100)
   const statusLabel = STATUS_LABELS[status]
@@ -38,7 +31,7 @@ export function BudgetCard({ budget }: BudgetCardProps) {
     <div className={s.card} data-testid="budget-card">
       <div className={s.header}>
         <div className={cn(s.icon, !iconStyle && s.iconFallbackBg)} style={iconStyle}>
-          {iconName && isIconName(iconName) ? <Icon name={iconName} className={s.categoryIcon} /> : fallbackIcon}
+          <CategoryIcon name={category?.icon ?? null} fallbackLabel={fallbackIcon} className={s.categoryIcon} />
         </div>
         <div className={s.info}>
           <p className={s.categoryName}>{categoryName}</p>

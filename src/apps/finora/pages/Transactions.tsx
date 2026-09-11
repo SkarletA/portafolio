@@ -6,12 +6,11 @@ import { TransactionItem } from '../components/molecules/TransactionItem/Transac
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
 import { Button } from '../components/atoms/Button/Button'
 import { Icon } from '../components/atoms/Icon/Icon'
+import { PAYMENT_METHODS } from '../domain/transaction'
 import s from './Transactions.module.css'
 
-const PAYMENT_METHODS = ['Credit Card', 'Debit Card', 'Cash', 'Bank Transfer']
-
 export function Transactions() {
-  const { transactions, loading, error } = useTransactions()
+  const { transactions, loading, error, refetch } = useTransactions()
   const { categories, loading: categoriesLoading } = useCategories()
   const navigate = useNavigate()
 
@@ -45,7 +44,7 @@ export function Transactions() {
       if (categoryId && transaction.category_id !== categoryId) {
         return false
       }
-      if (paymentMethod && transaction.payment_method !== paymentMethod) {
+      if (paymentMethod && !transaction.payments.some((payment) => payment.payment_method === paymentMethod)) {
         return false
       }
       return true
@@ -134,7 +133,7 @@ export function Transactions() {
             <p className={s.stateMessage}>No transactions match your filters.</p>
           ) : (
             filteredTransactions.map((transaction) => (
-              <TransactionItem key={transaction.id} transaction={transaction} />
+              <TransactionItem key={transaction.id} transaction={transaction} onDeleted={refetch} />
             ))
           )}
         </AsyncState>
