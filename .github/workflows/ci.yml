@@ -30,6 +30,14 @@ jobs:
         run: npm run lint
 
       - name: Test with coverage
+        # supabaseClient.ts throws if these are unset, since it validates them
+        # eagerly at import time. No test hits Supabase for real - every
+        # service call is mocked - so placeholder values are enough. There's
+        # no .env.local in CI (correctly not committed), which is the actual
+        # gap this fills.
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
         run: npx vitest run --coverage
 
       - name: Comment coverage on PR

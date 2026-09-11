@@ -8,6 +8,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './vitest.setup.js',
+    // Reuses one jsdom environment per worker instead of recreating it per
+    // test file - Vitest's own suggestion when it detects heavy environment
+    // setup cost. Reduces the resource contention that caused intermittent
+    // render() timeouts on CPU-constrained runners (2-core CI runners).
+    pool: 'vmThreads',
     coverage: {
       provider: 'v8',
       // text: human-readable summary in the CI log. lcov: standard format for
