@@ -1,0 +1,117 @@
+@reference '../styles/theme.css';
+
+.section {
+  @apply mx-auto max-w-3xl px-4 py-8 sm:px-10;
+}
+
+.header {
+  @apply mb-7;
+}
+
+.title {
+  @apply text-xl font-bold tracking-tight text-finora-ink sm:text-2xl;
+}
+
+.subtitle {
+  @apply text-sm text-finora-ink-muted;
+}
+
+.blocks {
+  @apply flex flex-col gap-4;
+}
+
+.block {
+  @apply rounded-xl border border-finora-border bg-white p-5 shadow-sm;
+}
+
+.blockTitle {
+  @apply mb-4 text-base font-semibold text-finora-ink;
+}
+
+.profileRow {
+  @apply mb-5 flex items-center gap-4;
+}
+
+.avatarImage {
+  @apply h-14 w-14 shrink-0 rounded-full object-cover;
+}
+
+.avatarFallback {
+  @apply flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-finora-primary-dark text-lg font-semibold text-white;
+}
+
+.hiddenFileInput {
+  @apply hidden;
+}
+
+.form {
+  @apply mb-5 flex flex-col gap-3 border-t border-finora-border pt-5 first:mt-0 first:border-t-0 first:pt-0;
+}
+
+.field {
+  @apply flex flex-col gap-1 text-sm font-semibold text-finora-ink;
+}
+
+.input {
+  @apply rounded-lg border border-finora-border px-3 py-2 text-sm font-normal;
+}
+
+.error {
+  @apply text-sm text-finora-danger;
+}
+
+.success {
+  @apply text-sm text-finora-success;
+}
+
+.row {
+  @apply flex items-center justify-between gap-4 border-b border-finora-border py-3 last:border-b-0;
+}
+
+.rowLabel {
+  @apply text-sm font-semibold text-finora-ink;
+}
+
+.rowSub {
+  @apply mt-0.5 text-xs text-finora-ink-muted;
+}
+
+.switch {
+  @apply relative h-5.5 w-9.5 shrink-0 rounded-full bg-slate-200 transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-4.5 after:w-4.5 after:rounded-full after:bg-white after:shadow after:transition-all;
+}
+
+.switchOn {
+  @apply bg-finora-primary after:left-4.5;
+}
+
+.stateMessage {
+  @apply text-sm text-finora-ink-muted;
+}
+
+.dangerBlock {
+  @apply border-finora-danger/30;
+}
+
+.dangerButton {
+  @apply border-finora-danger/40 text-finora-danger;
+}
+
+.modalOverlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4;
+}
+
+.modal {
+  @apply w-full max-w-sm rounded-xl bg-white p-6 shadow-lg;
+}
+
+.modalTitle {
+  @apply text-base font-bold text-finora-ink;
+}
+
+.modalText {
+  @apply mt-2 mb-4 text-sm text-finora-ink-muted;
+}
+
+.modalActions {
+  @apply mt-4 flex justify-end gap-3;
+}
