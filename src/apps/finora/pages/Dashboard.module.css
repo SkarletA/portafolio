@@ -1,51 +1,111 @@
 @reference '../styles/theme.css';
 
 .section {
-  @apply mx-auto max-w-3xl px-6 py-20 text-center;
+  @apply mx-auto max-w-5xl px-4 py-8 sm:px-10;
 }
 
-.eyebrow {
-  @apply text-sm font-medium uppercase tracking-finora-eyebrow text-finora-accent;
+.header {
+  @apply mb-7 flex flex-wrap items-start justify-between gap-5;
 }
 
 .title {
-  @apply mt-4 font-finora-display text-4xl text-finora-ink md:text-5xl;
+  @apply text-xl font-bold tracking-tight text-finora-ink sm:text-2xl;
 }
 
 .subtitle {
-  @apply mt-6 text-lg text-finora-ink-muted;
+  @apply text-sm text-finora-ink-muted;
 }
 
-.actions {
-  @apply mt-10 flex flex-col items-center gap-4;
+.headerRight {
+  @apply flex flex-wrap items-center gap-3;
 }
 
-.link {
-  @apply text-sm font-semibold text-finora-primary underline;
+.periodPill {
+  @apply hidden items-center gap-2 rounded-full border border-finora-border bg-white px-4 py-2 text-sm font-medium text-finora-ink-muted sm:inline-flex;
+}
+
+.addIcon {
+  @apply h-4 w-4;
+}
+
+.overviewGrid {
+  @apply mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+.balanceCard {
+  @apply rounded-xl bg-gradient-to-br from-finora-primary to-finora-primary-dark p-5 text-white shadow-sm;
+}
+
+.balanceLabel {
+  @apply text-xs font-medium text-white/85;
+}
+
+.balanceValue {
+  @apply mt-2 text-xl font-bold tracking-tight sm:text-2xl;
+}
+
+.overviewSkeletonWrap {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4;
+}
+
+.overviewSkeletonCard {
+  @apply h-24 animate-pulse rounded-xl bg-slate-100;
+}
+
+.contentRow {
+  @apply mb-6 grid grid-cols-1 gap-6 lg:grid-cols-5;
 }
 
 .recentSection {
-  @apply mt-16 text-left;
+  @apply lg:col-span-3;
+}
+
+.categorySection {
+  @apply lg:col-span-2;
 }
 
 .budgetsSection {
-  @apply mt-16 text-left;
+  @apply mt-2;
 }
 
-.budgetsGrid {
-  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
-}
-
-.recentHeader {
+.sectionHeader {
   @apply mb-4 flex flex-wrap items-center justify-between gap-3;
 }
 
-.recentTitle {
+.sectionTitle {
   @apply text-lg font-bold tracking-tight text-finora-ink;
+}
+
+.link {
+  @apply text-sm font-semibold text-finora-primary;
 }
 
 .card {
   @apply rounded-xl border border-finora-border bg-white px-2 py-1 shadow-sm sm:px-5;
+}
+
+.categoryList {
+  @apply flex flex-col gap-3 py-3;
+}
+
+.categoryRow {
+  @apply flex items-center gap-2 text-sm;
+}
+
+.categoryDot {
+  @apply h-2.5 w-2.5 shrink-0 rounded-full;
+}
+
+.categoryName {
+  @apply flex-1 truncate font-medium text-finora-ink;
+}
+
+.categoryAmount {
+  @apply text-right font-semibold text-finora-ink;
+}
+
+.budgetsGrid {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
 }
 
 .skeletonWrap {
@@ -54,4 +114,8 @@
 
 .skeletonRow {
   @apply h-12 animate-pulse rounded-lg bg-slate-100;
+}
+
+.skeletonCard {
+  @apply h-32 animate-pulse rounded-xl bg-slate-100;
 }
