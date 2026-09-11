@@ -11,6 +11,7 @@ const baseBudget: BudgetWithProgress = {
   created_at: null,
   category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b' },
   spent: 120,
+  effectiveLimit: 400,
   percentage: 30,
   status: 'on-track',
   breakdown: [],
@@ -35,8 +36,32 @@ describe('BudgetCard', () => {
     const progressbar = screen.getByRole('progressbar')
     expect(progressbar).toHaveAttribute('aria-valuenow', '100')
     expect(progressbar).toHaveAttribute('aria-valuemax', '100')
-    expect(screen.getByText('140% of monthly limit')).toBeInTheDocument()
+    expect(screen.getByText('140% of available limit')).toBeInTheDocument()
     expect(screen.getByText('Exceeded')).toBeInTheDocument()
+  })
+
+  it('shows spend against the effective limit and a reimbursement hint when it exceeds the monthly limit', () => {
+    render(
+      <BudgetCard
+        budget={{
+          ...baseBudget,
+          monthly_limit: 2000,
+          spent: 3625,
+          effectiveLimit: 4000,
+          percentage: 90.625,
+          status: 'near-limit',
+        }}
+      />
+    )
+
+    expect(screen.getByText('$3,625 / $4,000')).toBeInTheDocument()
+    expect(screen.getByText('Includes $2,000 in reimbursements')).toBeInTheDocument()
+  })
+
+  it('does not show a reimbursement hint when the effective limit equals the monthly limit', () => {
+    render(<BudgetCard budget={baseBudget} />)
+
+    expect(screen.queryByText(/in reimbursements/)).not.toBeInTheDocument()
   })
 
   it('shows a near-limit status label', () => {

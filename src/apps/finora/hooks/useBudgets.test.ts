@@ -31,7 +31,10 @@ describe('useBudgets', () => {
       data: [{ id: '1', category_id: 'c1', monthly_limit: 100 }],
       error: null,
     } as never)
-    vi.mocked(getExpensesByCategory).mockResolvedValue({ data: { totals: {}, raw: {} }, error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: {}, raw: {}, reimbursements: {} },
+      error: null,
+    } as never)
 
     const { result } = renderHook(() => useBudgets())
 
@@ -45,7 +48,10 @@ describe('useBudgets', () => {
 
   it('treats an empty result as a valid, non-error state', async () => {
     vi.mocked(getBudgets).mockResolvedValue({ data: [], error: null } as never)
-    vi.mocked(getExpensesByCategory).mockResolvedValue({ data: { totals: {}, raw: {} }, error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: {}, raw: {}, reimbursements: {} },
+      error: null,
+    } as never)
 
     const { result } = renderHook(() => useBudgets())
 
@@ -60,7 +66,10 @@ describe('useBudgets', () => {
       data: null,
       error: { message: 'Network error' },
     } as never)
-    vi.mocked(getExpensesByCategory).mockResolvedValue({ data: { totals: {}, raw: {} }, error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: {}, raw: {}, reimbursements: {} },
+      error: null,
+    } as never)
 
     const { result } = renderHook(() => useBudgets())
 
@@ -93,7 +102,10 @@ describe('useBudgets', () => {
       data: [{ id: '1', category_id: 'c1', monthly_limit: 100 }],
       error: null,
     } as never)
-    vi.mocked(getExpensesByCategory).mockResolvedValue({ data: { totals: {}, raw: {} }, error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: {}, raw: {}, reimbursements: {} },
+      error: null,
+    } as never)
     vi.mocked(getCategories).mockResolvedValue({ data: null, error: { message: 'Network error' } } as never)
 
     const { result } = renderHook(() => useBudgets())
@@ -104,13 +116,13 @@ describe('useBudgets', () => {
     expect(result.current.error).toBe('Network error')
   })
 
-  it('combines a budget with its month-to-date spend and derives percentage/status', async () => {
+  it('combines a budget with its gross month-to-date spend and derives percentage/status against the limit', async () => {
     vi.mocked(getBudgets).mockResolvedValue({
       data: [{ id: '1', category_id: 'c1', monthly_limit: 200 }],
       error: null,
     } as never)
     vi.mocked(getExpensesByCategory).mockResolvedValue({
-      data: { totals: { c1: 180 }, raw: { c1: 180 } },
+      data: { totals: { c1: 180 }, raw: { c1: 180 }, reimbursements: {} },
       error: null,
     } as never)
 
@@ -124,11 +136,37 @@ describe('useBudgets', () => {
         category_id: 'c1',
         monthly_limit: 200,
         spent: 180,
+        effectiveLimit: 200,
         percentage: 90,
         status: 'near-limit',
         breakdown: [],
       },
     ])
+  })
+
+  it('widens the effective limit by the reimbursements recorded this period (ADR-002 worked example)', async () => {
+    vi.mocked(getBudgets).mockResolvedValue({
+      data: [{ id: '1', category_id: 'food', monthly_limit: 2000 }],
+      error: null,
+    } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: {
+        totals: { food: 3625 },
+        raw: { food: 3625 },
+        reimbursements: { food: 2000 },
+      },
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useBudgets())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const budget = result.current.budgets[0]
+    expect(budget.spent).toBe(3625)
+    expect(budget.effectiveLimit).toBe(4000)
+    expect(budget.percentage).toBeCloseTo(90.625)
+    expect(budget.status).toBe('near-limit')
   })
 
   it('returns no breakdown for a category with no subcategories', async () => {
@@ -137,7 +175,7 @@ describe('useBudgets', () => {
       error: null,
     } as never)
     vi.mocked(getExpensesByCategory).mockResolvedValue({
-      data: { totals: { transport: 40 }, raw: { transport: 40 } },
+      data: { totals: { transport: 40 }, raw: { transport: 40 }, reimbursements: {} },
       error: null,
     } as never)
     vi.mocked(getCategories).mockResolvedValue({
@@ -161,6 +199,7 @@ describe('useBudgets', () => {
       data: {
         totals: { food: 450 },
         raw: { meat: 150, market: 300, restaurants: 0 },
+        reimbursements: {},
       },
       error: null,
     } as never)
@@ -193,6 +232,7 @@ describe('useBudgets', () => {
       data: {
         totals: { food: 470 },
         raw: { meat: 150, market: 300, food: 20 },
+        reimbursements: {},
       },
       error: null,
     } as never)

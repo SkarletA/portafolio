@@ -45,36 +45,52 @@ export interface CategoryLedgerEntry {
   amount: number
 }
 
-// Net spend per category on its own (expense minus reimbursement), before any
-// parent/child rollup - the raw ledger total each category would show if it
-// had no subcategories. Exposed on its own so callers that need per-category
-// figures without rolling children into their parent (e.g. a budget's
-// subcategory breakdown) don't duplicate this summing logic.
-export function getRawNetSpendByCategory(entries: CategoryLedgerEntry[]): Record<string, number> {
-  return entries.reduce<Record<string, number>>((totals, entry) => {
-    if (!entry.category_id || entry.type === 'income') return totals
-
-    const delta = entry.type === 'expense' ? entry.amount : -entry.amount
-    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + delta
-    return totals
-  }, {})
-}
-
-// Net spend per category = sum(expenses) - sum(reimbursements) across the category
-// and its subcategories (if it has any), clamped to a minimum of 0 once per
-// category's rollup scope - never clamped per-transaction or per-child before
-// the rollup sum, so a subcategory's reimbursements can still offset a sibling
-// subcategory's expenses at the parent level. See docs/adr/001-net-category-spend-calculation.md.
-export function getNetSpendByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
-  const netByCategory = getRawNetSpendByCategory(entries)
-
+function rollupByCategory(rawByCategory: Record<string, number>, categories: Category[]): Record<string, number> {
   const totalsByCategory: Record<string, number> = {}
 
   for (const category of categories) {
     const rollupIds = getCategoryIdsForRollup(categories, category.id)
-    const net = rollupIds.reduce((sum, id) => sum + (netByCategory[id] ?? 0), 0)
-    totalsByCategory[category.id] = Math.max(net, 0)
+    totalsByCategory[category.id] = rollupIds.reduce((sum, id) => sum + (rawByCategory[id] ?? 0), 0)
   }
 
   return totalsByCategory
+}
+
+// Gross spend per category on its own (sum of expense amounts only), before
+// any parent/child rollup. Reimbursements do not net against spend - see
+// docs/adr/002-gross-spend-and-effective-limit.md - they widen a budget's
+// effective limit instead (getReimbursementsByCategory). Exposed on its own
+// so callers that need per-category figures without rolling children into
+// their parent (e.g. a budget's subcategory breakdown) don't duplicate this
+// summing logic.
+export function getRawGrossSpendByCategory(entries: CategoryLedgerEntry[]): Record<string, number> {
+  return entries.reduce<Record<string, number>>((totals, entry) => {
+    if (!entry.category_id || entry.type !== 'expense') return totals
+
+    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
+    return totals
+  }, {})
+}
+
+// Gross spend per category = sum(expense amounts) across the category and its
+// subcategories (if it has any). A sum of non-negative expense amounts is
+// always non-negative, so unlike the net calculation this ADR-002 replaced,
+// no floor is needed regardless of rollup order.
+// See docs/adr/002-gross-spend-and-effective-limit.md.
+export function getGrossSpendByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
+  return rollupByCategory(getRawGrossSpendByCategory(entries), categories)
+}
+
+// Reimbursements per category, rolled up the same way as gross spend, so a
+// budget's effective limit (monthly_limit + reimbursements) can be computed
+// per rollup scope. See docs/adr/002-gross-spend-and-effective-limit.md.
+export function getReimbursementsByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
+  const rawByCategory = entries.reduce<Record<string, number>>((totals, entry) => {
+    if (!entry.category_id || entry.type !== 'reimbursement') return totals
+
+    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
+    return totals
+  }, {})
+
+  return rollupByCategory(rawByCategory, categories)
 }

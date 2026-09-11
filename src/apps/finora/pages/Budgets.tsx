@@ -46,7 +46,7 @@ export function Budgets() {
               <BudgetCardBreakdown
                 categoryId={budget.category_id}
                 categoryName={budget.category?.name ?? 'Uncategorized'}
-                monthlyLimit={budget.monthly_limit}
+                limit={budget.effectiveLimit}
                 items={budget.breakdown}
               />
             </div>

@@ -12,14 +12,14 @@ const items: BudgetBreakdownItem[] = [
 describe('BudgetCardBreakdown', () => {
   it('renders nothing when there are no items to break down', () => {
     const { container } = render(
-      <BudgetCardBreakdown categoryId="transport" categoryName="Transportation" monthlyLimit={200} items={[]} />
+      <BudgetCardBreakdown categoryId="transport" categoryName="Transportation" limit={200} items={[]} />
     )
 
     expect(container).toBeEmptyDOMElement()
   })
 
   it('shows the toggle collapsed by default with a testid derived from the category name', () => {
-    render(<BudgetCardBreakdown categoryId="food" categoryName="Food" monthlyLimit={500} items={items} />)
+    render(<BudgetCardBreakdown categoryId="food" categoryName="Food" limit={500} items={items} />)
 
     const toggle = screen.getByTestId('budget-card-food-expand-toggle')
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -27,7 +27,7 @@ describe('BudgetCardBreakdown', () => {
   })
 
   it('expands to show every subcategory, including one with $0 spent, without hiding it', () => {
-    render(<BudgetCardBreakdown categoryId="food" categoryName="Food" monthlyLimit={500} items={items} />)
+    render(<BudgetCardBreakdown categoryId="food" categoryName="Food" limit={500} items={items} />)
 
     fireEvent.click(screen.getByTestId('budget-card-food-expand-toggle'))
 
@@ -42,7 +42,7 @@ describe('BudgetCardBreakdown', () => {
   })
 
   it('collapses again when the toggle is clicked a second time', () => {
-    render(<BudgetCardBreakdown categoryId="food" categoryName="Food" monthlyLimit={500} items={items} />)
+    render(<BudgetCardBreakdown categoryId="food" categoryName="Food" limit={500} items={items} />)
 
     const toggle = screen.getByTestId('budget-card-food-expand-toggle')
     fireEvent.click(toggle)
@@ -58,7 +58,7 @@ describe('BudgetCardBreakdown', () => {
       <BudgetCardBreakdown
         categoryId="food"
         categoryName="Food"
-        monthlyLimit={100}
+        limit={100}
         items={[{ category_id: 'market', name: 'Groceries', icon: null, color: null, amount: 300 }]}
       />
     )

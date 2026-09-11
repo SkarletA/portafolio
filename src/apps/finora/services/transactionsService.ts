@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '../domain/transaction'
 import type { Category } from '../domain/category'
-import { getNetSpendByCategory, getRawNetSpendByCategory } from '../domain/category'
+import { getGrossSpendByCategory, getRawGrossSpendByCategory, getReimbursementsByCategory } from '../domain/category'
 import { getCategories } from './categoriesService'
 
 export type TransactionWithCategory = Transaction & {
@@ -161,12 +161,15 @@ export async function getExpensesByCategory({ start, end }: { start: string; end
   const categories = (categoriesData ?? []) as Category[]
 
   // `totals` rolls each category's subcategories into it (for showing a
-  // budget's or a chart's overall total); `raw` keeps each category's own net
-  // spend separate, e.g. for a per-subcategory breakdown. Same source rows,
-  // computed once, no duplicated summing.
+  // budget's or a chart's overall total); `raw` keeps each category's own
+  // gross spend separate, e.g. for a per-subcategory breakdown; `reimbursements`
+  // is the same rollup applied to reimbursement amounts, used to widen a
+  // budget's effective limit. Same source rows, computed once, no duplicated
+  // summing. See docs/adr/002-gross-spend-and-effective-limit.md.
   const data = {
-    totals: getNetSpendByCategory(rows ?? [], categories),
-    raw: getRawNetSpendByCategory(rows ?? []),
+    totals: getGrossSpendByCategory(rows ?? [], categories),
+    raw: getRawGrossSpendByCategory(rows ?? []),
+    reimbursements: getReimbursementsByCategory(rows ?? [], categories),
   }
 
   return { data, error: null }

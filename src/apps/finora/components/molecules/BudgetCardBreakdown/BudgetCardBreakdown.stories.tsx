@@ -9,7 +9,7 @@ export const WithSubcategories = {
   args: {
     categoryId: 'food',
     categoryName: 'Food',
-    monthlyLimit: 500,
+    limit: 500,
     items: [
       { category_id: 'market', name: 'Groceries', icon: 'shopping-cart', color: '#2563eb', amount: 300 },
       { category_id: 'meat', name: 'Meat', icon: 'beef', color: '#7c3aed', amount: 150 },
@@ -22,7 +22,7 @@ export const WithDirectSpend = {
   args: {
     categoryId: 'food',
     categoryName: 'Food',
-    monthlyLimit: 500,
+    limit: 500,
     items: [
       { category_id: 'market', name: 'Groceries', icon: 'shopping-cart', color: '#2563eb', amount: 300 },
       { category_id: 'meat', name: 'Meat', icon: 'beef', color: '#7c3aed', amount: 150 },
@@ -35,7 +35,7 @@ export const NoSubcategories = {
   args: {
     categoryId: 'transport',
     categoryName: 'Transportation',
-    monthlyLimit: 200,
+    limit: 200,
     items: [],
   },
 }

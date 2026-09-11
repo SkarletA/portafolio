@@ -51,27 +51,32 @@ export async function getMonthlyStats(range: DateRange) {
 
   if (error) return { data: null, error }
 
+  // totalSpent is gross (expenses only, never floored - see
+  // docs/adr/002-gross-spend-and-effective-limit.md). totalReimbursed is kept
+  // separate and never shown; it exists only to net against totalSpent for
+  // savingsRate, which answers "how much did I actually keep" rather than
+  // "how much did I charge as expenses."
   const totals = (data ?? []).reduce(
     (acc, row) => {
       if (row.type === 'expense') {
         acc.totalSpent += row.amount
       } else if (row.type === 'reimbursement') {
-        acc.totalSpent -= row.amount
+        acc.totalReimbursed += row.amount
       } else {
         acc.totalIncome += row.amount
       }
       return acc
     },
-    { totalSpent: 0, totalIncome: 0 }
+    { totalSpent: 0, totalIncome: 0, totalReimbursed: 0 }
   )
 
-  totals.totalSpent = Math.max(totals.totalSpent, 0)
+  const netSpentForSavings = totals.totalSpent - totals.totalReimbursed
 
   const stats: MonthlyStats = {
     totalSpent: totals.totalSpent,
     totalIncome: totals.totalIncome,
     avgPerDay: getAveragePerDay(totals.totalSpent, daysElapsedInRange(range)),
-    savingsRate: getSavingsRate(totals.totalIncome, totals.totalSpent),
+    savingsRate: getSavingsRate(totals.totalIncome, netSpentForSavings),
   }
 
   return { data: stats, error: null }
@@ -95,7 +100,7 @@ export async function getSpendingByCategory(range: DateRange) {
 
   const categories = (categoriesData ?? []) as Category[]
   // Only top-level categories are listed: each one's amount already includes
-  // its subcategories via getNetSpendByCategory's rollup, so listing children
+  // its subcategories via getGrossSpendByCategory's rollup, so listing children
   // as separate rows too would double-count spend and push percentages past 100%.
   const topLevelCategories = categories.filter((category) => !category.parent_id)
   const expensesMap = expensesByCategory?.totals ?? {}
@@ -126,7 +131,7 @@ export interface DailySpending {
 
 type LedgerRow = { date: string; amount: number; type: string }
 
-async function fetchNetLedgerRows(range: DateRange) {
+async function fetchExpenseAndReimbursementRows(range: DateRange) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
@@ -141,28 +146,30 @@ async function fetchNetLedgerRows(range: DateRange) {
     .lte('date', range.end)
 }
 
-// Net per bucket (expenses minus reimbursements), same approach as the
-// monthly total - just grouped by whatever key the caller derives from each
-// row's date (exact day, month, or year). See
-// docs/adr/001-net-category-spend-calculation.md.
-function netByBucketKey(rows: LedgerRow[], keyFn: (date: string) => string): Record<string, number> {
+// Gross spend per bucket (expense amounts only, never floored - a sum of
+// non-negative amounts can't go negative), grouped by whatever key the
+// caller derives from each row's date (exact day, month, or year). Moves in
+// lockstep with getMonthlyStats' totalSpent so the trend chart always agrees
+// with "Total spent". See docs/adr/002-gross-spend-and-effective-limit.md.
+function grossSpendByBucketKey(rows: LedgerRow[], keyFn: (date: string) => string): Record<string, number> {
   return rows.reduce<Record<string, number>>((totals, row) => {
+    if (row.type !== 'expense') return totals
+
     const key = keyFn(row.date)
-    const delta = row.type === 'expense' ? row.amount : -row.amount
-    totals[key] = (totals[key] ?? 0) + delta
+    totals[key] = (totals[key] ?? 0) + row.amount
     return totals
   }, {})
 }
 
 export async function getDailySpending(range: DateRange) {
-  const { data, error } = await fetchNetLedgerRows(range)
+  const { data, error } = await fetchExpenseAndReimbursementRows(range)
 
   if (error) return { data: null, error }
 
-  const netByDate = netByBucketKey((data ?? []) as LedgerRow[], (date) => date)
+  const grossByDate = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date)
 
-  const dailySpending: DailySpending[] = Object.entries(netByDate)
-    .map(([date, amount]) => ({ date, amount: Math.max(amount, 0) }))
+  const dailySpending: DailySpending[] = Object.entries(grossByDate)
+    .map(([date, amount]) => ({ date, amount }))
     .sort((a, b) => a.date.localeCompare(b.date))
 
   return { data: dailySpending, error: null }
@@ -189,16 +196,16 @@ export async function getTrendData(periodType: PeriodType) {
     const start = new Date(todayUtc)
     start.setUTCDate(start.getUTCDate() - (TREND_DAYS - 1))
 
-    const { data, error } = await fetchNetLedgerRows({ start: toIsoDate(start), end: toIsoDate(todayUtc) })
+    const { data, error } = await fetchExpenseAndReimbursementRows({ start: toIsoDate(start), end: toIsoDate(todayUtc) })
     if (error) return { data: null, error }
 
-    const netByDate = netByBucketKey((data ?? []) as LedgerRow[], (date) => date)
+    const grossByDate = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date)
 
     const trend: TrendPoint[] = Array.from({ length: TREND_DAYS }, (_, i) => {
       const date = new Date(start)
       date.setUTCDate(date.getUTCDate() + i)
       const iso = toIsoDate(date)
-      return { date: iso, amount: Math.max(netByDate[iso] ?? 0, 0) }
+      return { date: iso, amount: grossByDate[iso] ?? 0 }
     })
 
     return { data: trend, error: null }
@@ -211,14 +218,14 @@ export async function getTrendData(periodType: PeriodType) {
       end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), 11, 31))),
     }
 
-    const { data, error } = await fetchNetLedgerRows(range)
+    const { data, error } = await fetchExpenseAndReimbursementRows(range)
     if (error) return { data: null, error }
 
-    const netByYear = netByBucketKey((data ?? []) as LedgerRow[], (date) => date.slice(0, 4))
+    const grossByYear = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date.slice(0, 4))
 
     const trend: TrendPoint[] = Array.from({ length: TREND_YEARS }, (_, i) => {
       const year = startYear + i
-      return { date: toIsoDate(new Date(Date.UTC(year, 0, 1))), amount: Math.max(netByYear[String(year)] ?? 0, 0) }
+      return { date: toIsoDate(new Date(Date.UTC(year, 0, 1))), amount: grossByYear[String(year)] ?? 0 }
     })
 
     return { data: trend, error: null }
@@ -230,15 +237,15 @@ export async function getTrendData(periodType: PeriodType) {
     end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth() + 1, 0))),
   }
 
-  const { data, error } = await fetchNetLedgerRows(range)
+  const { data, error } = await fetchExpenseAndReimbursementRows(range)
   if (error) return { data: null, error }
 
-  const netByMonth = netByBucketKey((data ?? []) as LedgerRow[], (date) => date.slice(0, 7))
+  const grossByMonth = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date.slice(0, 7))
 
   const trend: TrendPoint[] = Array.from({ length: TREND_MONTHS }, (_, i) => {
     const date = new Date(Date.UTC(startMonth.getUTCFullYear(), startMonth.getUTCMonth() + i, 1))
     const key = toIsoDate(date).slice(0, 7)
-    return { date: toIsoDate(date), amount: Math.max(netByMonth[key] ?? 0, 0) }
+    return { date: toIsoDate(date), amount: grossByMonth[key] ?? 0 }
   })
 
   return { data: trend, error: null }

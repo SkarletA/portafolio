@@ -36,6 +36,10 @@
   @apply truncate text-xs text-finora-ink-muted;
 }
 
+.reimbursedHint {
+  @apply truncate text-xs text-finora-success;
+}
+
 .statusBadge {
   @apply inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold;
 }
