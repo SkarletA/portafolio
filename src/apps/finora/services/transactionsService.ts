@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '../domain/transaction'
 import type { Category } from '../domain/category'
-import { getNetSpendByCategory } from '../domain/category'
+import { getNetSpendByCategory, getRawNetSpendByCategory } from '../domain/category'
 import { getCategories } from './categoriesService'
 
 export type TransactionWithCategory = Transaction & {
@@ -159,7 +159,15 @@ export async function getExpensesByCategory({ start, end }: { start: string; end
   if (categoriesError) return { data: null, error: categoriesError }
 
   const categories = (categoriesData ?? []) as Category[]
-  const totalsByCategory = getNetSpendByCategory(rows ?? [], categories)
 
-  return { data: totalsByCategory, error: null }
+  // `totals` rolls each category's subcategories into it (for showing a
+  // budget's or a chart's overall total); `raw` keeps each category's own net
+  // spend separate, e.g. for a per-subcategory breakdown. Same source rows,
+  // computed once, no duplicated summing.
+  const data = {
+    totals: getNetSpendByCategory(rows ?? [], categories),
+    raw: getRawNetSpendByCategory(rows ?? []),
+  }
+
+  return { data, error: null }
 }

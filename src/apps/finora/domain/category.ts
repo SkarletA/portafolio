@@ -45,19 +45,28 @@ export interface CategoryLedgerEntry {
   amount: number
 }
 
-// Net spend per category = sum(expenses) - sum(reimbursements) across the category
-// and its subcategories (if it has any), clamped to a minimum of 0 once per
-// category's rollup scope - never clamped per-transaction or per-child before
-// the rollup sum, so a subcategory's reimbursements can still offset a sibling
-// subcategory's expenses at the parent level. See docs/adr/001-net-category-spend-calculation.md.
-export function getNetSpendByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
-  const netByCategory = entries.reduce<Record<string, number>>((totals, entry) => {
+// Net spend per category on its own (expense minus reimbursement), before any
+// parent/child rollup - the raw ledger total each category would show if it
+// had no subcategories. Exposed on its own so callers that need per-category
+// figures without rolling children into their parent (e.g. a budget's
+// subcategory breakdown) don't duplicate this summing logic.
+export function getRawNetSpendByCategory(entries: CategoryLedgerEntry[]): Record<string, number> {
+  return entries.reduce<Record<string, number>>((totals, entry) => {
     if (!entry.category_id || entry.type === 'income') return totals
 
     const delta = entry.type === 'expense' ? entry.amount : -entry.amount
     totals[entry.category_id] = (totals[entry.category_id] ?? 0) + delta
     return totals
   }, {})
+}
+
+// Net spend per category = sum(expenses) - sum(reimbursements) across the category
+// and its subcategories (if it has any), clamped to a minimum of 0 once per
+// category's rollup scope - never clamped per-transaction or per-child before
+// the rollup sum, so a subcategory's reimbursements can still offset a sibling
+// subcategory's expenses at the parent level. See docs/adr/001-net-category-spend-calculation.md.
+export function getNetSpendByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
+  const netByCategory = getRawNetSpendByCategory(entries)
 
   const totalsByCategory: Record<string, number> = {}
 

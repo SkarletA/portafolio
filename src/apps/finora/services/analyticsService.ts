@@ -98,7 +98,7 @@ export async function getSpendingByCategory(range: DateRange) {
   // its subcategories via getNetSpendByCategory's rollup, so listing children
   // as separate rows too would double-count spend and push percentages past 100%.
   const topLevelCategories = categories.filter((category) => !category.parent_id)
-  const expensesMap = expensesByCategory ?? {}
+  const expensesMap = expensesByCategory?.totals ?? {}
   const totalSpent = topLevelCategories.reduce((sum, category) => sum + (expensesMap[category.id] ?? 0), 0)
 
   const spending: CategorySpending[] = topLevelCategories

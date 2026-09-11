@@ -20,6 +20,10 @@
   @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
 }
 
+.budgetGroup {
+  @apply flex flex-col;
+}
+
 .skeletonWrap {
   @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
 }

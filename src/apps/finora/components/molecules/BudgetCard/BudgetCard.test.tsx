@@ -13,6 +13,7 @@ const baseBudget: BudgetWithProgress = {
   spent: 120,
   percentage: 30,
   status: 'on-track',
+  breakdown: [],
 }
 
 describe('BudgetCard', () => {
