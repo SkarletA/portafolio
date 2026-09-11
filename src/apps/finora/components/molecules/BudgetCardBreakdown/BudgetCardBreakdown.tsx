@@ -8,7 +8,7 @@ import s from './BudgetCardBreakdown.module.css'
 interface BudgetCardBreakdownProps {
   categoryId: string
   categoryName: string
-  monthlyLimit: number
+  limit: number
   items: BudgetBreakdownItem[]
 }
 
@@ -22,7 +22,7 @@ function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
-export function BudgetCardBreakdown({ categoryId, categoryName, monthlyLimit, items }: BudgetCardBreakdownProps) {
+export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: BudgetCardBreakdownProps) {
   const [expanded, setExpanded] = useState(false)
 
   const handleToggleClick = useCallback(() => {
@@ -50,7 +50,7 @@ export function BudgetCardBreakdown({ categoryId, categoryName, monthlyLimit, it
       {expanded && (
         <ul id={panelId} className={s.list}>
           {items.map((item) => {
-            const itemPercentage = monthlyLimit > 0 ? (item.amount / monthlyLimit) * 100 : 0
+            const itemPercentage = limit > 0 ? (item.amount / limit) * 100 : 0
             const cappedPercentage = Math.min(Math.max(itemPercentage, 0), 100)
             const iconStyle = item.color ? { backgroundColor: item.color } : undefined
 
@@ -69,7 +69,7 @@ export function BudgetCardBreakdown({ categoryId, categoryName, monthlyLimit, it
                   aria-valuenow={Math.round(cappedPercentage)}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`${item.name}: ${currencyFormatter.format(item.amount)} of ${currencyFormatter.format(monthlyLimit)} budget`}
+                  aria-label={`${item.name}: ${currencyFormatter.format(item.amount)} of ${currencyFormatter.format(limit)} budget`}
                 >
                   <div className={s.progressFill} style={{ width: `${cappedPercentage}%` }} />
                 </div>

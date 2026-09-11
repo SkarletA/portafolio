@@ -21,12 +21,16 @@ const STATUS_LABELS = {
 } as const
 
 export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
-  const { category, monthly_limit: monthlyLimit, spent, percentage, status } = budget
+  const { category, monthly_limit: monthlyLimit, effectiveLimit, spent, percentage, status } = budget
   const categoryName = category?.name ?? 'Uncategorized'
   const fallbackIcon = categoryName[0] || '•'
   const cappedPercentage = Math.min(Math.max(percentage, 0), 100)
   const statusLabel = STATUS_LABELS[status]
   const iconStyle = category?.color ? { backgroundColor: category.color } : undefined
+  // A reimbursement widens the effective limit rather than shrinking displayed
+  // spend - see docs/adr/002-gross-spend-and-effective-limit.md.
+  const reimbursedAmount = effectiveLimit - monthlyLimit
+  const hasReimbursement = reimbursedAmount > 0
 
   return (
     <div className={cn(s.card, flush && s.cardFlush)} data-testid="budget-card">
@@ -37,8 +41,13 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
         <div className={s.info}>
           <p className={s.categoryName}>{categoryName}</p>
           <p className={s.amounts}>
-            {currencyFormatter.format(spent)} / {currencyFormatter.format(monthlyLimit)}
+            {currencyFormatter.format(spent)} / {currencyFormatter.format(effectiveLimit)}
           </p>
+          {hasReimbursement && (
+            <p className={s.reimbursedHint}>
+              Includes {currencyFormatter.format(reimbursedAmount)} in reimbursements
+            </p>
+          )}
         </div>
         <span
           className={cn(
@@ -71,7 +80,7 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
         />
       </div>
 
-      <p className={s.percentageLabel}>{Math.round(percentage)}% of monthly limit</p>
+      <p className={s.percentageLabel}>{Math.round(percentage)}% of available limit</p>
     </div>
   )
 }

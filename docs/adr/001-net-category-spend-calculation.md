@@ -2,7 +2,14 @@
 
 ## Status
 
-Accepted
+Partially superseded by
+[ADR-002](./002-gross-spend-and-effective-limit.md): "spent" is no longer net of
+reimbursements and no longer floored at 0 - a budget's spend is now gross
+(expenses only), and reimbursements widen its effective limit instead. The
+rollup-scope mechanism decided here (`getCategoryIdsForRollup`: a parent's
+scope is itself plus its direct children combined into one number) and the
+reimbursement-must-have-a-category invariant are unaffected and remain
+accurate.
 
 ## Context
 

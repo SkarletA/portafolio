@@ -15,6 +15,7 @@ export interface BudgetBreakdownItem {
 
 export type BudgetWithProgress = BudgetWithCategory & {
   spent: number
+  effectiveLimit: number
   percentage: number
   status: BudgetStatus
   breakdown: BudgetBreakdownItem[]
@@ -82,14 +83,19 @@ export function useBudgets() {
     } else {
       const totalsByCategory = expensesData?.totals ?? {}
       const rawByCategory = expensesData?.raw ?? {}
+      const reimbursementsByCategory = expensesData?.reimbursements ?? {}
       const categories = (categoriesData ?? []) as Category[]
 
       const budgetsWithProgress = ((budgetsData ?? []) as BudgetWithCategory[]).map((budget) => {
         const spent = totalsByCategory[budget.category_id] ?? 0
-        const { percentage, status } = getBudgetProgress(budget.monthly_limit, spent)
+        // A reimbursement widens how much a budget can absorb this period
+        // rather than shrinking the displayed spend. See
+        // docs/adr/002-gross-spend-and-effective-limit.md.
+        const effectiveLimit = budget.monthly_limit + (reimbursementsByCategory[budget.category_id] ?? 0)
+        const { percentage, status } = getBudgetProgress(effectiveLimit, spent)
         const breakdown = buildBreakdown(budget.category_id, categories, rawByCategory)
 
-        return { ...budget, spent, percentage, status, breakdown }
+        return { ...budget, spent, effectiveLimit, percentage, status, breakdown }
       })
 
       setBudgets(budgetsWithProgress)
