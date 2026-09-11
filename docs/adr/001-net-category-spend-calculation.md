@@ -45,13 +45,22 @@ This requires a precise, testable rule for what "spent" means per category.
 
 ## Implementation
 
-The rule is implemented once, as a pure function
+The category-level rule is implemented once, as a pure function
 (`getNetSpendByCategory` in `src/apps/finora/domain/category.ts`), independent of
 Supabase, so it is directly unit-testable with plain arrays. Both
 `transactionsService.getExpensesByCategoryForCurrentMonth()` and
 `analyticsService.getMonthlyStats()`/`getSpendingByCategory()` call into it
 after fetching the month's raw `{ category_id, type, amount }` rows, rather than
 each re-deriving the same math independently.
+
+`analyticsService.getDailySpending()` (the "Spending over time" trend line)
+applies the same expenses-minus-reimbursements, clamp-once principle, just
+bucketed by date instead of by category - a day's reimbursements offset that
+same day's expenses, floored at 0. It was initially left out of this net
+treatment and only summed gross expenses; that produced a "Spending over
+time" total that didn't match "Total spent" / "Spending by category" on any
+day with a reimbursement, which is confusing on one page, so it was corrected
+to match.
 
 ## Consequences
 

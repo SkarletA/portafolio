@@ -97,7 +97,13 @@ export function Analytics() {
                         <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
                         <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={formatChartValue} />
                         <Tooltip formatter={formatChartValue} />
-                        <Line type="monotone" dataKey="amount" stroke={LINE_COLOR} strokeWidth={2.5} dot={false} />
+                        <Line
+                          type="monotone"
+                          dataKey="amount"
+                          stroke={LINE_COLOR}
+                          strokeWidth={2.5}
+                          dot={{ r: 3, fill: LINE_COLOR, strokeWidth: 0 }}
+                        />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>

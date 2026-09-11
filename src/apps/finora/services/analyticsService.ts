@@ -111,21 +111,25 @@ export async function getDailySpending() {
 
   const { data, error } = await supabase
     .from('transactions')
-    .select('date, amount')
+    .select('date, amount, type')
     .eq('user_id', userData.user.id)
-    .eq('type', 'expense')
+    .in('type', ['expense', 'reimbursement'])
     .gte('date', start)
     .lte('date', end)
 
   if (error) return { data: null, error }
 
-  const totalsByDate = (data ?? []).reduce<Record<string, number>>((totals, row) => {
-    totals[row.date] = (totals[row.date] ?? 0) + row.amount
+  // Net per day (expenses minus reimbursements), clamped at 0 per day - same
+  // approach as the monthly total, just bucketed by date instead of by
+  // category. See docs/adr/001-net-category-spend-calculation.md.
+  const netByDate = (data ?? []).reduce<Record<string, number>>((totals, row) => {
+    const delta = row.type === 'expense' ? row.amount : -row.amount
+    totals[row.date] = (totals[row.date] ?? 0) + delta
     return totals
   }, {})
 
-  const dailySpending: DailySpending[] = Object.entries(totalsByDate)
-    .map(([date, amount]) => ({ date, amount }))
+  const dailySpending: DailySpending[] = Object.entries(netByDate)
+    .map(([date, amount]) => ({ date, amount: Math.max(amount, 0) }))
     .sort((a, b) => a.date.localeCompare(b.date))
 
   return { data: dailySpending, error: null }
