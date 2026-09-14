@@ -1,0 +1,34 @@
+{
+  "title": "Inicio",
+  "subtitle": "Aquí tienes tu resumen financiero",
+  "viewAll": "Ver todo",
+  "balanceThisMonth": "Balance de este mes",
+  "stats": {
+    "income": "Ingresos",
+    "expenses": "Gastos",
+    "savingsRate": "Tasa de ahorro"
+  },
+  "overview": {
+    "loading": "Cargando resumen…",
+    "error": "No pudimos cargar tu resumen. Inténtalo de nuevo más tarde.",
+    "empty": "Aún no hay actividad registrada este mes."
+  },
+  "recentTransactions": {
+    "title": "Transacciones recientes",
+    "loading": "Cargando transacciones…",
+    "error": "No pudimos cargar tus transacciones.",
+    "empty": "Todavía no tienes transacciones."
+  },
+  "categorySpending": {
+    "title": "Gastos por categoría",
+    "loading": "Cargando categorías…",
+    "error": "No pudimos cargar tus gastos por categoría.",
+    "empty": "No hay gastos registrados este mes."
+  },
+  "budgets": {
+    "title": "Presupuestos",
+    "loading": "Cargando presupuestos…",
+    "error": "No pudimos cargar tus presupuestos.",
+    "empty": "Todavía no tienes presupuestos configurados."
+  }
+}

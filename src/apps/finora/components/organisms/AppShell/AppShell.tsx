@@ -1,23 +1,25 @@
 import { useCallback, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Sidebar } from './Sidebar'
 import { NavItem } from '../../molecules/NavItem/NavItem'
 import { Icon } from '../../atoms/Icon/Icon'
 import { useTheme } from '../../../context/ThemeContext'
 import s from './AppShell.module.css'
 
-const BOTTOM_NAV_LEFT = [
-  { label: 'Dashboard', to: '/finora', icon: <Icon name="dashboard" className={s.navIcon} /> },
-  { label: 'Transactions', to: '/finora/transactions', icon: <Icon name="transactions" className={s.navIcon} /> },
-]
+const BOTTOM_NAV_LEFT_DEFS = [
+  { labelKey: 'nav.dashboard', to: '/finora', icon: <Icon name="dashboard" className={s.navIcon} /> },
+  { labelKey: 'nav.transactions', to: '/finora/transactions', icon: <Icon name="transactions" className={s.navIcon} /> },
+] as const
 
-const BOTTOM_NAV_RIGHT = [
-  { label: 'Budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
-  { label: 'Analytics', to: '/finora/analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
-  { label: 'Goals', to: '/finora/goals', icon: <Icon name="goals" className={s.navIcon} /> },
-]
+const BOTTOM_NAV_RIGHT_DEFS = [
+  { labelKey: 'nav.budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
+  { labelKey: 'nav.analytics', to: '/finora/analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
+  { labelKey: 'nav.goals', to: '/finora/goals', icon: <Icon name="goals" className={s.navIcon} /> },
+] as const
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   const { theme } = useTheme()
 
@@ -39,8 +41,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className={s.main}>{children}</main>
 
       <nav className={s.bottomNav}>
-        {BOTTOM_NAV_LEFT.map((item) => (
-          <NavItem key={item.label} variant="bottom" label={item.label} icon={item.icon} to={item.to} />
+        {BOTTOM_NAV_LEFT_DEFS.map((item) => (
+          <NavItem key={item.labelKey} variant="bottom" label={t(item.labelKey)} icon={item.icon} to={item.to} />
         ))}
 
         <button
@@ -48,14 +50,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           data-testid="mobile-add-transaction-button"
           type="button"
           onClick={handleAddTransactionClick}
-          aria-label="Add transaction"
+          aria-label={t('addTransaction')}
           className={s.addButton}
         >
           <Icon name="plus" className={s.addButtonIcon} />
         </button>
 
-        {BOTTOM_NAV_RIGHT.map((item) => (
-          <NavItem key={item.label} variant="bottom" label={item.label} icon={item.icon} to={item.to} />
+        {BOTTOM_NAV_RIGHT_DEFS.map((item) => (
+          <NavItem key={item.labelKey} variant="bottom" label={t(item.labelKey)} icon={item.icon} to={item.to} />
         ))}
       </nav>
     </div>

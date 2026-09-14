@@ -1,0 +1,29 @@
+{
+  "title": "Metas financieras",
+  "subtitle": "Sigue el progreso hacia lo que importa",
+  "newGoal": "Nueva meta",
+  "list": {
+    "loading": "Cargando metas…",
+    "error": "No pudimos cargar tus metas. Inténtalo de nuevo más tarde.",
+    "empty": "Todavía no tienes metas financieras configuradas."
+  },
+  "card": {
+    "targetDate": "Fecha límite: {{date}}",
+    "remaining": "{{amount}} restante",
+    "progressAriaLabel": "Progreso de {{name}}",
+    "addFunds": "Agregar fondos",
+    "amountPlaceholder": "Monto",
+    "amountAriaLabel": "Monto para agregar a {{name}}"
+  },
+  "form": {
+    "title": "Nueva meta",
+    "name": "Nombre",
+    "targetAmount": "Monto objetivo",
+    "startingAmount": "Monto inicial",
+    "targetDate": "Fecha límite",
+    "saveGoal": "Guardar meta"
+  },
+  "validation": {
+    "targetAmountGreaterThanZero": "Ingresa un monto objetivo mayor a 0"
+  }
+}

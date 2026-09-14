@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { BudgetBreakdownItem } from '../../../hooks/useBudgets'
+import { getCategoryDisplayName } from '../../../domain/category'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCardBreakdown.module.css'
 
@@ -23,6 +25,7 @@ function slugify(value: string): string {
 }
 
 export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: BudgetCardBreakdownProps) {
+  const { t } = useTranslation(['budgets', 'categories'])
   const [expanded, setExpanded] = useState(false)
 
   const handleToggleClick = useCallback(() => {
@@ -43,7 +46,7 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
         className={s.toggle}
         data-testid={`budget-card-${slugify(categoryName)}-expand-toggle`}
       >
-        <span>{expanded ? 'Hide breakdown' : 'Show breakdown'}</span>
+        <span>{expanded ? t('breakdown.hide') : t('breakdown.show')}</span>
         <ChevronDown className={cn(s.chevron, expanded && s.chevronOpen)} aria-hidden="true" />
       </button>
 
@@ -53,14 +56,15 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
             const itemPercentage = limit > 0 ? (item.amount / limit) * 100 : 0
             const cappedPercentage = Math.min(Math.max(itemPercentage, 0), 100)
             const iconStyle = item.color ? { backgroundColor: item.color } : undefined
+            const itemDisplayName = getCategoryDisplayName(item, t)
 
             return (
               <li key={item.category_id} className={s.row}>
                 <div className={s.rowHeader}>
                   <div className={cn(s.icon, !iconStyle && s.iconFallbackBg)} style={iconStyle}>
-                    <CategoryIcon name={item.icon} fallbackLabel={item.name[0] || '•'} className={s.categoryIcon} />
+                    <CategoryIcon name={item.icon} fallbackLabel={itemDisplayName[0] || '•'} className={s.categoryIcon} />
                   </div>
-                  <span className={s.name}>{item.name}</span>
+                  <span className={s.name}>{itemDisplayName}</span>
                   <span className={s.amount}>{currencyFormatter.format(item.amount)}</span>
                 </div>
                 <div
@@ -69,7 +73,11 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
                   aria-valuenow={Math.round(cappedPercentage)}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`${item.name}: ${currencyFormatter.format(item.amount)} of ${currencyFormatter.format(limit)} budget`}
+                  aria-label={t('breakdown.progressAriaLabel', {
+                    name: itemDisplayName,
+                    spent: currencyFormatter.format(item.amount),
+                    limit: currencyFormatter.format(limit),
+                  })}
                 >
                   <div className={s.progressFill} style={{ width: `${cappedPercentage}%` }} />
                 </div>

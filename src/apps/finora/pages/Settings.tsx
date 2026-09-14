@@ -1,8 +1,19 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { useLanguage } from '../context/LanguageContext'
 import { useProfile } from '../hooks/useProfile'
 import { updateProfile, uploadAvatar } from '../services/profilesService'
 import { Avatar } from '../components/atoms/Avatar/Avatar'
@@ -10,6 +21,7 @@ import { Button } from '../components/atoms/Button/Button'
 import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
 import { PhoneInput } from '../components/molecules/PhoneInput/PhoneInput'
 import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '../domain/profile'
+import type { Language } from '../domain/profile'
 import s from './Settings.module.css'
 
 const DELETE_CONFIRMATION_KEYWORD = 'DELETE'
@@ -18,21 +30,28 @@ const MIN_PASSWORD_LENGTH = 6
 const PREFERENCE_ITEMS = [
   {
     key: 'weekly-summary',
-    label: 'Weekly summary email',
-    description: 'Get a recap of income and spending every Monday',
+    labelKey: 'preferences.weeklySummary.label',
+    descriptionKey: 'preferences.weeklySummary.description',
     defaultOn: true,
   },
   {
     key: 'budget-alerts',
-    label: 'Budget alerts',
-    description: 'Notify me when a category is close to its limit',
+    labelKey: 'preferences.budgetAlerts.label',
+    descriptionKey: 'preferences.budgetAlerts.description',
     defaultOn: true,
   },
+] as const
+
+const LANGUAGE_OPTIONS: { value: Language; labelKey: string }[] = [
+  { value: 'en', labelKey: 'preferences.language.en' },
+  { value: 'es', labelKey: 'preferences.language.es' },
 ]
 
 export function Settings() {
+  const { t } = useTranslation(['settings', 'common'])
   const { user, changePassword, deleteAccount, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
+  const { language, setLanguage } = useLanguage()
   const { profile, refetch: refetchProfile } = useProfile()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -84,19 +103,33 @@ export function Settings() {
     if (isDeleteModalOpen) deleteInputRef.current?.focus()
   }, [isDeleteModalOpen])
 
-  const handleFirstNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value
-    setFirstName(value)
-    setFirstNameError(isValidName(value) ? null : "Name shouldn't contain numbers or symbols")
-    setProfileSuccess(false)
-  }, [])
+  const handleFirstNameChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setFirstName(value)
+      setFirstNameError(
+        isValidName(value)
+          ? null
+          : t('common:validation.invalidNameField', { field: t('common:profileFields.firstName') })
+      )
+      setProfileSuccess(false)
+    },
+    [t]
+  )
 
-  const handleLastNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value
-    setLastName(value)
-    setLastNameError(isValidName(value) ? null : "Last name shouldn't contain numbers or symbols")
-    setProfileSuccess(false)
-  }, [])
+  const handleLastNameChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setLastName(value)
+      setLastNameError(
+        isValidName(value)
+          ? null
+          : t('common:validation.invalidNameField', { field: t('common:profileFields.lastName') })
+      )
+      setProfileSuccess(false)
+    },
+    [t]
+  )
 
   const handlePhoneChange = useCallback((digits: string) => {
     setPhone(digits)
@@ -118,7 +151,7 @@ export function Settings() {
       event.preventDefault()
 
       if (!isValidName(firstName) || !isValidName(lastName)) {
-        setProfileError('Fix the highlighted fields before saving')
+        setProfileError(t('common:validation.fixHighlightedFieldsSaving'))
         return
       }
 
@@ -146,7 +179,7 @@ export function Settings() {
       setProfileSuccess(true)
       refetchProfile()
     },
-    [firstName, lastName, phone, nationality, dateOfBirth, refetchProfile]
+    [firstName, lastName, phone, nationality, dateOfBirth, refetchProfile, t]
   )
 
   const handleChangePhotoClick = useCallback(() => {
@@ -193,12 +226,12 @@ export function Settings() {
       event.preventDefault()
 
       if (newPassword.length < MIN_PASSWORD_LENGTH) {
-        setPasswordError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+        setPasswordError(t('common:validation.passwordMinLength', { count: MIN_PASSWORD_LENGTH }))
         return
       }
 
       if (newPassword !== confirmNewPassword) {
-        setPasswordError("New passwords don't match")
+        setPasswordError(t('common:validation.passwordsDontMatch'))
         return
       }
 
@@ -220,12 +253,20 @@ export function Settings() {
       setConfirmNewPassword('')
       setPasswordSuccess(true)
     },
-    [currentPassword, newPassword, confirmNewPassword, changePassword]
+    [currentPassword, newPassword, confirmNewPassword, changePassword, t]
   )
 
   const handleThemeToggle = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }, [theme, setTheme])
+
+  const handleLanguageButtonClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const nextLanguage = event.currentTarget.dataset.language as Language | undefined
+      if (nextLanguage) setLanguage(nextLanguage)
+    },
+    [setLanguage]
+  )
 
   const handleOpenDeleteModal = useCallback(() => {
     setIsDeleteModalOpen(true)
@@ -267,13 +308,13 @@ export function Settings() {
   return (
     <section className={s.section}>
       <div className={s.header}>
-        <h1 className={s.title}>Settings</h1>
-        <p className={s.subtitle}>Manage your account and preferences</p>
+        <h1 className={s.title}>{t('settings:title')}</h1>
+        <p className={s.subtitle}>{t('settings:subtitle')}</p>
       </div>
 
       <div className={s.blocks}>
         <div className={s.block}>
-          <h2 className={s.blockTitle}>Profile</h2>
+          <h2 className={s.blockTitle}>{t('settings:profile.title')}</h2>
 
           <div className={s.profileRow}>
             <Avatar
@@ -299,7 +340,7 @@ export function Settings() {
               onClick={handleChangePhotoClick}
               disabled={uploadingAvatar}
             >
-              {uploadingAvatar ? 'Uploading…' : 'Change photo'}
+              {uploadingAvatar ? t('settings:profile.uploading') : t('settings:profile.changePhoto')}
             </Button>
           </div>
           {avatarError && (
@@ -309,7 +350,7 @@ export function Settings() {
           )}
 
           <label className={s.field}>
-            Email
+            {t('common:profileFields.email')}
             <input
               type="email"
               value={user?.email ?? ''}
@@ -323,7 +364,7 @@ export function Settings() {
           <form onSubmit={handleSaveProfile} className={s.form}>
             <div className={s.fieldRow}>
               <label className={s.field}>
-                First name
+                {t('common:profileFields.firstName')}
                 <input
                   type="text"
                   value={firstName}
@@ -338,7 +379,7 @@ export function Settings() {
                 )}
               </label>
               <label className={s.field}>
-                Last name
+                {t('common:profileFields.lastName')}
                 <input
                   type="text"
                   value={lastName}
@@ -356,7 +397,7 @@ export function Settings() {
 
             <div className={s.fieldRow}>
               <label className={s.field}>
-                Phone
+                {t('common:profileFields.phone')}
                 <PhoneInput
                   value={phone}
                   onChange={handlePhoneChange}
@@ -365,14 +406,14 @@ export function Settings() {
                 />
               </label>
               <label className={s.field}>
-                Nationality
+                {t('common:profileFields.nationality')}
                 <select
                   value={nationality}
                   onChange={handleNationalityChange}
                   className={s.select}
                   data-testid="settings-nationality-select"
                 >
-                  <option value="">Select a country</option>
+                  <option value="">{t('common:profileFields.selectCountry')}</option>
                   {COUNTRIES.map((country) => (
                     <option key={country} value={country}>
                       {country}
@@ -383,7 +424,7 @@ export function Settings() {
             </div>
 
             <label className={s.field}>
-              Date of birth
+              {t('common:profileFields.dateOfBirth')}
               <input
                 type="date"
                 value={dateOfBirth}
@@ -398,25 +439,25 @@ export function Settings() {
                 {profileError}
               </p>
             )}
-            {profileSuccess && <p className={s.success}>Your profile was updated.</p>}
+            {profileSuccess && <p className={s.success}>{t('settings:profile.saveSuccess')}</p>}
             <Button
               id="settings-save-profile-button"
               data-testid="settings-save-profile-button"
               type="submit"
               disabled={savingProfile}
             >
-              {savingProfile ? 'Saving…' : 'Save changes'}
+              {savingProfile ? t('common:buttons.saving') : t('common:buttons.saveChanges')}
             </Button>
           </form>
         </div>
 
         <div className={s.block}>
-          <h2 className={s.blockTitle}>Preferences</h2>
+          <h2 className={s.blockTitle}>{t('settings:preferences.title')}</h2>
           {PREFERENCE_ITEMS.map((item) => (
             <div key={item.key} className={s.row}>
               <div>
-                <p className={s.rowLabel}>{item.label}</p>
-                <p className={s.rowSub}>{item.description}</p>
+                <p className={s.rowLabel}>{t(`settings:${item.labelKey}`)}</p>
+                <p className={s.rowSub}>{t(`settings:${item.descriptionKey}`)}</p>
               </div>
               {/* Visual only - there's no preferences table in the schema yet. */}
               <button
@@ -431,8 +472,8 @@ export function Settings() {
           ))}
           <div className={s.row}>
             <div>
-              <p className={s.rowLabel}>Dark mode</p>
-              <p className={s.rowSub}>Switch the interface to a darker palette</p>
+              <p className={s.rowLabel}>{t('settings:preferences.darkMode.label')}</p>
+              <p className={s.rowSub}>{t('settings:preferences.darkMode.description')}</p>
             </div>
             <button
               type="button"
@@ -443,27 +484,48 @@ export function Settings() {
               data-testid="settings-preference-dark-mode-toggle"
             />
           </div>
+          <div className={s.row}>
+            <div>
+              <p className={s.rowLabel}>{t('settings:preferences.language.label')}</p>
+              <p className={s.rowSub}>{t('settings:preferences.language.description')}</p>
+            </div>
+            <div className={s.languageToggle} role="group" aria-label={t('settings:preferences.language.label')}>
+              {LANGUAGE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-language={option.value}
+                  aria-pressed={language === option.value}
+                  onClick={handleLanguageButtonClick}
+                  className={cn(s.languageButton, language === option.value && s.languageButtonActive)}
+                  data-testid={`settings-preference-language-${option.value}-button`}
+                >
+                  {t(option.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className={s.block}>
-          <h2 className={s.blockTitle}>Security</h2>
+          <h2 className={s.blockTitle}>{t('settings:security.title')}</h2>
           <form onSubmit={handleChangePassword} className={s.form}>
             <PasswordInput
-              label="Current password"
+              label={t('settings:security.currentPassword')}
               value={currentPassword}
               onChange={handleCurrentPasswordChange}
               testId="settings-current-password-input"
               required
             />
             <PasswordInput
-              label="New password"
+              label={t('settings:security.newPassword')}
               value={newPassword}
               onChange={handleNewPasswordChange}
               testId="settings-new-password-input"
               required
             />
             <PasswordInput
-              label="Confirm new password"
+              label={t('settings:security.confirmNewPassword')}
               value={confirmNewPassword}
               onChange={handleConfirmNewPasswordChange}
               testId="settings-confirm-password-input"
@@ -474,24 +536,24 @@ export function Settings() {
                 {passwordError}
               </p>
             )}
-            {passwordSuccess && <p className={s.success}>Your password was updated.</p>}
+            {passwordSuccess && <p className={s.success}>{t('settings:security.saveSuccess')}</p>}
             <Button
               id="settings-change-password-button"
               data-testid="settings-change-password-button"
               type="submit"
               disabled={changingPassword}
             >
-              {changingPassword ? 'Updating…' : 'Change password'}
+              {changingPassword ? t('common:buttons.updating') : t('settings:security.changePassword')}
             </Button>
           </form>
         </div>
 
         <div className={cn(s.block, s.dangerBlock)}>
-          <h2 className={s.blockTitle}>Danger zone</h2>
+          <h2 className={s.blockTitle}>{t('settings:dangerZone.title')}</h2>
           <div className={s.row}>
             <div>
-              <p className={s.rowLabel}>Delete account</p>
-              <p className={s.rowSub}>Permanently remove your Finora account and data</p>
+              <p className={s.rowLabel}>{t('settings:dangerZone.deleteAccount')}</p>
+              <p className={s.rowSub}>{t('settings:dangerZone.deleteAccountDescription')}</p>
             </div>
             <Button
               id="settings-delete-account-button"
@@ -500,7 +562,7 @@ export function Settings() {
               className={s.dangerButton}
               onClick={handleOpenDeleteModal}
             >
-              Delete
+              {t('settings:dangerZone.delete')}
             </Button>
           </div>
         </div>
@@ -510,11 +572,11 @@ export function Settings() {
         <div className={s.modalOverlay} onKeyDown={handleDeleteModalKeyDown}>
           <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="delete-account-modal-title">
             <h3 id="delete-account-modal-title" className={s.modalTitle}>
-              Delete your account?
+              {t('settings:dangerZone.modalTitle')}
             </h3>
             <p className={s.modalText}>
-              This permanently deletes your account and all of your data. This can&apos;t be undone. Type{' '}
-              <strong>{DELETE_CONFIRMATION_KEYWORD}</strong> or your email address to confirm.
+              {t('settings:dangerZone.modalTextBefore')}{' '}
+              <strong>{DELETE_CONFIRMATION_KEYWORD}</strong> {t('settings:dangerZone.modalTextAfter')}
             </p>
             <input
               ref={deleteInputRef}
@@ -537,7 +599,7 @@ export function Settings() {
                 onClick={handleCloseDeleteModal}
                 disabled={deletingAccount}
               >
-                Cancel
+                {t('common:buttons.cancel')}
               </Button>
               <Button
                 id="settings-delete-confirm-button"
@@ -546,7 +608,7 @@ export function Settings() {
                 onClick={handleConfirmDelete}
                 disabled={!canConfirmDelete || deletingAccount}
               >
-                {deletingAccount ? 'Deleting…' : 'Delete my account'}
+                {deletingAccount ? t('common:buttons.deleting') : t('settings:dangerZone.deleteMyAccount')}
               </Button>
             </div>
           </div>

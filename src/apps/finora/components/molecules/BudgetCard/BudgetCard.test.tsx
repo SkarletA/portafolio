@@ -9,7 +9,7 @@ const baseBudget: BudgetWithProgress = {
   category_id: 'c1',
   monthly_limit: 400,
   created_at: null,
-  category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b' },
+  category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b', translationKey: null },
   spent: 120,
   effectiveLimit: 400,
   percentage: 30,
@@ -23,7 +23,7 @@ describe('BudgetCard', () => {
 
     expect(screen.getByText('Food')).toBeInTheDocument()
     expect(screen.getByText('$120 / $400')).toBeInTheDocument()
-    expect(screen.getByText('On track')).toBeInTheDocument()
+    expect(screen.getByText('card.status.onTrack')).toBeInTheDocument()
   })
 
   it('caps the progress bar visual width at 100% while keeping the real percentage as text', () => {
@@ -36,8 +36,8 @@ describe('BudgetCard', () => {
     const progressbar = screen.getByRole('progressbar')
     expect(progressbar).toHaveAttribute('aria-valuenow', '100')
     expect(progressbar).toHaveAttribute('aria-valuemax', '100')
-    expect(screen.getByText('140% of available limit')).toBeInTheDocument()
-    expect(screen.getByText('Exceeded')).toBeInTheDocument()
+    expect(screen.getByText('card.percentageLabel:{"percent":140}')).toBeInTheDocument()
+    expect(screen.getByText('card.status.exceeded')).toBeInTheDocument()
   })
 
   it('shows spend against the effective limit and a reimbursement hint when it exceeds the monthly limit', () => {
@@ -55,7 +55,7 @@ describe('BudgetCard', () => {
     )
 
     expect(screen.getByText('$3,625 / $4,000')).toBeInTheDocument()
-    expect(screen.getByText('Includes $2,000 in reimbursements')).toBeInTheDocument()
+    expect(screen.getByText('card.reimbursedHint:{"amount":"$2,000"}')).toBeInTheDocument()
   })
 
   it('does not show a reimbursement hint when the effective limit equals the monthly limit', () => {
@@ -67,13 +67,13 @@ describe('BudgetCard', () => {
   it('shows a near-limit status label', () => {
     render(<BudgetCard budget={{ ...baseBudget, spent: 360, percentage: 90, status: 'near-limit' }} />)
 
-    expect(screen.getByText('Near limit')).toBeInTheDocument()
+    expect(screen.getByText('card.status.nearLimit')).toBeInTheDocument()
   })
 
   it('falls back to the category initial when the icon is not a known icon name', () => {
     render(
       <BudgetCard
-        budget={{ ...baseBudget, category: { id: 'c1', name: 'Food', icon: null, color: null } }}
+        budget={{ ...baseBudget, category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null } }}
       />
     )
 

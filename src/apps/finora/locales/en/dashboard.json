@@ -1,0 +1,34 @@
+{
+  "title": "Dashboard",
+  "subtitle": "Here's your financial overview",
+  "viewAll": "View all",
+  "balanceThisMonth": "Balance this month",
+  "stats": {
+    "income": "Income",
+    "expenses": "Expenses",
+    "savingsRate": "Savings rate"
+  },
+  "overview": {
+    "loading": "Loading overview…",
+    "error": "We couldn't load your overview. Please try again later.",
+    "empty": "No activity recorded this month yet."
+  },
+  "recentTransactions": {
+    "title": "Recent transactions",
+    "loading": "Loading transactions…",
+    "error": "We couldn't load your transactions.",
+    "empty": "You don't have any transactions yet."
+  },
+  "categorySpending": {
+    "title": "Spending by category",
+    "loading": "Loading categories…",
+    "error": "We couldn't load your spending by category.",
+    "empty": "No spending recorded this month."
+  },
+  "budgets": {
+    "title": "Budgets",
+    "loading": "Loading budgets…",
+    "error": "We couldn't load your budgets.",
+    "empty": "You don't have any budgets set up yet."
+  }
+}

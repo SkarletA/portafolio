@@ -1,0 +1,41 @@
+{
+  "title": "Presupuestos",
+  "subtitle": "Controla cuánto has gastado frente a tus límites mensuales",
+  "newBudget": "Nuevo presupuesto",
+  "list": {
+    "loading": "Cargando presupuestos…",
+    "error": "No pudimos cargar tus presupuestos. Inténtalo de nuevo más tarde.",
+    "empty": "Todavía no tienes presupuestos configurados."
+  },
+  "card": {
+    "uncategorized": "Sin categoría",
+    "status": {
+      "onTrack": "En camino",
+      "nearLimit": "Cerca del límite",
+      "exceeded": "Excedido"
+    },
+    "reimbursedHint": "Incluye {{amount}} en reembolsos",
+    "percentageLabel": "{{percent}}% del límite disponible",
+    "progressAriaLabel": "Presupuesto de {{category}}: {{status}}"
+  },
+  "breakdown": {
+    "hide": "Ocultar desglose",
+    "show": "Mostrar desglose",
+    "progressAriaLabel": "{{name}}: {{spent}} de {{limit}} de presupuesto"
+  },
+  "form": {
+    "title": "Nuevo presupuesto",
+    "category": "Categoría",
+    "loadingCategories": "Cargando categorías…",
+    "selectCategory": "Selecciona una categoría",
+    "noCategoriesAvailable": "No hay categorías disponibles",
+    "couldntLoadCategories": "No pudimos cargar las categorías: {{message}}",
+    "allCategoriesBudgeted": "Todas tus categorías ya tienen un presupuesto.",
+    "monthlyLimit": "Límite mensual",
+    "saveBudget": "Guardar presupuesto"
+  },
+  "validation": {
+    "selectCategory": "Selecciona una categoría",
+    "limitGreaterThanZero": "Ingresa un límite mayor a 0"
+  }
+}

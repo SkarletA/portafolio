@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useBudgets } from '../hooks/useBudgets'
 import { BudgetCard } from '../components/molecules/BudgetCard/BudgetCard'
 import { BudgetCardBreakdown } from '../components/molecules/BudgetCardBreakdown/BudgetCardBreakdown'
@@ -8,6 +9,7 @@ import { Button } from '../components/atoms/Button/Button'
 import s from './Budgets.module.css'
 
 export function Budgets() {
+  const { t } = useTranslation('budgets')
   const { budgets, loading, error } = useBudgets()
   const navigate = useNavigate()
 
@@ -19,11 +21,11 @@ export function Budgets() {
     <section className={s.section}>
       <div className={s.header}>
         <div>
-          <h1 className={s.title}>Budgets</h1>
-          <p className={s.subtitle}>Track how much you've spent against your monthly limits</p>
+          <h1 className={s.title}>{t('title')}</h1>
+          <p className={s.subtitle}>{t('subtitle')}</p>
         </div>
         <Button id="budgets-new-button" data-testid="budgets-new-button" onClick={handleNewBudgetClick}>
-          New budget
+          {t('newBudget')}
         </Button>
       </div>
 
@@ -31,9 +33,9 @@ export function Budgets() {
         loading={loading}
         error={error}
         isEmpty={budgets.length === 0}
-        loadingLabel="Loading budgets…"
-        errorMessage="We couldn't load your budgets. Please try again later."
-        emptyMessage="You don't have any budgets set up yet."
+        loadingLabel={t('list.loading')}
+        errorMessage={t('list.error')}
+        emptyMessage={t('list.empty')}
         skeletonCount={3}
         skeletonWrapClassName={s.skeletonWrap}
         skeletonItemClassName={s.skeletonCard}
@@ -45,7 +47,7 @@ export function Budgets() {
               <BudgetCard budget={budget} flush={budget.breakdown.length > 0} />
               <BudgetCardBreakdown
                 categoryId={budget.category_id}
-                categoryName={budget.category?.name ?? 'Uncategorized'}
+                categoryName={budget.category?.name ?? t('card.uncategorized')}
                 limit={budget.effectiveLimit}
                 items={budget.breakdown}
               />

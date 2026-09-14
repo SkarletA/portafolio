@@ -1,0 +1,49 @@
+{
+  "title": "Configuración",
+  "subtitle": "Administra tu cuenta y preferencias",
+  "profile": {
+    "title": "Perfil",
+    "uploading": "Subiendo…",
+    "changePhoto": "Cambiar foto",
+    "saveSuccess": "Tu perfil fue actualizado."
+  },
+  "preferences": {
+    "title": "Preferencias",
+    "weeklySummary": {
+      "label": "Resumen semanal por correo",
+      "description": "Recibe un resumen de ingresos y gastos cada lunes"
+    },
+    "budgetAlerts": {
+      "label": "Alertas de presupuesto",
+      "description": "Avísame cuando una categoría esté cerca de su límite"
+    },
+    "darkMode": {
+      "label": "Modo oscuro",
+      "description": "Cambia la interfaz a una paleta más oscura"
+    },
+    "language": {
+      "label": "Idioma",
+      "description": "Elige el idioma que se usa en toda Finora",
+      "en": "EN",
+      "es": "ES"
+    }
+  },
+  "security": {
+    "title": "Seguridad",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmNewPassword": "Confirmar nueva contraseña",
+    "changePassword": "Cambiar contraseña",
+    "saveSuccess": "Tu contraseña fue actualizada."
+  },
+  "dangerZone": {
+    "title": "Zona de peligro",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteAccountDescription": "Elimina permanentemente tu cuenta de Finora y tus datos",
+    "delete": "Eliminar",
+    "modalTitle": "¿Eliminar tu cuenta?",
+    "modalTextBefore": "Esto elimina permanentemente tu cuenta y todos tus datos. Esta acción no se puede deshacer. Escribe",
+    "modalTextAfter": "o tu correo electrónico para confirmar.",
+    "deleteMyAccount": "Eliminar mi cuenta"
+  }
+}

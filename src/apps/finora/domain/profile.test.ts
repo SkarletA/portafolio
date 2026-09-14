@@ -12,6 +12,7 @@ describe('toProfile', () => {
       date_of_birth: '1995-03-14',
       avatar_url: 'https://example.com/avatar.png',
       theme: 'dark',
+      language: 'es',
     }
 
     expect(toProfile(row)).toEqual({
@@ -23,6 +24,7 @@ describe('toProfile', () => {
       dateOfBirth: '1995-03-14',
       avatarUrl: 'https://example.com/avatar.png',
       theme: 'dark',
+      language: 'es',
     })
   })
 
@@ -36,6 +38,7 @@ describe('toProfile', () => {
       date_of_birth: null,
       avatar_url: null,
       theme: 'light',
+      language: 'en',
     }
 
     expect(toProfile(row)).toEqual({
@@ -47,6 +50,7 @@ describe('toProfile', () => {
       dateOfBirth: null,
       avatarUrl: null,
       theme: 'light',
+      language: 'en',
     })
   })
 })

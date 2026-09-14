@@ -1,0 +1,81 @@
+{
+  "title": "Transactions",
+  "subtitle": "All your account activity in one place",
+  "search": {
+    "placeholder": "Search transactions",
+    "ariaLabel": "Search transactions"
+  },
+  "filters": {
+    "categoryAriaLabel": "Filter by category",
+    "allCategories": "All categories",
+    "paymentMethodAriaLabel": "Filter by payment method",
+    "allPaymentMethods": "All payment methods"
+  },
+  "table": {
+    "transaction": "Transaction",
+    "date": "Date",
+    "amount": "Amount"
+  },
+  "list": {
+    "loading": "Loading transactions…",
+    "error": "We couldn't load your transactions. Please try again later.",
+    "empty": "You don't have any transactions yet.",
+    "noMatches": "No transactions match your filters."
+  },
+  "item": {
+    "uncategorized": "Uncategorized",
+    "confirmDelete": "Delete \"{{description}}\"?",
+    "editAriaLabel": "Edit {{description}}",
+    "deleteAriaLabel": "Delete {{description}}"
+  },
+  "form": {
+    "addTitle": "Add transaction",
+    "editTitle": "Edit transaction",
+    "typeAriaLabel": "Transaction type",
+    "type": {
+      "expense": "Expense",
+      "income": "Income",
+      "reimbursement": "Reimbursement"
+    },
+    "amount": "Amount",
+    "description": "Description",
+    "category": "Category",
+    "loadingCategories": "Loading categories…",
+    "selectCategory": "Select a category",
+    "createNewCategory": "+ Create new category",
+    "couldntLoadCategories": "Couldn't load categories: {{message}}",
+    "subcategory": "Subcategory",
+    "noneUseDirectly": "None — use {{category}} directly",
+    "createNewSubcategory": "Others: type a new subcategory",
+    "newSubcategoryPlaceholder": "New subcategory name",
+    "newCategoryName": "New category name",
+    "parentCategory": "Parent category",
+    "noneTopLevel": "None (top-level category)",
+    "color": "Color",
+    "colorAriaLabel": "Category color",
+    "colorSwatchAriaLabel": "Color {{color}}",
+    "icon": "Icon",
+    "iconAriaLabel": "Category icon",
+    "iconSwatchAriaLabel": "Icon {{icon}}",
+    "createCategory": "Create category",
+    "paymentMethods": "Payment methods",
+    "paymentMethodsAriaLabel": "Payment methods",
+    "amountPaidWith": "Amount paid with {{method}}",
+    "assignedSummary": "Assigned: {{assigned}} / {{total}} total",
+    "date": "Date",
+    "notes": "Notes",
+    "saveTransaction": "Save transaction",
+    "loadingTransaction": "Loading transaction…",
+    "loadError": "We couldn't load this transaction. Please try again later.",
+    "couldNotCreateSubcategory": "Could not create the subcategory",
+    "couldNotCreateCategory": "Could not create the category"
+  },
+  "validation": {
+    "selectCategory": "Select a category",
+    "selectDate": "Select a date",
+    "descriptionRequired": "Description is required",
+    "selectPaymentMethod": "Select at least one payment method",
+    "amountGreaterThanZeroEach": "Enter an amount greater than 0 for each selected payment method",
+    "assignedMustEqualTotal": "Assigned amounts ({{assigned}}) must equal the total ({{total}})"
+  }
+}

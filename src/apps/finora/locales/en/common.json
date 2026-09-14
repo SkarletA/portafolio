@@ -1,0 +1,50 @@
+{
+  "addTransaction": "Add transaction",
+  "buttons": {
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "saving": "Saving…",
+    "deleting": "Deleting…",
+    "creating": "Creating…",
+    "adding": "Adding…",
+    "updating": "Updating…"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "budgets": "Budgets",
+    "analytics": "Analytics",
+    "goals": "Goals",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "backToPortfolio": "← Back to portfolio"
+  },
+  "profileFields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "nationality": "Nationality",
+    "dateOfBirth": "Date of birth",
+    "email": "Email",
+    "selectCountry": "Select a country",
+    "optional": "(optional)"
+  },
+  "validation": {
+    "required": "This field is required",
+    "nameRequired": "Name is required",
+    "amountGreaterThanZero": "Enter an amount greater than 0",
+    "invalidNameField": "{{field}} shouldn't contain numbers or symbols",
+    "passwordsDontMatch": "Passwords don't match",
+    "passwordMinLength": "Password must be at least {{count}} characters",
+    "fixHighlightedFields": "Fix the highlighted fields before continuing",
+    "fixHighlightedFieldsSaving": "Fix the highlighted fields before saving"
+  },
+  "passwordVisibility": {
+    "show": "Show password",
+    "hide": "Hide password"
+  }
+}

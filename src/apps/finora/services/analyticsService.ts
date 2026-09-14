@@ -87,6 +87,7 @@ export interface CategorySpending {
   name: string
   icon: string | null
   color: string | null
+  translationKey: string | null
   amount: number
   percentage: number
 }
@@ -114,6 +115,7 @@ export async function getSpendingByCategory(range: DateRange) {
         name: category.name,
         icon: category.icon,
         color: category.color,
+        translationKey: category.translationKey,
         amount,
         percentage: getCategoryPercentage(amount, totalSpent),
       }
@@ -256,6 +258,7 @@ export interface PeriodComparisonCategory {
   name: string
   icon: string | null
   color: string | null
+  translationKey: string | null
   currentAmount: number
   previousAmount: number
   percentChange: number | null
@@ -300,6 +303,7 @@ export async function getPeriodComparison(periodType: PeriodType) {
       name: category.name,
       icon: category.icon,
       color: category.color,
+      translationKey: category.translationKey,
       currentAmount: category.amount,
       previousAmount,
       percentChange: getPercentChange(category.amount, previousAmount),
@@ -314,6 +318,7 @@ export async function getPeriodComparison(periodType: PeriodType) {
       name: category.name,
       icon: category.icon,
       color: category.color,
+      translationKey: category.translationKey,
       currentAmount: 0,
       previousAmount: category.amount,
       percentChange: getPercentChange(0, category.amount),

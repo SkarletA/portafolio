@@ -1,5 +1,6 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/atoms/Button/Button'
 import { createGoal, type NewGoalInput } from '../services/goalsService'
 import s from './AddGoal.module.css'
@@ -10,6 +11,7 @@ interface FormErrors {
 }
 
 export function AddGoal() {
+  const { t } = useTranslation(['goals', 'common'])
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
@@ -48,10 +50,10 @@ export function AddGoal() {
       const nextErrors: FormErrors = {}
 
       if (!trimmedName) {
-        nextErrors.name = 'Name is required'
+        nextErrors.name = t('common:validation.nameRequired')
       }
       if (!targetAmount || Number.isNaN(parsedTargetAmount) || parsedTargetAmount <= 0) {
-        nextErrors.target_amount = 'Enter a target amount greater than 0'
+        nextErrors.target_amount = t('goals:validation.targetAmountGreaterThanZero')
       }
 
       setErrors(nextErrors)
@@ -79,16 +81,16 @@ export function AddGoal() {
 
       navigate('/finora/goals')
     },
-    [name, targetAmount, currentAmount, targetDate, navigate]
+    [name, targetAmount, currentAmount, targetDate, navigate, t]
   )
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>New goal</h1>
+      <h1 className={s.title}>{t('goals:form.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form} noValidate>
         <label className={s.field}>
-          Name
+          {t('goals:form.name')}
           <input
             type="text"
             required
@@ -107,7 +109,7 @@ export function AddGoal() {
         </label>
 
         <label className={s.field}>
-          Target amount
+          {t('goals:form.targetAmount')}
           <input
             type="number"
             inputMode="decimal"
@@ -129,7 +131,7 @@ export function AddGoal() {
         </label>
 
         <label className={s.field}>
-          Starting amount <span className={s.hint}>(optional)</span>
+          {t('goals:form.startingAmount')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
           <input
             type="number"
             inputMode="decimal"
@@ -143,7 +145,7 @@ export function AddGoal() {
         </label>
 
         <label className={s.field}>
-          Target date <span className={s.hint}>(optional)</span>
+          {t('goals:form.targetDate')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
           <input
             type="date"
             value={targetDate}
@@ -160,7 +162,7 @@ export function AddGoal() {
         )}
 
         <Button id="add-goal-save-button" data-testid="add-goal-save-button" type="submit" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save goal'}
+          {submitting ? t('common:buttons.saving') : t('goals:form.saveGoal')}
         </Button>
       </form>
     </section>

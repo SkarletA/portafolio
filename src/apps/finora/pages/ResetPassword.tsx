@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/atoms/Button/Button'
 import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
 import { PasswordStrengthHint } from '../components/molecules/PasswordStrengthHint/PasswordStrengthHint'
@@ -8,6 +9,7 @@ import { getPasswordStrength } from '../domain/password'
 import s from './ResetPassword.module.css'
 
 export function ResetPassword() {
+  const { t } = useTranslation(['auth', 'common'])
   const { updatePassword } = useAuth()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -30,12 +32,12 @@ export function ResetPassword() {
       event.preventDefault()
 
       if (!passwordStrength.isValid) {
-        setError('Your password does not meet the requirements below')
+        setError(t('auth:shared.passwordRequirementsNotMet'))
         return
       }
 
       if (password !== confirmPassword) {
-        setError("Passwords don't match")
+        setError(t('common:validation.passwordsDontMatch'))
         return
       }
 
@@ -53,16 +55,16 @@ export function ResetPassword() {
 
       setDone(true)
     },
-    [password, confirmPassword, passwordStrength.isValid, updatePassword]
+    [password, confirmPassword, passwordStrength.isValid, updatePassword, t]
   )
 
   if (done) {
     return (
       <section className={s.sectionCentered}>
-        <h1 className={s.title}>Password updated</h1>
-        <p className={s.confirmationText}>Your password was updated successfully.</p>
+        <h1 className={s.title}>{t('auth:resetPassword.successTitle')}</h1>
+        <p className={s.confirmationText}>{t('auth:resetPassword.successText')}</p>
         <Link to="/finora/login" data-testid="reset-password-login-link">
-          Go to sign in
+          {t('auth:resetPassword.goToSignIn')}
         </Link>
       </section>
     )
@@ -70,11 +72,11 @@ export function ResetPassword() {
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>Reset password</h1>
+      <h1 className={s.title}>{t('auth:resetPassword.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form}>
         <PasswordInput
-          label="New password"
+          label={t('auth:resetPassword.newPassword')}
           value={password}
           onChange={handlePasswordChange}
           testId="reset-password-password-input"
@@ -83,7 +85,7 @@ export function ResetPassword() {
         <PasswordStrengthHint password={password} />
 
         <PasswordInput
-          label="Confirm password"
+          label={t('auth:resetPassword.confirmPassword')}
           value={confirmPassword}
           onChange={handleConfirmPasswordChange}
           testId="reset-password-confirm-input"
@@ -98,7 +100,7 @@ export function ResetPassword() {
           type="submit"
           disabled={submitting}
         >
-          {submitting ? 'Updating…' : 'Update password'}
+          {submitting ? t('auth:resetPassword.submitting') : t('auth:resetPassword.submit')}
         </Button>
       </form>
     </section>

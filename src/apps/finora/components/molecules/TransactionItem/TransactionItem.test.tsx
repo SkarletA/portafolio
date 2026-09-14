@@ -22,7 +22,7 @@ const baseTransaction: TransactionWithCategory = {
   date: '2026-09-08',
   notes: null,
   created_at: null,
-  category: { id: 'c1', name: 'Food', icon: null, color: null },
+  category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null },
   payments: [{ id: 'p1', transaction_id: '1', payment_method: 'Credit Card', amount: 120 }],
 }
 
@@ -85,7 +85,7 @@ describe('TransactionItem', () => {
     renderItem(baseTransaction, onDeleted)
 
     fireEvent.click(screen.getByTestId('transaction-item-1-delete-icon'))
-    expect(screen.getByText('Delete "Starbucks"?')).toBeInTheDocument()
+    expect(screen.getByText('item.confirmDelete:{"description":"Starbucks"}')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('transaction-item-1-confirm-delete-button'))
 

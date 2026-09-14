@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/atoms/Button/Button'
 import { useCategories } from '../hooks/useCategories'
 import { useBudgets } from '../hooks/useBudgets'
 import { createBudget, type NewBudgetInput } from '../services/budgetsService'
+import { getCategoryDisplayName } from '../domain/category'
 import s from './AddBudget.module.css'
 
 interface FormErrors {
@@ -12,6 +14,7 @@ interface FormErrors {
 }
 
 export function AddBudget() {
+  const { t } = useTranslation(['budgets', 'common', 'categories'])
   const navigate = useNavigate()
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories()
   const { budgets, loading: budgetsLoading } = useBudgets()
@@ -50,10 +53,10 @@ export function AddBudget() {
       const nextErrors: FormErrors = {}
 
       if (!categoryId) {
-        nextErrors.category_id = 'Select a category'
+        nextErrors.category_id = t('budgets:validation.selectCategory')
       }
       if (!monthlyLimit || Number.isNaN(parsedLimit) || parsedLimit <= 0) {
-        nextErrors.monthly_limit = 'Enter a limit greater than 0'
+        nextErrors.monthly_limit = t('budgets:validation.limitGreaterThanZero')
       }
 
       setErrors(nextErrors)
@@ -79,16 +82,16 @@ export function AddBudget() {
 
       navigate('/finora/budgets')
     },
-    [categoryId, monthlyLimit, navigate]
+    [categoryId, monthlyLimit, navigate, t]
   )
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>New budget</h1>
+      <h1 className={s.title}>{t('budgets:form.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form} noValidate>
         <label className={s.field}>
-          Category
+          {t('budgets:form.category')}
           <select
             required
             value={categoryId}
@@ -100,16 +103,16 @@ export function AddBudget() {
             data-testid="add-budget-category-select"
           >
             <option value="" disabled={availableCategories.length > 0}>
-              {loadingOptions ? 'Loading categories…' : 'Select a category'}
+              {loadingOptions ? t('budgets:form.loadingCategories') : t('budgets:form.selectCategory')}
             </option>
             {noAvailableCategories && (
               <option value="" disabled>
-                No categories available
+                {t('budgets:form.noCategoriesAvailable')}
               </option>
             )}
             {availableCategories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.name}
+                {getCategoryDisplayName(category, t)}
               </option>
             ))}
           </select>
@@ -120,16 +123,16 @@ export function AddBudget() {
           )}
           {categoriesError && (
             <p role="alert" className={s.error}>
-              Couldn&apos;t load categories: {categoriesError}
+              {t('budgets:form.couldntLoadCategories', { message: categoriesError })}
             </p>
           )}
           {noAvailableCategories && (
-            <p className={s.hint}>All your categories already have a budget.</p>
+            <p className={s.hint}>{t('budgets:form.allCategoriesBudgeted')}</p>
           )}
         </label>
 
         <label className={s.field}>
-          Monthly limit
+          {t('budgets:form.monthlyLimit')}
           <input
             type="number"
             inputMode="decimal"
@@ -162,7 +165,7 @@ export function AddBudget() {
           type="submit"
           disabled={submitting || noAvailableCategories}
         >
-          {submitting ? 'Saving…' : 'Save budget'}
+          {submitting ? t('common:buttons.saving') : t('budgets:form.saveBudget')}
         </Button>
       </form>
     </section>

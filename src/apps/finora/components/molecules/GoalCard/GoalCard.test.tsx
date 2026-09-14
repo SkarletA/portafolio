@@ -31,7 +31,7 @@ describe('GoalCard', () => {
     expect(screen.getByText('Emergency Fund')).toBeInTheDocument()
     expect(screen.getByText('$3,500')).toBeInTheDocument()
     expect(screen.getByText('/ $5,000')).toBeInTheDocument()
-    expect(screen.getByText('$1,500 remaining')).toBeInTheDocument()
+    expect(screen.getByText('goals:card.remaining:{"amount":"$1,500"}')).toBeInTheDocument()
     expect(screen.getByText('70%')).toBeInTheDocument()
   })
 
@@ -67,7 +67,7 @@ describe('GoalCard', () => {
     fireEvent.click(screen.getByTestId('goal-card-1-add-funds-button'))
     fireEvent.click(screen.getByTestId('goal-card-1-confirm-button'))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Enter an amount greater than 0')
+    expect(await screen.findByRole('alert')).toHaveTextContent('common:validation.amountGreaterThanZero')
     expect(addFundsToGoal).not.toHaveBeenCalled()
   })
 

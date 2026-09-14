@@ -3,7 +3,7 @@ import type { Budget } from '../domain/budget'
 import type { Category } from '../domain/category'
 
 export type BudgetWithCategory = Budget & {
-  category: Pick<Category, 'id' | 'name' | 'icon' | 'color'> | null
+  category: Pick<Category, 'id' | 'name' | 'icon' | 'color' | 'translationKey'> | null
 }
 
 export async function getBudgets() {
@@ -14,7 +14,7 @@ export async function getBudgets() {
 
   return supabase
     .from('budgets')
-    .select('*, category:categories(id, name, icon, color)')
+    .select('*, category:categories(id, name, icon, color, translationKey:translation_key)')
     .eq('user_id', userData.user.id)
     .order('created_at', { ascending: false })
 }

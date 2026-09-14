@@ -5,11 +5,11 @@ import { getGrossSpendByCategory, getRawGrossSpendByCategory, getReimbursementsB
 import { getCategories } from './categoriesService'
 
 export type TransactionWithCategory = Transaction & {
-  category: Pick<Category, 'id' | 'name' | 'icon' | 'color'> | null
+  category: Pick<Category, 'id' | 'name' | 'icon' | 'color' | 'translationKey'> | null
 }
 
 const TRANSACTION_SELECT =
-  '*, category:categories(id, name, icon, color), payments:transaction_payments(id, transaction_id, payment_method, amount)'
+  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount)'
 
 export async function getTransactions() {
   const { data: userData, error: userError } = await supabase.auth.getUser()

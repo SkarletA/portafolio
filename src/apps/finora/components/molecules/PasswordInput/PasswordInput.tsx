@@ -1,5 +1,6 @@
 import { useCallback, useState, type ChangeEvent } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import s from './PasswordInput.module.css'
 
 interface PasswordInputProps {
@@ -11,6 +12,7 @@ interface PasswordInputProps {
 }
 
 export function PasswordInput({ label, value, onChange, testId, required = false }: PasswordInputProps) {
+  const { t } = useTranslation('common')
   const [visible, setVisible] = useState(false)
 
   const handleToggleVisibility = useCallback(() => {
@@ -32,7 +34,7 @@ export function PasswordInput({ label, value, onChange, testId, required = false
         <button
           type="button"
           onClick={handleToggleVisibility}
-          aria-label={visible ? 'Hide password' : 'Show password'}
+          aria-label={visible ? t('passwordVisibility.hide') : t('passwordVisibility.show')}
           className={s.toggle}
           data-testid={`${testId}-visibility-toggle`}
         >

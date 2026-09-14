@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { TransactionItem } from '../components/molecules/TransactionItem/TransactionItem'
@@ -7,9 +8,11 @@ import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
 import { Button } from '../components/atoms/Button/Button'
 import { Icon } from '../components/atoms/Icon/Icon'
 import { PAYMENT_METHODS } from '../domain/transaction'
+import { getCategoryDisplayName } from '../domain/category'
 import s from './Transactions.module.css'
 
 export function Transactions() {
+  const { t } = useTranslation(['transactions', 'common', 'categories'])
   const { transactions, loading, error, refetch } = useTransactions()
   const { categories, loading: categoriesLoading } = useCategories()
   const navigate = useNavigate()
@@ -55,15 +58,15 @@ export function Transactions() {
     <section className={s.section}>
       <div className={s.header}>
         <div>
-          <h1 className={s.title}>Transactions</h1>
-          <p className={s.subtitle}>All your account activity in one place</p>
+          <h1 className={s.title}>{t('transactions:title')}</h1>
+          <p className={s.subtitle}>{t('transactions:subtitle')}</p>
         </div>
         <Button
           id="transactions-add-button"
           data-testid="transactions-add-button"
           onClick={handleAddTransactionClick}
         >
-          <Icon name="plus" className={s.addIcon} /> Add transaction
+          <Icon name="plus" className={s.addIcon} /> {t('common:addTransaction')}
         </Button>
       </div>
 
@@ -72,8 +75,8 @@ export function Transactions() {
           <Icon name="search" className={s.searchIcon} />
           <input
             type="text"
-            placeholder="Search transactions"
-            aria-label="Search transactions"
+            placeholder={t('transactions:search.placeholder')}
+            aria-label={t('transactions:search.ariaLabel')}
             className={s.searchInput}
             value={search}
             onChange={handleSearchChange}
@@ -81,28 +84,28 @@ export function Transactions() {
           />
         </div>
         <select
-          aria-label="Filter by category"
+          aria-label={t('transactions:filters.categoryAriaLabel')}
           className={s.select}
           value={categoryId}
           onChange={handleCategoryFilterChange}
           disabled={categoriesLoading}
           data-testid="transactions-category-select"
         >
-          <option value="">All categories</option>
+          <option value="">{t('transactions:filters.allCategories')}</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.name}
+              {getCategoryDisplayName(category, t)}
             </option>
           ))}
         </select>
         <select
-          aria-label="Filter by payment method"
+          aria-label={t('transactions:filters.paymentMethodAriaLabel')}
           className={s.select}
           value={paymentMethod}
           onChange={handlePaymentMethodFilterChange}
           data-testid="transactions-payment-method-select"
         >
-          <option value="">All payment methods</option>
+          <option value="">{t('transactions:filters.allPaymentMethods')}</option>
           {PAYMENT_METHODS.map((method) => (
             <option key={method} value={method}>
               {method}
@@ -113,24 +116,24 @@ export function Transactions() {
 
       <div className={s.card}>
         <div className={s.tableHead}>
-          <span>Transaction</span>
-          <span>Date</span>
-          <span className={s.amountHead}>Amount</span>
+          <span>{t('transactions:table.transaction')}</span>
+          <span>{t('transactions:table.date')}</span>
+          <span className={s.amountHead}>{t('transactions:table.amount')}</span>
         </div>
 
         <AsyncState
           loading={loading}
           error={error}
           isEmpty={transactions.length === 0}
-          loadingLabel="Loading transactions…"
-          errorMessage="We couldn't load your transactions. Please try again later."
-          emptyMessage="You don't have any transactions yet."
+          loadingLabel={t('transactions:list.loading')}
+          errorMessage={t('transactions:list.error')}
+          emptyMessage={t('transactions:list.empty')}
           skeletonCount={4}
           skeletonWrapClassName={s.skeletonWrap}
           skeletonItemClassName={s.skeletonRow}
         >
           {filteredTransactions.length === 0 ? (
-            <p className={s.stateMessage}>No transactions match your filters.</p>
+            <p className={s.stateMessage}>{t('transactions:list.noMatches')}</p>
           ) : (
             filteredTransactions.map((transaction) => (
               <TransactionItem key={transaction.id} transaction={transaction} onDeleted={refetch} />

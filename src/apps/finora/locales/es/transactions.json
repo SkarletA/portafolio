@@ -1,0 +1,81 @@
+{
+  "title": "Transacciones",
+  "subtitle": "Toda la actividad de tu cuenta en un solo lugar",
+  "search": {
+    "placeholder": "Buscar transacciones",
+    "ariaLabel": "Buscar transacciones"
+  },
+  "filters": {
+    "categoryAriaLabel": "Filtrar por categoría",
+    "allCategories": "Todas las categorías",
+    "paymentMethodAriaLabel": "Filtrar por método de pago",
+    "allPaymentMethods": "Todos los métodos de pago"
+  },
+  "table": {
+    "transaction": "Transacción",
+    "date": "Fecha",
+    "amount": "Monto"
+  },
+  "list": {
+    "loading": "Cargando transacciones…",
+    "error": "No pudimos cargar tus transacciones. Inténtalo de nuevo más tarde.",
+    "empty": "Todavía no tienes transacciones.",
+    "noMatches": "Ninguna transacción coincide con tus filtros."
+  },
+  "item": {
+    "uncategorized": "Sin categoría",
+    "confirmDelete": "¿Eliminar \"{{description}}\"?",
+    "editAriaLabel": "Editar {{description}}",
+    "deleteAriaLabel": "Eliminar {{description}}"
+  },
+  "form": {
+    "addTitle": "Agregar transacción",
+    "editTitle": "Editar transacción",
+    "typeAriaLabel": "Tipo de transacción",
+    "type": {
+      "expense": "Gasto",
+      "income": "Ingreso",
+      "reimbursement": "Reembolso"
+    },
+    "amount": "Monto",
+    "description": "Descripción",
+    "category": "Categoría",
+    "loadingCategories": "Cargando categorías…",
+    "selectCategory": "Selecciona una categoría",
+    "createNewCategory": "+ Crear nueva categoría",
+    "couldntLoadCategories": "No pudimos cargar las categorías: {{message}}",
+    "subcategory": "Subcategoría",
+    "noneUseDirectly": "Ninguna — usar {{category}} directamente",
+    "createNewSubcategory": "Otra: escribe una nueva subcategoría",
+    "newSubcategoryPlaceholder": "Nombre de la nueva subcategoría",
+    "newCategoryName": "Nombre de la nueva categoría",
+    "parentCategory": "Categoría principal",
+    "noneTopLevel": "Ninguna (categoría de nivel superior)",
+    "color": "Color",
+    "colorAriaLabel": "Color de categoría",
+    "colorSwatchAriaLabel": "Color {{color}}",
+    "icon": "Ícono",
+    "iconAriaLabel": "Ícono de categoría",
+    "iconSwatchAriaLabel": "Ícono {{icon}}",
+    "createCategory": "Crear categoría",
+    "paymentMethods": "Métodos de pago",
+    "paymentMethodsAriaLabel": "Métodos de pago",
+    "amountPaidWith": "Monto pagado con {{method}}",
+    "assignedSummary": "Asignado: {{assigned}} / {{total}} total",
+    "date": "Fecha",
+    "notes": "Notas",
+    "saveTransaction": "Guardar transacción",
+    "loadingTransaction": "Cargando transacción…",
+    "loadError": "No pudimos cargar esta transacción. Inténtalo de nuevo más tarde.",
+    "couldNotCreateSubcategory": "No se pudo crear la subcategoría",
+    "couldNotCreateCategory": "No se pudo crear la categoría"
+  },
+  "validation": {
+    "selectCategory": "Selecciona una categoría",
+    "selectDate": "Selecciona una fecha",
+    "descriptionRequired": "La descripción es obligatoria",
+    "selectPaymentMethod": "Selecciona al menos un método de pago",
+    "amountGreaterThanZeroEach": "Ingresa un monto mayor a 0 para cada método de pago seleccionado",
+    "assignedMustEqualTotal": "Los montos asignados ({{assigned}}) deben ser iguales al total ({{total}})"
+  }
+}

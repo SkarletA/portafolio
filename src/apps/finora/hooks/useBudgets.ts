@@ -10,6 +10,7 @@ export interface BudgetBreakdownItem {
   name: string
   icon: string | null
   color: string | null
+  translationKey: string | null
   amount: number
 }
 
@@ -40,6 +41,7 @@ function buildBreakdown(
     name: child.name,
     icon: child.icon,
     color: child.color,
+    translationKey: child.translationKey,
     amount: rawByCategory[child.id] ?? 0,
   }))
 
@@ -50,6 +52,7 @@ function buildBreakdown(
       name: OTHER_BREAKDOWN_LABEL,
       icon: null,
       color: null,
+      translationKey: null,
       amount: directToParent,
     })
   }

@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import cn from 'clsx'
 import { useAnalytics } from '../hooks/useAnalytics'
 import { getPeriodRange, type DateRange, type PeriodType } from '../domain/analytics'
+import { getCategoryDisplayName } from '../domain/category'
 import type { PeriodComparison, PeriodComparisonCategory } from '../services/analyticsService'
 import { StatCard } from '../components/molecules/StatCard/StatCard'
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
@@ -17,10 +20,10 @@ const NEUTRAL_CATEGORY_COLOR = 'var(--color-finora-icon-fallback-bg)'
 const LINE_COLOR = 'var(--color-finora-primary)'
 const GRID_COLOR = 'var(--color-finora-surface-muted)'
 
-const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
-  { value: 'day', label: 'Daily' },
-  { value: 'month', label: 'Monthly' },
-  { value: 'year', label: 'Yearly' },
+const PERIOD_OPTIONS: { value: PeriodType; labelKey: string }[] = [
+  { value: 'day', labelKey: 'period.daily' },
+  { value: 'month', labelKey: 'period.monthly' },
+  { value: 'year', labelKey: 'period.yearly' },
 ]
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -68,31 +71,35 @@ function formatPercentMagnitude(value: number) {
   return `${Math.round(Math.abs(value))}%`
 }
 
-function buildCategoryInsight(category: PeriodComparisonCategory & { percentChange: number }): string {
-  if (category.percentChange === 0) return `Your spending on ${category.name} stayed the same as the previous period.`
-  const direction = category.percentChange > 0 ? 'more' : 'less'
-  return `You spent ${formatPercentMagnitude(category.percentChange)} ${direction} on ${category.name} than the previous period.`
+function buildCategoryInsight(t: TFunction, category: PeriodComparisonCategory & { percentChange: number }): string {
+  const categoryName = getCategoryDisplayName(category, t)
+  if (category.percentChange === 0) {
+    return t('comparison.insights.categorySame', { category: categoryName })
+  }
+  const key = category.percentChange > 0 ? 'comparison.insights.categoryMore' : 'comparison.insights.categoryLess'
+  return t(key, { percent: formatPercentMagnitude(category.percentChange), category: categoryName })
 }
 
-function buildTotalInsight(comparison: PeriodComparison): string | null {
+function buildTotalInsight(t: TFunction, comparison: PeriodComparison): string | null {
   if (comparison.totalPercentChange === null) return null
-  if (comparison.totalPercentChange === 0) return 'Your total spending stayed the same as the previous period.'
-  const direction = comparison.totalPercentChange > 0 ? 'more' : 'less'
-  return `Overall, you spent ${formatPercentMagnitude(comparison.totalPercentChange)} ${direction} than the previous period.`
+  if (comparison.totalPercentChange === 0) return t('comparison.insights.totalSame')
+  const key = comparison.totalPercentChange > 0 ? 'comparison.insights.totalMore' : 'comparison.insights.totalLess'
+  return t(key, { percent: formatPercentMagnitude(comparison.totalPercentChange) })
 }
 
-function buildInsights(comparison: PeriodComparison): string[] {
+function buildInsights(t: TFunction, comparison: PeriodComparison): string[] {
   const topChanges = comparison.categories
     .filter((category): category is PeriodComparisonCategory & { percentChange: number } => category.percentChange !== null)
     .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange))
     .slice(0, TOP_CHANGES_LIMIT)
 
-  const totalInsight = buildTotalInsight(comparison)
+  const totalInsight = buildTotalInsight(t, comparison)
 
-  return [...topChanges.map(buildCategoryInsight), ...(totalInsight ? [totalInsight] : [])]
+  return [...topChanges.map((category) => buildCategoryInsight(t, category)), ...(totalInsight ? [totalInsight] : [])]
 }
 
 export function Analytics() {
+  const { t } = useTranslation(['analytics', 'categories'])
   const [periodType, setPeriodType] = useState<PeriodType>('month')
   const { stats, spendingByCategory, trendData, comparison, loading, error } = useAnalytics(periodType)
 
@@ -111,19 +118,19 @@ export function Analytics() {
     () => formatPeriodPillLabel(periodType, getPeriodRange(periodType, new Date()).current),
     [periodType]
   )
-  const insights = comparison && comparison.hasPreviousData ? buildInsights(comparison) : []
+  const insights = comparison && comparison.hasPreviousData ? buildInsights(t, comparison) : []
 
   return (
     <section className={s.section}>
       <div className={s.header}>
         <div>
-          <h1 className={s.title}>Analytics</h1>
-          <p className={s.subtitle}>Understand where your money goes</p>
+          <h1 className={s.title}>{t('title')}</h1>
+          <p className={s.subtitle}>{t('subtitle')}</p>
         </div>
         <span className={s.periodPill}>{periodLabel}</span>
       </div>
 
-      <div className={s.periodToggle} role="group" aria-label="Analytics period">
+      <div className={s.periodToggle} role="group" aria-label={t('period.ariaLabel')}>
         {PERIOD_OPTIONS.map((option) => (
           <button
             key={option.value}
@@ -134,7 +141,7 @@ export function Analytics() {
             className={cn(s.periodButton, periodType === option.value && s.periodButtonActive)}
             data-testid={`analytics-period-${option.value}-button`}
           >
-            {option.label}
+            {t(option.labelKey)}
           </button>
         ))}
       </div>
@@ -143,9 +150,9 @@ export function Analytics() {
         loading={loading}
         error={error}
         isEmpty={!hasData}
-        loadingLabel="Loading analytics…"
-        errorMessage="We couldn't load your analytics. Please try again later."
-        emptyMessage="No transactions recorded for this period yet."
+        loadingLabel={t('state.loading')}
+        errorMessage={t('state.error')}
+        emptyMessage={t('state.empty')}
         skeletonCount={3}
         skeletonWrapClassName={s.skeletonWrap}
         skeletonItemClassName={s.skeletonCard}
@@ -156,17 +163,17 @@ export function Analytics() {
             <div className={s.statGrid}>
               <StatCard
                 testId="analytics-total-spent-stat"
-                label="Total spent"
+                label={t('stats.totalSpent')}
                 value={currencyFormatter.format(stats.totalSpent)}
               />
               <StatCard
                 testId="analytics-avg-per-day-stat"
-                label="Average per day"
+                label={t('stats.avgPerDay')}
                 value={currencyFormatter.format(stats.avgPerDay)}
               />
               <StatCard
                 testId="analytics-savings-rate-stat"
-                label="Savings rate"
+                label={t('stats.savingsRate')}
                 value={formatPercentage(stats.savingsRate)}
                 variant={stats.savingsRate >= 0 ? 'success' : 'danger'}
               />
@@ -174,9 +181,9 @@ export function Analytics() {
 
             <div className={s.analyticsRow}>
               <div className={cn(s.card, s.chartCard)}>
-                <h2 className={s.cardTitle}>Spending over time</h2>
+                <h2 className={s.cardTitle}>{t('chart.title')}</h2>
                 {chartData.length === 0 ? (
-                  <p className={s.stateMessage}>No expenses recorded yet for this period.</p>
+                  <p className={s.stateMessage}>{t('chart.empty')}</p>
                 ) : (
                   <div className={s.chartWrap}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -199,9 +206,9 @@ export function Analytics() {
               </div>
 
               <div className={cn(s.card, s.sideCard)}>
-                <h2 className={s.cardTitle}>Spending by category</h2>
+                <h2 className={s.cardTitle}>{t('categoryBreakdown.title')}</h2>
                 {spendingByCategory.length === 0 ? (
-                  <p className={s.stateMessage}>No spending recorded for this period.</p>
+                  <p className={s.stateMessage}>{t('categoryBreakdown.empty')}</p>
                 ) : (
                   <ul className={s.categoryList}>
                     {spendingByCategory.map((category) => (
@@ -210,7 +217,7 @@ export function Analytics() {
                           className={s.categoryDot}
                           style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                         />
-                        <span className={s.categoryName}>{category.name}</span>
+                        <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>
                         <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
                       </li>
@@ -221,9 +228,9 @@ export function Analytics() {
             </div>
 
             <div className={s.card}>
-              <h2 className={s.cardTitle}>Top spending categories</h2>
+              <h2 className={s.cardTitle}>{t('topCategories.title')}</h2>
               {topCategories.length === 0 ? (
-                <p className={s.stateMessage}>No spending recorded for this period.</p>
+                <p className={s.stateMessage}>{t('topCategories.empty')}</p>
               ) : (
                 <ul className={s.topCategoryList}>
                   {topCategories.map((category, index) => (
@@ -233,7 +240,7 @@ export function Analytics() {
                         className={s.categoryDot}
                         style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                       />
-                      <span className={s.categoryName}>{category.name}</span>
+                      <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                       <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
                     </li>
                   ))}
@@ -242,9 +249,9 @@ export function Analytics() {
             </div>
 
             <div className={s.card}>
-              <h2 className={s.cardTitle}>Comparison</h2>
+              <h2 className={s.cardTitle}>{t('comparison.title')}</h2>
               {!comparison?.hasPreviousData ? (
-                <p className={s.stateMessage}>No previous period data to compare.</p>
+                <p className={s.stateMessage}>{t('comparison.noPreviousData')}</p>
               ) : (
                 <>
                   {insights.length > 0 && (
@@ -264,7 +271,7 @@ export function Analytics() {
                           className={s.categoryDot}
                           style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                         />
-                        <span className={s.categoryName}>{category.name}</span>
+                        <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.comparisonAmounts}>
                           {currencyFormatter.format(category.previousAmount)} → {currencyFormatter.format(category.currentAmount)}
                         </span>
@@ -277,7 +284,7 @@ export function Analytics() {
                           )}
                         >
                           {category.percentChange === null
-                            ? 'New'
+                            ? t('comparison.new')
                             : `${category.percentChange > 0 ? '+' : ''}${Math.round(category.percentChange)}%`}
                         </span>
                       </li>
