@@ -6,7 +6,9 @@ import { useProfile } from '../hooks/useProfile'
 import { updateProfile, uploadAvatar } from '../services/profilesService'
 import { Avatar } from '../components/atoms/Avatar/Avatar'
 import { Button } from '../components/atoms/Button/Button'
-import { COUNTRIES } from '../domain/profile'
+import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
+import { PhoneInput } from '../components/molecules/PhoneInput/PhoneInput'
+import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '../domain/profile'
 import s from './Settings.module.css'
 
 const DELETE_CONFIRMATION_KEYWORD = 'DELETE'
@@ -41,7 +43,9 @@ export function Settings() {
   const deleteInputRef = useRef<HTMLInputElement>(null)
 
   const [firstName, setFirstName] = useState('')
+  const [firstNameError, setFirstNameError] = useState<string | null>(null)
   const [lastName, setLastName] = useState('')
+  const [lastNameError, setLastNameError] = useState<string | null>(null)
   const [phone, setPhone] = useState('')
   const [nationality, setNationality] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
@@ -72,7 +76,10 @@ export function Settings() {
     if (!profile) return
     setFirstName(profile.firstName ?? '')
     setLastName(profile.lastName ?? '')
-    setPhone(profile.phone ?? '')
+    // The stored phone may include a calling code from a previous save -
+    // the input only ever edits the local digits, so strip anything that
+    // isn't a digit and keep at most the last MAX_PHONE_DIGITS of it.
+    setPhone((profile.phone ?? '').replace(/\D/g, '').slice(-10))
     setNationality(profile.nationality ?? '')
     setDateOfBirth(profile.dateOfBirth ?? '')
   }, [profile])
@@ -82,17 +89,21 @@ export function Settings() {
   }, [isDeleteModalOpen])
 
   const handleFirstNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setFirstName(event.target.value)
+    const value = event.target.value
+    setFirstName(value)
+    setFirstNameError(isValidName(value) ? null : "Name shouldn't contain numbers or symbols")
     setProfileSuccess(false)
   }, [])
 
   const handleLastNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setLastName(event.target.value)
+    const value = event.target.value
+    setLastName(value)
+    setLastNameError(isValidName(value) ? null : "Last name shouldn't contain numbers or symbols")
     setProfileSuccess(false)
   }, [])
 
-  const handlePhoneChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setPhone(event.target.value)
+  const handlePhoneChange = useCallback((digits: string) => {
+    setPhone(digits)
     setProfileSuccess(false)
   }, [])
 
@@ -109,14 +120,22 @@ export function Settings() {
   const handleSaveProfile = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
+
+      if (!isValidName(firstName) || !isValidName(lastName)) {
+        setProfileError('Fix the highlighted fields before saving')
+        return
+      }
+
       setSavingProfile(true)
       setProfileError(null)
       setProfileSuccess(false)
 
+      const countryCode = nationality ? (COUNTRY_CALLING_CODES[nationality] ?? '+') : ''
+
       const { error } = await updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        phone: phone.trim(),
+        phone: phone ? `${countryCode}${phone}` : '',
         nationality,
         dateOfBirth,
       })
@@ -312,6 +331,11 @@ export function Settings() {
                   className={s.input}
                   data-testid="settings-first-name-input"
                 />
+                {firstNameError && (
+                  <span role="alert" className={s.error}>
+                    {firstNameError}
+                  </span>
+                )}
               </label>
               <label className={s.field}>
                 Last name
@@ -322,18 +346,22 @@ export function Settings() {
                   className={s.input}
                   data-testid="settings-last-name-input"
                 />
+                {lastNameError && (
+                  <span role="alert" className={s.error}>
+                    {lastNameError}
+                  </span>
+                )}
               </label>
             </div>
 
             <div className={s.fieldRow}>
               <label className={s.field}>
                 Phone
-                <input
-                  type="tel"
+                <PhoneInput
                   value={phone}
                   onChange={handlePhoneChange}
-                  className={s.input}
-                  data-testid="settings-phone-input"
+                  countryCode={nationality ? COUNTRY_CALLING_CODES[nationality] : undefined}
+                  testId="settings-phone-input"
                 />
               </label>
               <label className={s.field}>
@@ -406,39 +434,27 @@ export function Settings() {
         <div className={s.block}>
           <h2 className={s.blockTitle}>Security</h2>
           <form onSubmit={handleChangePassword} className={s.form}>
-            <label className={s.field}>
-              Current password
-              <input
-                type="password"
-                required
-                value={currentPassword}
-                onChange={handleCurrentPasswordChange}
-                className={s.input}
-                data-testid="settings-current-password-input"
-              />
-            </label>
-            <label className={s.field}>
-              New password
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={handleNewPasswordChange}
-                className={s.input}
-                data-testid="settings-new-password-input"
-              />
-            </label>
-            <label className={s.field}>
-              Confirm new password
-              <input
-                type="password"
-                required
-                value={confirmNewPassword}
-                onChange={handleConfirmNewPasswordChange}
-                className={s.input}
-                data-testid="settings-confirm-password-input"
-              />
-            </label>
+            <PasswordInput
+              label="Current password"
+              value={currentPassword}
+              onChange={handleCurrentPasswordChange}
+              testId="settings-current-password-input"
+              required
+            />
+            <PasswordInput
+              label="New password"
+              value={newPassword}
+              onChange={handleNewPasswordChange}
+              testId="settings-new-password-input"
+              required
+            />
+            <PasswordInput
+              label="Confirm new password"
+              value={confirmNewPassword}
+              onChange={handleConfirmNewPasswordChange}
+              testId="settings-confirm-password-input"
+              required
+            />
             {passwordError && (
               <p role="alert" className={s.error}>
                 {passwordError}

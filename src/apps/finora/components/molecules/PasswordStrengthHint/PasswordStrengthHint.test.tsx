@@ -9,7 +9,7 @@ describe('PasswordStrengthHint', () => {
     expect(screen.getByText('At least 8 characters')).not.toHaveClass('met')
     expect(screen.getByText('One uppercase letter')).not.toHaveClass('met')
     expect(screen.getByText('One number')).not.toHaveClass('met')
-    expect(screen.getByText('One symbol')).not.toHaveClass('met')
+    expect(screen.getByText('One symbol (e.g. ! @ # $ %)')).not.toHaveClass('met')
   })
 
   it('marks only the requirements that are met', () => {
@@ -18,7 +18,7 @@ describe('PasswordStrengthHint', () => {
     expect(screen.getByText('At least 8 characters').className).toContain('met')
     expect(screen.getByText('One number').className).toContain('met')
     expect(screen.getByText('One uppercase letter').className).not.toContain('met')
-    expect(screen.getByText('One symbol').className).not.toContain('met')
+    expect(screen.getByText('One symbol (e.g. ! @ # $ %)').className).not.toContain('met')
   })
 
   it('marks every requirement as met for a valid password', () => {
@@ -27,6 +27,6 @@ describe('PasswordStrengthHint', () => {
     expect(screen.getByText('At least 8 characters').className).toContain('met')
     expect(screen.getByText('One uppercase letter').className).toContain('met')
     expect(screen.getByText('One number').className).toContain('met')
-    expect(screen.getByText('One symbol').className).toContain('met')
+    expect(screen.getByText('One symbol (e.g. ! @ # $ %)').className).toContain('met')
   })
 })

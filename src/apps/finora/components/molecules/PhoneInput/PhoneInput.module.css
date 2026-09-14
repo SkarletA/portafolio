@@ -1,0 +1,13 @@
+@reference '../../../styles/theme.css';
+
+.wrap {
+  @apply flex items-stretch overflow-hidden rounded-lg border border-finora-ink/20;
+}
+
+.prefix {
+  @apply flex items-center bg-slate-50 px-3 text-sm font-medium text-finora-ink-muted;
+}
+
+.input {
+  @apply w-full border-0 px-3 py-2 outline-none;
+}

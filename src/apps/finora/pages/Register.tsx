@@ -3,16 +3,19 @@ import { Link } from 'react-router-dom'
 import { Button } from '../components/atoms/Button/Button'
 import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
 import { PasswordStrengthHint } from '../components/molecules/PasswordStrengthHint/PasswordStrengthHint'
+import { PhoneInput } from '../components/molecules/PhoneInput/PhoneInput'
 import { useAuth } from '../context/AuthContext'
 import { getPasswordStrength } from '../domain/password'
-import { COUNTRIES } from '../domain/profile'
+import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '../domain/profile'
 import type { SignUpMetadata } from '../services/authService'
 import s from './Register.module.css'
 
 export function Register() {
   const { signUp } = useAuth()
   const [firstName, setFirstName] = useState('')
+  const [firstNameError, setFirstNameError] = useState<string | null>(null)
   const [lastName, setLastName] = useState('')
+  const [lastNameError, setLastNameError] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [nationality, setNationality] = useState('')
@@ -25,19 +28,23 @@ export function Register() {
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
 
   const handleFirstNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setFirstName(event.target.value)
+    const value = event.target.value
+    setFirstName(value)
+    setFirstNameError(isValidName(value) ? null : "Name shouldn't contain numbers or symbols")
   }, [])
 
   const handleLastNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setLastName(event.target.value)
+    const value = event.target.value
+    setLastName(value)
+    setLastNameError(isValidName(value) ? null : "Last name shouldn't contain numbers or symbols")
   }, [])
 
   const handleEmailChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setEmail(event.target.value)
   }, [])
 
-  const handlePhoneChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setPhone(event.target.value)
+  const handlePhoneChange = useCallback((digits: string) => {
+    setPhone(digits)
   }, [])
 
   const handleNationalityChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
@@ -56,6 +63,11 @@ export function Register() {
     async (event: FormEvent) => {
       event.preventDefault()
 
+      if (!isValidName(firstName) || !isValidName(lastName)) {
+        setError('Fix the highlighted fields before continuing')
+        return
+      }
+
       if (!passwordStrength.isValid) {
         setError('Your password does not meet the requirements below')
         return
@@ -71,7 +83,7 @@ export function Register() {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
       }
-      if (phone.trim()) metadata.phone = phone.trim()
+      if (phone) metadata.phone = `${nationality ? (COUNTRY_CALLING_CODES[nationality] ?? '+') : ''}${phone}`
       if (nationality) metadata.nationality = nationality
       if (dateOfBirth) metadata.date_of_birth = dateOfBirth
 
@@ -114,6 +126,11 @@ export function Register() {
               className={s.input}
               data-testid="register-first-name-input"
             />
+            {firstNameError && (
+              <span role="alert" className={s.error}>
+                {firstNameError}
+              </span>
+            )}
           </label>
 
           <label className={s.field}>
@@ -126,6 +143,11 @@ export function Register() {
               className={s.input}
               data-testid="register-last-name-input"
             />
+            {lastNameError && (
+              <span role="alert" className={s.error}>
+                {lastNameError}
+              </span>
+            )}
           </label>
         </div>
 
@@ -144,12 +166,11 @@ export function Register() {
         <div className={s.fieldRow}>
           <label className={s.field}>
             Phone <span className={s.hint}>(optional)</span>
-            <input
-              type="tel"
+            <PhoneInput
               value={phone}
               onChange={handlePhoneChange}
-              className={s.input}
-              data-testid="register-phone-input"
+              countryCode={nationality ? COUNTRY_CALLING_CODES[nationality] : undefined}
+              testId="register-phone-input"
             />
           </label>
 

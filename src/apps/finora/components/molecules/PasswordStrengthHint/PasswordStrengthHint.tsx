@@ -10,7 +10,7 @@ const REQUIREMENTS = [
   { key: 'minLength', label: 'At least 8 characters' },
   { key: 'hasUppercase', label: 'One uppercase letter' },
   { key: 'hasNumber', label: 'One number' },
-  { key: 'hasSymbol', label: 'One symbol' },
+  { key: 'hasSymbol', label: 'One symbol (e.g. ! @ # $ %)' },
 ] as const
 
 export function PasswordStrengthHint({ password }: PasswordStrengthHintProps) {
