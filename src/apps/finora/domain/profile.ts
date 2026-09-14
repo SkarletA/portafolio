@@ -1,4 +1,5 @@
 export type Theme = 'light' | 'dark'
+export type Language = 'en' | 'es'
 
 export interface Profile {
   userId: string
@@ -9,6 +10,7 @@ export interface Profile {
   dateOfBirth: string | null
   avatarUrl: string | null
   theme: Theme
+  language: Language
 }
 
 export interface ProfileRow {
@@ -20,6 +22,7 @@ export interface ProfileRow {
   date_of_birth: string | null
   avatar_url: string | null
   theme: Theme
+  language: Language
 }
 
 export function toProfile(row: ProfileRow): Profile {
@@ -32,6 +35,7 @@ export function toProfile(row: ProfileRow): Profile {
     dateOfBirth: row.date_of_birth,
     avatarUrl: row.avatar_url,
     theme: row.theme,
+    language: row.language,
   }
 }
 

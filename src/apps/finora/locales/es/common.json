@@ -1,0 +1,49 @@
+{
+  "buttons": {
+    "save": "Guardar",
+    "saveChanges": "Guardar cambios",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "confirm": "Confirmar",
+    "saving": "Guardando…",
+    "deleting": "Eliminando…",
+    "creating": "Creando…",
+    "adding": "Agregando…",
+    "updating": "Actualizando…"
+  },
+  "nav": {
+    "dashboard": "Inicio",
+    "transactions": "Transacciones",
+    "budgets": "Presupuestos",
+    "analytics": "Analíticas",
+    "goals": "Metas",
+    "settings": "Configuración",
+    "signOut": "Cerrar sesión",
+    "backToPortfolio": "← Volver al portafolio"
+  },
+  "profileFields": {
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "phone": "Teléfono",
+    "nationality": "Nacionalidad",
+    "dateOfBirth": "Fecha de nacimiento",
+    "email": "Correo electrónico",
+    "selectCountry": "Selecciona un país",
+    "optional": "(opcional)"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "nameRequired": "El nombre es obligatorio",
+    "amountGreaterThanZero": "Ingresa un monto mayor a 0",
+    "invalidNameField": "{{field}} no debería contener números ni símbolos",
+    "passwordsDontMatch": "Las contraseñas no coinciden",
+    "passwordMinLength": "La contraseña debe tener al menos {{count}} caracteres",
+    "fixHighlightedFields": "Corrige los campos marcados antes de continuar",
+    "fixHighlightedFieldsSaving": "Corrige los campos marcados antes de guardar"
+  },
+  "passwordVisibility": {
+    "show": "Mostrar contraseña",
+    "hide": "Ocultar contraseña"
+  }
+}
