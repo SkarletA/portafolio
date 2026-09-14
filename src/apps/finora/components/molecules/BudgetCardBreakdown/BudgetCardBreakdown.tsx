@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { BudgetBreakdownItem } from '../../../hooks/useBudgets'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
@@ -23,6 +24,7 @@ function slugify(value: string): string {
 }
 
 export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: BudgetCardBreakdownProps) {
+  const { t } = useTranslation('budgets')
   const [expanded, setExpanded] = useState(false)
 
   const handleToggleClick = useCallback(() => {
@@ -43,7 +45,7 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
         className={s.toggle}
         data-testid={`budget-card-${slugify(categoryName)}-expand-toggle`}
       >
-        <span>{expanded ? 'Hide breakdown' : 'Show breakdown'}</span>
+        <span>{expanded ? t('breakdown.hide') : t('breakdown.show')}</span>
         <ChevronDown className={cn(s.chevron, expanded && s.chevronOpen)} aria-hidden="true" />
       </button>
 
@@ -69,7 +71,11 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
                   aria-valuenow={Math.round(cappedPercentage)}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`${item.name}: ${currencyFormatter.format(item.amount)} of ${currencyFormatter.format(limit)} budget`}
+                  aria-label={t('breakdown.progressAriaLabel', {
+                    name: item.name,
+                    spent: currencyFormatter.format(item.amount),
+                    limit: currencyFormatter.format(limit),
+                  })}
                 >
                   <div className={s.progressFill} style={{ width: `${cappedPercentage}%` }} />
                 </div>

@@ -1,1 +1,41 @@
-{}
+{
+  "title": "Budgets",
+  "subtitle": "Track how much you've spent against your monthly limits",
+  "newBudget": "New budget",
+  "list": {
+    "loading": "Loading budgets…",
+    "error": "We couldn't load your budgets. Please try again later.",
+    "empty": "You don't have any budgets set up yet."
+  },
+  "card": {
+    "uncategorized": "Uncategorized",
+    "status": {
+      "onTrack": "On track",
+      "nearLimit": "Near limit",
+      "exceeded": "Exceeded"
+    },
+    "reimbursedHint": "Includes {{amount}} in reimbursements",
+    "percentageLabel": "{{percent}}% of available limit",
+    "progressAriaLabel": "{{category}} budget: {{status}}"
+  },
+  "breakdown": {
+    "hide": "Hide breakdown",
+    "show": "Show breakdown",
+    "progressAriaLabel": "{{name}}: {{spent}} of {{limit}} budget"
+  },
+  "form": {
+    "title": "New budget",
+    "category": "Category",
+    "loadingCategories": "Loading categories…",
+    "selectCategory": "Select a category",
+    "noCategoriesAvailable": "No categories available",
+    "couldntLoadCategories": "Couldn't load categories: {{message}}",
+    "allCategoriesBudgeted": "All your categories already have a budget.",
+    "monthlyLimit": "Monthly limit",
+    "saveBudget": "Save budget"
+  },
+  "validation": {
+    "selectCategory": "Select a category",
+    "limitGreaterThanZero": "Enter a limit greater than 0"
+  }
+}

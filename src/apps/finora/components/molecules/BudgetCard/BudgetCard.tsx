@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { BudgetWithProgress } from '../../../hooks/useBudgets'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
@@ -14,18 +15,19 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
-const STATUS_LABELS = {
-  'on-track': 'On track',
-  'near-limit': 'Near limit',
-  exceeded: 'Exceeded',
+const STATUS_LABEL_KEYS = {
+  'on-track': 'card.status.onTrack',
+  'near-limit': 'card.status.nearLimit',
+  exceeded: 'card.status.exceeded',
 } as const
 
 export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
+  const { t } = useTranslation('budgets')
   const { category, monthly_limit: monthlyLimit, effectiveLimit, spent, percentage, status } = budget
-  const categoryName = category?.name ?? 'Uncategorized'
+  const categoryName = category?.name ?? t('card.uncategorized')
   const fallbackIcon = categoryName[0] || '•'
   const cappedPercentage = Math.min(Math.max(percentage, 0), 100)
-  const statusLabel = STATUS_LABELS[status]
+  const statusLabel = t(STATUS_LABEL_KEYS[status])
   const iconStyle = category?.color ? { backgroundColor: category.color } : undefined
   // A reimbursement widens the effective limit rather than shrinking displayed
   // spend - see docs/adr/002-gross-spend-and-effective-limit.md.
@@ -45,7 +47,7 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
           </p>
           {hasReimbursement && (
             <p className={s.reimbursedHint}>
-              Includes {currencyFormatter.format(reimbursedAmount)} in reimbursements
+              {t('card.reimbursedHint', { amount: currencyFormatter.format(reimbursedAmount) })}
             </p>
           )}
         </div>
@@ -67,7 +69,7 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
         aria-valuenow={cappedPercentage}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${categoryName} budget: ${statusLabel}`}
+        aria-label={t('card.progressAriaLabel', { category: categoryName, status: statusLabel })}
       >
         <div
           className={cn(
@@ -80,7 +82,7 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
         />
       </div>
 
-      <p className={s.percentageLabel}>{Math.round(percentage)}% of available limit</p>
+      <p className={s.percentageLabel}>{t('card.percentageLabel', { percent: Math.round(percentage) })}</p>
     </div>
   )
 }
