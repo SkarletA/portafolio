@@ -15,7 +15,8 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const { user, signOut } = useAuth()
-  const initials = user?.email ? user.email[0].toUpperCase() : '?'
+  const displayName = user?.fullName || user?.email || ''
+  const initials = displayName ? displayName[0].toUpperCase() : '?'
 
   const handleSignOutClick = useCallback(() => {
     signOut()
@@ -37,14 +38,18 @@ export function Sidebar() {
       </nav>
 
       <div className={s.bottomSection}>
-        <NavItem label="Settings" icon={<Icon name="settings" className={s.navIcon} />} />
+        <NavItem label="Settings" icon={<Icon name="settings" className={s.navIcon} />} to="/finora/settings" />
         <Link to="/" className={s.backLink} data-testid="sidebar-back-to-portfolio-link">
           ← Back to portfolio
         </Link>
 
         <div className={s.profile}>
-          <div className={s.avatar}>{initials}</div>
-          <p className={s.email}>{user?.email}</p>
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className={s.avatarImage} />
+          ) : (
+            <div className={s.avatar}>{initials}</div>
+          )}
+          <p className={s.email}>{displayName}</p>
           <button
             id="sidebar-sign-out-button"
             data-testid="sidebar-sign-out-button"

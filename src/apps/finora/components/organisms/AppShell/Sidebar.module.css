@@ -44,6 +44,10 @@
   @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-finora-primary-dark text-sm font-semibold text-white;
 }
 
+.avatarImage {
+  @apply h-8 w-8 shrink-0 rounded-full object-cover;
+}
+
 .email {
   @apply min-w-0 flex-1 truncate text-xs font-semibold text-finora-ink;
 }
