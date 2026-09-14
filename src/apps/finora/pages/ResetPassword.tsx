@@ -1,7 +1,10 @@
-import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/atoms/Button/Button'
+import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
+import { PasswordStrengthHint } from '../components/molecules/PasswordStrengthHint/PasswordStrengthHint'
 import { useAuth } from '../context/AuthContext'
+import { getPasswordStrength } from '../domain/password'
 import s from './ResetPassword.module.css'
 
 export function ResetPassword() {
@@ -11,6 +14,8 @@ export function ResetPassword() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
 
   const handlePasswordChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setPassword(event.target.value)
@@ -24,13 +29,13 @@ export function ResetPassword() {
     async (event: FormEvent) => {
       event.preventDefault()
 
-      if (password.length < 6) {
-        setError('La contraseña debe tener al menos 6 caracteres')
+      if (!passwordStrength.isValid) {
+        setError('Your password does not meet the requirements below')
         return
       }
 
       if (password !== confirmPassword) {
-        setError('Las contraseñas no coinciden')
+        setError("Passwords don't match")
         return
       }
 
@@ -48,47 +53,42 @@ export function ResetPassword() {
 
       setDone(true)
     },
-    [password, confirmPassword, updatePassword]
+    [password, confirmPassword, passwordStrength.isValid, updatePassword]
   )
 
   if (done) {
     return (
       <section className={s.sectionCentered}>
-        <h1 className={s.title}>Contraseña actualizada</h1>
-        <p className={s.confirmationText}>Tu contraseña se actualizó correctamente.</p>
-        <Link to="/finora/login" data-testid="reset-password-login-link">Ir a iniciar sesión</Link>
+        <h1 className={s.title}>Password updated</h1>
+        <p className={s.confirmationText}>Your password was updated successfully.</p>
+        <Link to="/finora/login" data-testid="reset-password-login-link">
+          Go to sign in
+        </Link>
       </section>
     )
   }
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>Restablecer contraseña</h1>
+      <h1 className={s.title}>Reset password</h1>
 
       <form onSubmit={handleSubmit} className={s.form}>
-        <label className={s.field}>
-          Nueva contraseña
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={handlePasswordChange}
-            className={s.input}
-            data-testid="reset-password-password-input"
-          />
-        </label>
+        <PasswordInput
+          label="New password"
+          value={password}
+          onChange={handlePasswordChange}
+          testId="reset-password-password-input"
+          required
+        />
+        <PasswordStrengthHint password={password} />
 
-        <label className={s.field}>
-          Confirmar contraseña
-          <input
-            type="password"
-            required
-            value={confirmPassword}
-            onChange={handleConfirmPasswordChange}
-            className={s.input}
-            data-testid="reset-password-confirm-input"
-          />
-        </label>
+        <PasswordInput
+          label="Confirm password"
+          value={confirmPassword}
+          onChange={handleConfirmPasswordChange}
+          testId="reset-password-confirm-input"
+          required
+        />
 
         {error && <p className={s.error}>{error}</p>}
 
@@ -98,7 +98,7 @@ export function ResetPassword() {
           type="submit"
           disabled={submitting}
         >
-          {submitting ? 'Actualizando…' : 'Actualizar contraseña'}
+          {submitting ? 'Updating…' : 'Update password'}
         </Button>
       </form>
     </section>

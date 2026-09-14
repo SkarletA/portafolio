@@ -1,7 +1,7 @@
 @reference '../../../styles/theme.css';
 
 .card {
-  @apply rounded-xl border border-finora-border bg-white p-4 shadow-sm;
+  @apply rounded-xl border border-finora-border bg-finora-surface p-4 shadow-sm;
 }
 
 .cardFlush {
@@ -17,7 +17,7 @@
 }
 
 .iconFallbackBg {
-  @apply bg-slate-400 text-finora-ink-muted;
+  @apply bg-finora-icon-fallback-bg text-finora-ink-muted;
 }
 
 .categoryIcon {
@@ -45,19 +45,19 @@
 }
 
 .statusOnTrack {
-  @apply bg-green-50 text-finora-success;
+  @apply bg-finora-success-bg text-finora-success;
 }
 
 .statusNearLimit {
-  @apply bg-amber-50 text-amber-600;
+  @apply bg-finora-warning-bg text-finora-warning;
 }
 
 .statusExceeded {
-  @apply bg-red-50 text-finora-danger;
+  @apply bg-finora-danger-bg text-finora-danger;
 }
 
 .progressTrack {
-  @apply mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100;
+  @apply mt-3 h-2 w-full overflow-hidden rounded-full bg-finora-surface-muted;
 }
 
 .progressFill {
@@ -69,7 +69,7 @@
 }
 
 .fillNearLimit {
-  @apply bg-amber-500;
+  @apply bg-finora-warning;
 }
 
 .fillExceeded {

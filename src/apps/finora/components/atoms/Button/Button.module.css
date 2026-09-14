@@ -9,5 +9,5 @@
 }
 
 .secondary {
-  @apply border border-finora-border text-finora-ink hover:bg-slate-50;
+  @apply border border-finora-border text-finora-ink hover:bg-finora-surface-muted;
 }

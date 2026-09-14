@@ -9,7 +9,7 @@
 }
 
 .boxed {
-  @apply rounded-xl border border-finora-border bg-white;
+  @apply rounded-xl border border-finora-border bg-finora-surface;
 }
 
 .srOnly {

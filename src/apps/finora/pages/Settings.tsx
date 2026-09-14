@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEv
 import { useNavigate } from 'react-router-dom'
 import cn from 'clsx'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
+import { useProfile } from '../hooks/useProfile'
+import { updateProfile, uploadAvatar } from '../services/profilesService'
+import { Avatar } from '../components/atoms/Avatar/Avatar'
 import { Button } from '../components/atoms/Button/Button'
+import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
+import { PhoneInput } from '../components/molecules/PhoneInput/PhoneInput'
+import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '../domain/profile'
 import s from './Settings.module.css'
 
 const DELETE_CONFIRMATION_KEYWORD = 'DELETE'
@@ -21,29 +28,26 @@ const PREFERENCE_ITEMS = [
     description: 'Notify me when a category is close to its limit',
     defaultOn: true,
   },
-  {
-    key: 'dark-mode',
-    label: 'Dark mode',
-    description: 'Switch the interface to a darker palette',
-    defaultOn: false,
-  },
 ]
 
 export function Settings() {
-  const { user, updateProfile, updateEmail, uploadAvatar, changePassword, deleteAccount, signOut } = useAuth()
+  const { user, changePassword, deleteAccount, signOut } = useAuth()
+  const { theme, setTheme } = useTheme()
+  const { profile, refetch: refetchProfile } = useProfile()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const deleteInputRef = useRef<HTMLInputElement>(null)
 
-  const [fullName, setFullName] = useState(user?.fullName ?? '')
+  const [firstName, setFirstName] = useState('')
+  const [firstNameError, setFirstNameError] = useState<string | null>(null)
+  const [lastName, setLastName] = useState('')
+  const [lastNameError, setLastNameError] = useState<string | null>(null)
+  const [phone, setPhone] = useState('')
+  const [nationality, setNationality] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState(false)
-
-  const [email, setEmail] = useState(user?.email ?? '')
-  const [savingEmail, setSavingEmail] = useState(false)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [emailPendingConfirmation, setEmailPendingConfirmation] = useState<string | null>(null)
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
@@ -60,28 +64,77 @@ export function Settings() {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const initials = (user?.fullName || user?.email || '?')[0]?.toUpperCase() ?? '?'
   const canConfirmDelete =
     deleteConfirmationText.trim() === DELETE_CONFIRMATION_KEYWORD ||
     (!!user?.email && deleteConfirmationText.trim().toLowerCase() === user.email.toLowerCase())
 
   useEffect(() => {
+    if (!profile) return
+    setFirstName(profile.firstName ?? '')
+    setLastName(profile.lastName ?? '')
+    // The stored phone may include a calling code from a previous save -
+    // the input only ever edits the local digits, so strip anything that
+    // isn't a digit and keep at most the last MAX_PHONE_DIGITS of it.
+    setPhone((profile.phone ?? '').replace(/\D/g, '').slice(-10))
+    setNationality(profile.nationality ?? '')
+    setDateOfBirth(profile.dateOfBirth ?? '')
+  }, [profile])
+
+  useEffect(() => {
     if (isDeleteModalOpen) deleteInputRef.current?.focus()
   }, [isDeleteModalOpen])
 
-  const handleFullNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setFullName(event.target.value)
+  const handleFirstNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+    setFirstName(value)
+    setFirstNameError(isValidName(value) ? null : "Name shouldn't contain numbers or symbols")
+    setProfileSuccess(false)
+  }, [])
+
+  const handleLastNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value
+    setLastName(value)
+    setLastNameError(isValidName(value) ? null : "Last name shouldn't contain numbers or symbols")
+    setProfileSuccess(false)
+  }, [])
+
+  const handlePhoneChange = useCallback((digits: string) => {
+    setPhone(digits)
+    setProfileSuccess(false)
+  }, [])
+
+  const handleNationalityChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
+    setNationality(event.target.value)
+    setProfileSuccess(false)
+  }, [])
+
+  const handleDateOfBirthChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setDateOfBirth(event.target.value)
     setProfileSuccess(false)
   }, [])
 
   const handleSaveProfile = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
+
+      if (!isValidName(firstName) || !isValidName(lastName)) {
+        setProfileError('Fix the highlighted fields before saving')
+        return
+      }
+
       setSavingProfile(true)
       setProfileError(null)
       setProfileSuccess(false)
 
-      const { error } = await updateProfile({ fullName: fullName.trim() })
+      const countryCode = nationality ? (COUNTRY_CALLING_CODES[nationality] ?? '+') : ''
+
+      const { error } = await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone ? `${countryCode}${phone}` : '',
+        nationality,
+        dateOfBirth,
+      })
 
       setSavingProfile(false)
 
@@ -91,38 +144,9 @@ export function Settings() {
       }
 
       setProfileSuccess(true)
+      refetchProfile()
     },
-    [fullName, updateProfile]
-  )
-
-  const handleEmailChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setEmail(event.target.value)
-    setEmailPendingConfirmation(null)
-  }, [])
-
-  const handleSaveEmail = useCallback(
-    async (event: FormEvent) => {
-      event.preventDefault()
-
-      const trimmedEmail = email.trim()
-      if (!trimmedEmail || trimmedEmail === user?.email) return
-
-      setSavingEmail(true)
-      setEmailError(null)
-      setEmailPendingConfirmation(null)
-
-      const { error } = await updateEmail(trimmedEmail)
-
-      setSavingEmail(false)
-
-      if (error) {
-        setEmailError(error.message)
-        return
-      }
-
-      setEmailPendingConfirmation(trimmedEmail)
-    },
-    [email, user?.email, updateEmail]
+    [firstName, lastName, phone, nationality, dateOfBirth, refetchProfile]
   )
 
   const handleChangePhotoClick = useCallback(() => {
@@ -144,9 +168,12 @@ export function Settings() {
 
       if (error) {
         setAvatarError(error.message)
+        return
       }
+
+      refetchProfile()
     },
-    [uploadAvatar]
+    [refetchProfile]
   )
 
   const handleCurrentPasswordChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
@@ -195,6 +222,10 @@ export function Settings() {
     },
     [currentPassword, newPassword, confirmNewPassword, changePassword]
   )
+
+  const handleThemeToggle = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }, [theme, setTheme])
 
   const handleOpenDeleteModal = useCallback(() => {
     setIsDeleteModalOpen(true)
@@ -245,11 +276,14 @@ export function Settings() {
           <h2 className={s.blockTitle}>Profile</h2>
 
           <div className={s.profileRow}>
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" className={s.avatarImage} />
-            ) : (
-              <div className={s.avatarFallback}>{initials}</div>
-            )}
+            <Avatar
+              userId={user?.id ?? ''}
+              avatarUrl={profile?.avatarUrl}
+              firstName={profile?.firstName}
+              lastName={profile?.lastName}
+              email={user?.email}
+              size="lg"
+            />
             <input
               ref={fileInputRef}
               type="file"
@@ -274,23 +308,97 @@ export function Settings() {
             </p>
           )}
 
+          <label className={s.field}>
+            Email
+            <input
+              type="email"
+              value={user?.email ?? ''}
+              readOnly
+              disabled
+              className={s.input}
+              data-testid="settings-email-input"
+            />
+          </label>
+
           <form onSubmit={handleSaveProfile} className={s.form}>
+            <div className={s.fieldRow}>
+              <label className={s.field}>
+                First name
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={handleFirstNameChange}
+                  className={s.input}
+                  data-testid="settings-first-name-input"
+                />
+                {firstNameError && (
+                  <span role="alert" className={s.error}>
+                    {firstNameError}
+                  </span>
+                )}
+              </label>
+              <label className={s.field}>
+                Last name
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={handleLastNameChange}
+                  className={s.input}
+                  data-testid="settings-last-name-input"
+                />
+                {lastNameError && (
+                  <span role="alert" className={s.error}>
+                    {lastNameError}
+                  </span>
+                )}
+              </label>
+            </div>
+
+            <div className={s.fieldRow}>
+              <label className={s.field}>
+                Phone
+                <PhoneInput
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  countryCode={nationality ? COUNTRY_CALLING_CODES[nationality] : undefined}
+                  testId="settings-phone-input"
+                />
+              </label>
+              <label className={s.field}>
+                Nationality
+                <select
+                  value={nationality}
+                  onChange={handleNationalityChange}
+                  className={s.select}
+                  data-testid="settings-nationality-select"
+                >
+                  <option value="">Select a country</option>
+                  {COUNTRIES.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
             <label className={s.field}>
-              Full name
+              Date of birth
               <input
-                type="text"
-                value={fullName}
-                onChange={handleFullNameChange}
+                type="date"
+                value={dateOfBirth}
+                onChange={handleDateOfBirthChange}
                 className={s.input}
-                data-testid="settings-full-name-input"
+                data-testid="settings-date-of-birth-input"
               />
             </label>
+
             {profileError && (
               <p role="alert" className={s.error}>
                 {profileError}
               </p>
             )}
-            {profileSuccess && <p className={s.success}>Your name was updated.</p>}
+            {profileSuccess && <p className={s.success}>Your profile was updated.</p>}
             <Button
               id="settings-save-profile-button"
               data-testid="settings-save-profile-button"
@@ -298,39 +406,6 @@ export function Settings() {
               disabled={savingProfile}
             >
               {savingProfile ? 'Saving…' : 'Save changes'}
-            </Button>
-          </form>
-
-          <form onSubmit={handleSaveEmail} className={s.form}>
-            <label className={s.field}>
-              Email address
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={handleEmailChange}
-                className={s.input}
-                data-testid="settings-email-input"
-              />
-            </label>
-            {emailError && (
-              <p role="alert" className={s.error}>
-                {emailError}
-              </p>
-            )}
-            {emailPendingConfirmation && (
-              <p className={s.success}>
-                We sent a confirmation email to {emailPendingConfirmation}. The change will apply once you confirm
-                it.
-              </p>
-            )}
-            <Button
-              id="settings-save-email-button"
-              data-testid="settings-save-email-button"
-              type="submit"
-              disabled={savingEmail || !email.trim() || email.trim() === user?.email}
-            >
-              {savingEmail ? 'Sending…' : 'Save changes'}
             </Button>
           </form>
         </div>
@@ -354,44 +429,46 @@ export function Settings() {
               />
             </div>
           ))}
+          <div className={s.row}>
+            <div>
+              <p className={s.rowLabel}>Dark mode</p>
+              <p className={s.rowSub}>Switch the interface to a darker palette</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={theme === 'dark'}
+              onClick={handleThemeToggle}
+              className={cn(s.switch, theme === 'dark' && s.switchOn)}
+              data-testid="settings-preference-dark-mode-toggle"
+            />
+          </div>
         </div>
 
         <div className={s.block}>
           <h2 className={s.blockTitle}>Security</h2>
           <form onSubmit={handleChangePassword} className={s.form}>
-            <label className={s.field}>
-              Current password
-              <input
-                type="password"
-                required
-                value={currentPassword}
-                onChange={handleCurrentPasswordChange}
-                className={s.input}
-                data-testid="settings-current-password-input"
-              />
-            </label>
-            <label className={s.field}>
-              New password
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={handleNewPasswordChange}
-                className={s.input}
-                data-testid="settings-new-password-input"
-              />
-            </label>
-            <label className={s.field}>
-              Confirm new password
-              <input
-                type="password"
-                required
-                value={confirmNewPassword}
-                onChange={handleConfirmNewPasswordChange}
-                className={s.input}
-                data-testid="settings-confirm-password-input"
-              />
-            </label>
+            <PasswordInput
+              label="Current password"
+              value={currentPassword}
+              onChange={handleCurrentPasswordChange}
+              testId="settings-current-password-input"
+              required
+            />
+            <PasswordInput
+              label="New password"
+              value={newPassword}
+              onChange={handleNewPasswordChange}
+              testId="settings-new-password-input"
+              required
+            />
+            <PasswordInput
+              label="Confirm new password"
+              value={confirmNewPassword}
+              onChange={handleConfirmNewPasswordChange}
+              testId="settings-confirm-password-input"
+              required
+            />
             {passwordError && (
               <p role="alert" className={s.error}>
                 {passwordError}
@@ -407,16 +484,6 @@ export function Settings() {
               {changingPassword ? 'Updating…' : 'Change password'}
             </Button>
           </form>
-        </div>
-
-        <div className={s.block}>
-          <h2 className={s.blockTitle}>Linked accounts</h2>
-          <p className={s.stateMessage}>Not available yet.</p>
-        </div>
-
-        <div className={s.block}>
-          <h2 className={s.blockTitle}>Billing</h2>
-          <p className={s.stateMessage}>Not available yet.</p>
         </div>
 
         <div className={cn(s.block, s.dangerBlock)}>

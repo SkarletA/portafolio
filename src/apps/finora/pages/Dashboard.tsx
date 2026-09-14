@@ -2,7 +2,10 @@ import { useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/atoms/Button/Button'
 import { Icon } from '../components/atoms/Icon/Icon'
+import { Avatar } from '../components/atoms/Avatar/Avatar'
 import { StatCard } from '../components/molecules/StatCard/StatCard'
+import { useAuth } from '../context/AuthContext'
+import { useProfile } from '../hooks/useProfile'
 import { useTransactions } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
@@ -14,7 +17,9 @@ import s from './Dashboard.module.css'
 const RECENT_TRANSACTIONS_LIMIT = 5
 const BUDGETS_PREVIEW_LIMIT = 3
 const TOP_CATEGORIES_LIMIT = 3
-const NEUTRAL_CATEGORY_COLOR = '#94a3b8'
+// A CSS custom property, not a literal color, so the fallback dot follows
+// the active theme (light/dark).
+const NEUTRAL_CATEGORY_COLOR = 'var(--color-finora-icon-fallback-bg)'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -30,6 +35,9 @@ function formatPercentage(value: number) {
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { profile } = useProfile()
+  const displayName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || user?.email || ''
 
   const { transactions, loading, error, refetch } = useTransactions()
   const recentTransactions = transactions.slice(0, RECENT_TRANSACTIONS_LIMIT)
@@ -54,6 +62,17 @@ export function Dashboard() {
           <p className={s.subtitle}>Here&apos;s your financial overview</p>
         </div>
         <div className={s.headerRight}>
+          <Link to="/finora/settings" className={s.profileLink} data-testid="dashboard-settings-link">
+            <Avatar
+              userId={user?.id ?? ''}
+              avatarUrl={profile?.avatarUrl}
+              firstName={profile?.firstName}
+              lastName={profile?.lastName}
+              email={user?.email}
+              size="sm"
+            />
+            <span className={s.profileName}>{displayName}</span>
+          </Link>
           <span className={s.periodPill}>{monthFormatter.format(new Date())}</span>
           <Button
             id="dashboard-add-transaction-button"

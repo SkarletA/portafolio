@@ -1,7 +1,7 @@
 @reference '../../../styles/theme.css';
 
 .sidebar {
-  @apply hidden w-60 shrink-0 flex-col border-r border-finora-border bg-white px-4 py-6 sm:flex;
+  @apply hidden w-60 shrink-0 flex-col border-r border-finora-border bg-finora-surface px-4 py-6 sm:flex;
 }
 
 .brand {
@@ -38,14 +38,6 @@
 
 .profile {
   @apply mt-2 flex items-center gap-2.5 rounded-lg border border-finora-border p-2.5;
-}
-
-.avatar {
-  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-finora-primary-dark text-sm font-semibold text-white;
-}
-
-.avatarImage {
-  @apply h-8 w-8 shrink-0 rounded-full object-cover;
 }
 
 .email {

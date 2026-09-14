@@ -9,7 +9,7 @@
 }
 
 .icon {
-  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm text-finora-ink-muted;
+  @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-finora-surface-muted text-sm text-finora-ink-muted;
 }
 
 .categoryIcon {
@@ -53,7 +53,7 @@
 }
 
 .actionIcon {
-  @apply flex h-7 w-7 items-center justify-center rounded-md text-finora-ink-muted transition-colors hover:bg-slate-100 hover:text-finora-ink;
+  @apply flex h-7 w-7 items-center justify-center rounded-md text-finora-ink-muted transition-colors hover:bg-finora-surface-muted hover:text-finora-ink;
 }
 
 .actionIconGlyph {

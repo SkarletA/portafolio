@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { NavItem } from '../../molecules/NavItem/NavItem'
 import { Icon } from '../../atoms/Icon/Icon'
+import { useTheme } from '../../../context/ThemeContext'
 import s from './AppShell.module.css'
 
 const BOTTOM_NAV_LEFT = [
@@ -18,13 +19,14 @@ const BOTTOM_NAV_RIGHT = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const { theme } = useTheme()
 
   const handleAddTransactionClick = useCallback(() => {
     navigate('/finora/add-transaction')
   }, [navigate])
 
   return (
-    <div className={s.shell}>
+    <div className={s.shell} data-theme={theme}>
       <Sidebar />
 
       <header className={s.mobileHeader}>
