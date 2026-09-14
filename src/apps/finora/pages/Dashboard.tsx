@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/atoms/Button/Button'
 import { Icon } from '../components/atoms/Icon/Icon'
 import { Avatar } from '../components/atoms/Avatar/Avatar'
@@ -34,6 +35,7 @@ function formatPercentage(value: number) {
 }
 
 export function Dashboard() {
+  const { t } = useTranslation(['dashboard', 'common'])
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
@@ -58,8 +60,8 @@ export function Dashboard() {
     <section className={s.section}>
       <div className={s.header}>
         <div>
-          <h1 className={s.title}>Dashboard</h1>
-          <p className={s.subtitle}>Here&apos;s your financial overview</p>
+          <h1 className={s.title}>{t('dashboard:title')}</h1>
+          <p className={s.subtitle}>{t('dashboard:subtitle')}</p>
         </div>
         <div className={s.headerRight}>
           <Link to="/finora/settings" className={s.profileLink} data-testid="dashboard-settings-link">
@@ -79,7 +81,7 @@ export function Dashboard() {
             data-testid="dashboard-add-transaction-button"
             onClick={handleAddTransactionClick}
           >
-            <Icon name="plus" className={s.addIcon} /> Add transaction
+            <Icon name="plus" className={s.addIcon} /> {t('common:addTransaction')}
           </Button>
         </div>
       </div>
@@ -88,9 +90,9 @@ export function Dashboard() {
         loading={summaryLoading}
         error={summaryError}
         isEmpty={!hasSummaryData}
-        loadingLabel="Loading overview…"
-        errorMessage="We couldn't load your overview. Please try again later."
-        emptyMessage="No activity recorded this month yet."
+        loadingLabel={t('dashboard:overview.loading')}
+        errorMessage={t('dashboard:overview.error')}
+        emptyMessage={t('dashboard:overview.empty')}
         skeletonCount={4}
         skeletonWrapClassName={s.overviewSkeletonWrap}
         skeletonItemClassName={s.overviewSkeletonCard}
@@ -99,14 +101,14 @@ export function Dashboard() {
         {stats && (
           <div className={s.overviewGrid}>
             <div className={s.balanceCard}>
-              <p className={s.balanceLabel}>Balance this month</p>
+              <p className={s.balanceLabel}>{t('dashboard:balanceThisMonth')}</p>
               <p className={s.balanceValue}>{currencyFormatter.format(balance)}</p>
             </div>
-            <StatCard testId="dashboard-income-stat" label="Income" value={currencyFormatter.format(stats.totalIncome)} />
-            <StatCard testId="dashboard-expenses-stat" label="Expenses" value={currencyFormatter.format(stats.totalSpent)} />
+            <StatCard testId="dashboard-income-stat" label={t('dashboard:stats.income')} value={currencyFormatter.format(stats.totalIncome)} />
+            <StatCard testId="dashboard-expenses-stat" label={t('dashboard:stats.expenses')} value={currencyFormatter.format(stats.totalSpent)} />
             <StatCard
               testId="dashboard-savings-rate-stat"
-              label="Savings rate"
+              label={t('dashboard:stats.savingsRate')}
               value={formatPercentage(stats.savingsRate)}
               variant={stats.savingsRate >= 0 ? 'success' : 'danger'}
             />
@@ -117,9 +119,9 @@ export function Dashboard() {
       <div className={s.contentRow}>
         <div className={s.recentSection}>
           <div className={s.sectionHeader}>
-            <h2 className={s.sectionTitle}>Recent transactions</h2>
+            <h2 className={s.sectionTitle}>{t('dashboard:recentTransactions.title')}</h2>
             <Link to="/finora/transactions" className={s.link} data-testid="dashboard-view-all-transactions-link">
-              View all
+              {t('dashboard:viewAll')}
             </Link>
           </div>
 
@@ -128,9 +130,9 @@ export function Dashboard() {
               loading={loading}
               error={error}
               isEmpty={recentTransactions.length === 0}
-              loadingLabel="Loading transactions…"
-              errorMessage="We couldn't load your transactions."
-              emptyMessage="You don't have any transactions yet."
+              loadingLabel={t('dashboard:recentTransactions.loading')}
+              errorMessage={t('dashboard:recentTransactions.error')}
+              emptyMessage={t('dashboard:recentTransactions.empty')}
               skeletonCount={3}
               skeletonWrapClassName={s.skeletonWrap}
               skeletonItemClassName={s.skeletonRow}
@@ -144,9 +146,9 @@ export function Dashboard() {
 
         <div className={s.categorySection}>
           <div className={s.sectionHeader}>
-            <h2 className={s.sectionTitle}>Spending by category</h2>
+            <h2 className={s.sectionTitle}>{t('dashboard:categorySpending.title')}</h2>
             <Link to="/finora/analytics" className={s.link} data-testid="dashboard-view-analytics-link">
-              View all
+              {t('dashboard:viewAll')}
             </Link>
           </div>
 
@@ -155,9 +157,9 @@ export function Dashboard() {
               loading={summaryLoading}
               error={summaryError}
               isEmpty={topCategories.length === 0}
-              loadingLabel="Loading categories…"
-              errorMessage="We couldn't load your spending by category."
-              emptyMessage="No spending recorded this month."
+              loadingLabel={t('dashboard:categorySpending.loading')}
+              errorMessage={t('dashboard:categorySpending.error')}
+              emptyMessage={t('dashboard:categorySpending.empty')}
               skeletonCount={3}
               skeletonWrapClassName={s.skeletonWrap}
               skeletonItemClassName={s.skeletonRow}
@@ -181,9 +183,9 @@ export function Dashboard() {
 
       <div className={s.budgetsSection}>
         <div className={s.sectionHeader}>
-          <h2 className={s.sectionTitle}>Budgets</h2>
+          <h2 className={s.sectionTitle}>{t('dashboard:budgets.title')}</h2>
           <Link to="/finora/budgets" className={s.link} data-testid="dashboard-view-all-budgets-link">
-            View all
+            {t('dashboard:viewAll')}
           </Link>
         </div>
 
@@ -191,9 +193,9 @@ export function Dashboard() {
           loading={budgetsLoading}
           error={budgetsError}
           isEmpty={previewBudgets.length === 0}
-          loadingLabel="Loading budgets…"
-          errorMessage="We couldn't load your budgets."
-          emptyMessage="You don't have any budgets set up yet."
+          loadingLabel={t('dashboard:budgets.loading')}
+          errorMessage={t('dashboard:budgets.error')}
+          emptyMessage={t('dashboard:budgets.empty')}
           skeletonCount={3}
           skeletonWrapClassName={s.skeletonWrap}
           skeletonItemClassName={s.skeletonCard}

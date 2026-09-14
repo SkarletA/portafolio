@@ -85,7 +85,7 @@ describe('TransactionItem', () => {
     renderItem(baseTransaction, onDeleted)
 
     fireEvent.click(screen.getByTestId('transaction-item-1-delete-icon'))
-    expect(screen.getByText('Delete "Starbucks"?')).toBeInTheDocument()
+    expect(screen.getByText('item.confirmDelete:{"description":"Starbucks"}')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('transaction-item-1-confirm-delete-button'))
 

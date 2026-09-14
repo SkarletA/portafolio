@@ -8,6 +8,7 @@ import {
   type MouseEvent,
 } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import { Button } from '../components/atoms/Button/Button'
 import { CategoryIcon, CATEGORY_ICON_NAMES, DEFAULT_CATEGORY_ICON } from '../components/atoms/CategoryIcon/CategoryIcon'
@@ -66,6 +67,7 @@ interface AddTransactionProps {
 }
 
 export function AddTransaction({ mode }: AddTransactionProps) {
+  const { t } = useTranslation(['transactions', 'common'])
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const { categories, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories()
@@ -211,7 +213,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setCreatingSubcategory(false)
 
     if (error || !data) {
-      setSubcategoryCreateError(error?.message ?? 'Could not create the subcategory')
+      setSubcategoryCreateError(error?.message ?? t('transactions:form.couldNotCreateSubcategory'))
       return
     }
 
@@ -220,7 +222,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setErrors((prev) => (prev.category_id ? { ...prev, category_id: undefined } : prev))
     setIsCreatingSubcategory(false)
     setNewSubcategoryName('')
-  }, [newSubcategoryName, selectedParent, refetchCategories])
+  }, [newSubcategoryName, selectedParent, refetchCategories, t])
 
   const handleDateChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setDate(event.target.value)
@@ -285,7 +287,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     const trimmedName = newCategoryName.trim()
 
     if (!trimmedName) {
-      setCategoryCreateError('Name is required')
+      setCategoryCreateError(t('common:validation.nameRequired'))
       return
     }
 
@@ -302,7 +304,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setCreatingCategory(false)
 
     if (error || !data) {
-      setCategoryCreateError(error?.message ?? 'Could not create the category')
+      setCategoryCreateError(error?.message ?? t('transactions:form.couldNotCreateCategory'))
       return
     }
 
@@ -310,7 +312,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setCategoryId(data.id)
     setErrors((prev) => (prev.category_id ? { ...prev, category_id: undefined } : prev))
     handleCancelNewCategory()
-  }, [newCategoryName, newCategoryIcon, newCategoryColor, newCategoryParentId, refetchCategories, handleCancelNewCategory])
+  }, [newCategoryName, newCategoryIcon, newCategoryColor, newCategoryParentId, refetchCategories, handleCancelNewCategory, t])
 
   const handleSubmit = useCallback(
     async (event: FormEvent) => {
@@ -321,34 +323,37 @@ export function AddTransaction({ mode }: AddTransactionProps) {
       const nextErrors: FormErrors = {}
 
       if (!amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-        nextErrors.amount = 'Enter an amount greater than 0'
+        nextErrors.amount = t('common:validation.amountGreaterThanZero')
       }
       if (!trimmedDescription) {
-        nextErrors.description = 'Description is required'
+        nextErrors.description = t('transactions:validation.descriptionRequired')
       }
       if (!categoryId) {
-        nextErrors.category_id = 'Select a category'
+        nextErrors.category_id = t('transactions:validation.selectCategory')
       }
       if (!date) {
-        nextErrors.date = 'Select a date'
+        nextErrors.date = t('transactions:validation.selectDate')
       }
 
       const checkedPayments = payments.filter((payment) => payment.checked)
 
       if (checkedPayments.length === 0) {
-        nextErrors.payments = 'Select at least one payment method'
+        nextErrors.payments = t('transactions:validation.selectPaymentMethod')
       } else {
         const hasInvalidAmount = checkedPayments.some(
           (payment) => !payment.amount || Number.isNaN(Number(payment.amount)) || Number(payment.amount) <= 0
         )
 
         if (hasInvalidAmount) {
-          nextErrors.payments = 'Enter an amount greater than 0 for each selected payment method'
+          nextErrors.payments = t('transactions:validation.amountGreaterThanZeroEach')
         } else {
           const assigned = checkedPayments.reduce((sum, payment) => sum + Number(payment.amount), 0)
 
           if (Math.abs(assigned - parsedAmount) > 0.001) {
-            nextErrors.payments = `Assigned amounts (${currencyFormatter.format(assigned)}) must equal the total (${currencyFormatter.format(parsedAmount || 0)})`
+            nextErrors.payments = t('transactions:validation.assignedMustEqualTotal', {
+              assigned: currencyFormatter.format(assigned),
+              total: currencyFormatter.format(parsedAmount || 0),
+            })
           }
         }
       }
@@ -384,7 +389,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
       navigate('/finora/transactions')
     },
-    [amount, description, categoryId, date, notes, type, payments, mode, id, navigate]
+    [amount, description, categoryId, date, notes, type, payments, mode, id, navigate, t]
   )
 
   const assignedTotal = payments.reduce(
@@ -396,7 +401,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   if (mode === 'edit' && transactionLoading) {
     return (
       <section className={s.section}>
-        <p className={s.hint}>Loading transaction…</p>
+        <p className={s.hint}>{t('transactions:form.loadingTransaction')}</p>
       </section>
     )
   }
@@ -404,17 +409,17 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   if (mode === 'edit' && transactionError) {
     return (
       <section className={s.section}>
-        <p className={s.error}>We couldn&apos;t load this transaction. Please try again later.</p>
+        <p className={s.error}>{t('transactions:form.loadError')}</p>
       </section>
     )
   }
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>{mode === 'edit' ? 'Edit transaction' : 'Add transaction'}</h1>
+      <h1 className={s.title}>{mode === 'edit' ? t('transactions:form.editTitle') : t('transactions:form.addTitle')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form} noValidate>
-        <div className={s.typeToggle} role="group" aria-label="Transaction type">
+        <div className={s.typeToggle} role="group" aria-label={t('transactions:form.typeAriaLabel')}>
           <button
             type="button"
             data-type="expense"
@@ -423,7 +428,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             className={cn(s.typeButton, type === 'expense' && s.typeButtonActiveExpense)}
             data-testid="add-transaction-type-expense-button"
           >
-            Expense
+            {t('transactions:form.type.expense')}
           </button>
           <button
             type="button"
@@ -433,7 +438,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             className={cn(s.typeButton, type === 'income' && s.typeButtonActiveIncome)}
             data-testid="add-transaction-type-income-button"
           >
-            Income
+            {t('transactions:form.type.income')}
           </button>
           <button
             type="button"
@@ -443,12 +448,12 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             className={cn(s.typeButton, type === 'reimbursement' && s.typeButtonActiveReimbursement)}
             data-testid="add-transaction-type-reimbursement-button"
           >
-            Reimbursement
+            {t('transactions:form.type.reimbursement')}
           </button>
         </div>
 
         <label className={s.field}>
-          Amount
+          {t('transactions:form.amount')}
           <input
             type="number"
             inputMode="decimal"
@@ -470,7 +475,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         </label>
 
         <label className={s.field}>
-          Description
+          {t('transactions:form.description')}
           <input
             type="text"
             required
@@ -489,7 +494,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         </label>
 
         <label className={s.field}>
-          Category
+          {t('transactions:form.category')}
           <select
             required
             value={selectedParent?.id ?? ''}
@@ -501,14 +506,14 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             data-testid="add-transaction-category-select"
           >
             <option value="" disabled={categories.length > 0}>
-              {categoriesLoading ? 'Loading categories…' : 'Select a category'}
+              {categoriesLoading ? t('transactions:form.loadingCategories') : t('transactions:form.selectCategory')}
             </option>
             {categoryGroups.map((group) => (
               <option key={group.parent.id} value={group.parent.id}>
                 {group.parent.name}
               </option>
             ))}
-            <option value={CREATE_NEW_CATEGORY_VALUE}>+ Create new category</option>
+            <option value={CREATE_NEW_CATEGORY_VALUE}>{t('transactions:form.createNewCategory')}</option>
           </select>
           {errors.category_id && (
             <p id="add-transaction-category-error" role="alert" className={s.error}>
@@ -517,14 +522,14 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           )}
           {categoriesError && (
             <p role="alert" className={s.error}>
-              Couldn&apos;t load categories: {categoriesError}
+              {t('transactions:form.couldntLoadCategories', { message: categoriesError })}
             </p>
           )}
         </label>
 
         {selectedGroup && (
           <label className={s.field}>
-            Subcategory <span className={s.hint}>(optional)</span>
+            {t('transactions:form.subcategory')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
             <select
               value={
                 isCreatingSubcategory
@@ -537,13 +542,15 @@ export function AddTransaction({ mode }: AddTransactionProps) {
               className={s.select}
               data-testid="add-transaction-subcategory-select"
             >
-              <option value={NONE_SUBCATEGORY_VALUE}>None — use {selectedGroup.parent.name} directly</option>
+              <option value={NONE_SUBCATEGORY_VALUE}>
+                {t('transactions:form.noneUseDirectly', { category: selectedGroup.parent.name })}
+              </option>
               {selectedGroup.children.map((child) => (
                 <option key={child.id} value={child.id}>
                   {child.name}
                 </option>
               ))}
-              <option value={OTHERS_SUBCATEGORY_VALUE}>Others: type a new subcategory</option>
+              <option value={OTHERS_SUBCATEGORY_VALUE}>{t('transactions:form.createNewSubcategory')}</option>
             </select>
             {isCreatingSubcategory && (
               <>
@@ -553,12 +560,12 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                   value={newSubcategoryName}
                   onChange={handleNewSubcategoryNameChange}
                   onBlur={handleNewSubcategoryBlur}
-                  placeholder="New subcategory name"
+                  placeholder={t('transactions:form.newSubcategoryPlaceholder')}
                   className={s.input}
                   disabled={creatingSubcategory}
                   data-testid="add-transaction-new-subcategory-input"
                 />
-                {creatingSubcategory && <p className={s.hint}>Creating…</p>}
+                {creatingSubcategory && <p className={s.hint}>{t('common:buttons.creating')}</p>}
                 {subcategoryCreateError && (
                   <p role="alert" className={s.error}>
                     {subcategoryCreateError}
@@ -572,7 +579,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         {isCreatingCategory && (
           <div className={s.categoryCreate}>
             <label className={s.field}>
-              New category name
+              {t('transactions:form.newCategoryName')}
               <input
                 type="text"
                 value={newCategoryName}
@@ -583,14 +590,14 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             </label>
 
             <label className={s.field}>
-              Parent category <span className={s.hint}>(optional, to create as a subcategory)</span>
+              {t('transactions:form.parentCategory')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
               <select
                 value={newCategoryParentId}
                 onChange={handleNewCategoryParentChange}
                 className={s.select}
                 data-testid="add-transaction-new-category-parent-select"
               >
-                <option value="">None (top-level category)</option>
+                <option value="">{t('transactions:form.noneTopLevel')}</option>
                 {categoryGroups.map((group) => (
                   <option key={group.parent.id} value={group.parent.id}>
                     {group.parent.name}
@@ -600,8 +607,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             </label>
 
             <div className={s.field}>
-              Color
-              <div className={s.colorPicker} role="group" aria-label="Category color">
+              {t('transactions:form.color')}
+              <div className={s.colorPicker} role="group" aria-label={t('transactions:form.colorAriaLabel')}>
                 {CATEGORY_COLORS.map((color) => (
                   <button
                     key={color}
@@ -609,7 +616,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                     data-color={color}
                     onClick={handleNewCategoryColorClick}
                     aria-pressed={newCategoryColor === color}
-                    aria-label={`Color ${color}`}
+                    aria-label={t('transactions:form.colorSwatchAriaLabel', { color })}
                     className={cn(s.colorSwatch, newCategoryColor === color && s.colorSwatchActive)}
                     style={{ backgroundColor: color }}
                     data-testid={`add-transaction-new-category-color-${color.replace('#', '')}-button`}
@@ -619,8 +626,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             </div>
 
             <div className={s.field}>
-              Icon
-              <div className={s.iconPicker} role="group" aria-label="Category icon">
+              {t('transactions:form.icon')}
+              <div className={s.iconPicker} role="group" aria-label={t('transactions:form.iconAriaLabel')}>
                 {CATEGORY_ICON_NAMES.map((iconName) => (
                   <button
                     key={iconName}
@@ -628,7 +635,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                     data-icon={iconName}
                     onClick={handleNewCategoryIconClick}
                     aria-pressed={newCategoryIcon === iconName}
-                    aria-label={`Icon ${iconName}`}
+                    aria-label={t('transactions:form.iconSwatchAriaLabel', { icon: iconName })}
                     className={cn(s.iconSwatch, newCategoryIcon === iconName && s.iconSwatchActive)}
                     data-testid={`add-transaction-new-category-icon-${iconName}-button`}
                   >
@@ -653,7 +660,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 disabled={creatingCategory}
                 className={s.actionButton}
               >
-                {creatingCategory ? 'Creating…' : 'Create category'}
+                {creatingCategory ? t('common:buttons.creating') : t('transactions:form.createCategory')}
               </Button>
               <Button
                 id="add-transaction-cancel-new-category-button"
@@ -664,15 +671,15 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 disabled={creatingCategory}
                 className={s.actionButton}
               >
-                Cancel
+                {t('common:buttons.cancel')}
               </Button>
             </div>
           </div>
         )}
 
         <div className={s.field}>
-          Payment methods
-          <div className={s.paymentMethodList} role="group" aria-label="Payment methods">
+          {t('transactions:form.paymentMethods')}
+          <div className={s.paymentMethodList} role="group" aria-label={t('transactions:form.paymentMethodsAriaLabel')}>
             {payments.map((payment) => (
               <div key={payment.paymentMethod} className={s.paymentMethodRow}>
                 <label className={s.paymentMethodCheckboxLabel}>
@@ -695,7 +702,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                     onChange={handlePaymentAmountChange}
                     data-method={payment.paymentMethod}
                     className={s.paymentMethodAmountInput}
-                    aria-label={`Amount paid with ${payment.paymentMethod}`}
+                    aria-label={t('transactions:form.amountPaidWith', { method: payment.paymentMethod })}
                     data-testid={`add-transaction-payment-${slugify(payment.paymentMethod)}-amount-input`}
                   />
                 )}
@@ -703,7 +710,10 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             ))}
           </div>
           <p className={cn(s.paymentSummary, assignedTotal !== totalAmount && s.paymentSummaryMismatch)}>
-            Assigned: {currencyFormatter.format(assignedTotal)} / {currencyFormatter.format(totalAmount)} total
+            {t('transactions:form.assignedSummary', {
+              assigned: currencyFormatter.format(assignedTotal),
+              total: currencyFormatter.format(totalAmount),
+            })}
           </p>
           {errors.payments && (
             <p role="alert" className={s.error}>
@@ -713,7 +723,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         </div>
 
         <label className={s.field}>
-          Date
+          {t('transactions:form.date')}
           <input
             type="date"
             required
@@ -732,7 +742,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         </label>
 
         <label className={s.field}>
-          Notes
+          {t('transactions:form.notes')}
           <textarea
             value={notes}
             onChange={handleNotesChange}
@@ -754,7 +764,11 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           type="submit"
           disabled={submitting}
         >
-          {submitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Save transaction'}
+          {submitting
+            ? t('common:buttons.saving')
+            : mode === 'edit'
+              ? t('common:buttons.saveChanges')
+              : t('transactions:form.saveTransaction')}
         </Button>
       </form>
     </section>

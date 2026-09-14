@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { TransactionWithCategory } from '../../../services/transactionsService'
 import { deleteTransaction } from '../../../services/transactionsService'
@@ -26,6 +27,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 export function TransactionItem({ transaction, onDeleted }: TransactionItemProps) {
+  const { t } = useTranslation(['transactions', 'common'])
   const navigate = useNavigate()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -69,7 +71,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
   if (isConfirmingDelete) {
     return (
       <div className={s.deleteConfirmRow}>
-        <span className={s.deleteConfirmText}>Delete &quot;{transaction.description}&quot;?</span>
+        <span className={s.deleteConfirmText}>{t('item.confirmDelete', { description: transaction.description })}</span>
         <div className={s.deleteConfirmActions}>
           <button
             type="button"
@@ -78,7 +80,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
             className={s.deleteConfirmButton}
             data-testid={`transaction-item-${transaction.id}-confirm-delete-button`}
           >
-            {deleting ? 'Deleting…' : 'Delete'}
+            {deleting ? t('common:buttons.deleting') : t('common:buttons.delete')}
           </button>
           <button
             type="button"
@@ -87,7 +89,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
             className={s.deleteCancelButton}
             data-testid={`transaction-item-${transaction.id}-cancel-delete-button`}
           >
-            Cancel
+            {t('common:buttons.cancel')}
           </button>
         </div>
         {deleteError && (
@@ -112,7 +114,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
         <div className={s.info}>
           <p className={s.description}>{transaction.description}</p>
           <p className={s.meta}>
-            {transaction.category?.name ?? 'Uncategorized'}
+            {transaction.category?.name ?? t('item.uncategorized')}
             {paymentMethodsLabel ? ` · ${paymentMethodsLabel}` : ''}
           </p>
         </div>
@@ -128,7 +130,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
         <button
           type="button"
           onClick={handleEditClick}
-          aria-label={`Edit ${transaction.description}`}
+          aria-label={t('item.editAriaLabel', { description: transaction.description })}
           className={s.actionIcon}
           data-testid={`transaction-item-${transaction.id}-edit-icon`}
         >
@@ -137,7 +139,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
         <button
           type="button"
           onClick={handleDeleteClick}
-          aria-label={`Delete ${transaction.description}`}
+          aria-label={t('item.deleteAriaLabel', { description: transaction.description })}
           className={s.actionIcon}
           data-testid={`transaction-item-${transaction.id}-delete-icon`}
         >
