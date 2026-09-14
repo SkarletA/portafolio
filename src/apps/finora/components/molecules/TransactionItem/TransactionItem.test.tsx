@@ -22,7 +22,7 @@ const baseTransaction: TransactionWithCategory = {
   date: '2026-09-08',
   notes: null,
   created_at: null,
-  category: { id: 'c1', name: 'Food', icon: null, color: null },
+  category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null },
   payments: [{ id: 'p1', transaction_id: '1', payment_method: 'Credit Card', amount: 120 }],
 }
 

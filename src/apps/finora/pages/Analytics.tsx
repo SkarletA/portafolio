@@ -5,6 +5,7 @@ import type { TFunction } from 'i18next'
 import cn from 'clsx'
 import { useAnalytics } from '../hooks/useAnalytics'
 import { getPeriodRange, type DateRange, type PeriodType } from '../domain/analytics'
+import { getCategoryDisplayName } from '../domain/category'
 import type { PeriodComparison, PeriodComparisonCategory } from '../services/analyticsService'
 import { StatCard } from '../components/molecules/StatCard/StatCard'
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
@@ -71,11 +72,12 @@ function formatPercentMagnitude(value: number) {
 }
 
 function buildCategoryInsight(t: TFunction, category: PeriodComparisonCategory & { percentChange: number }): string {
+  const categoryName = getCategoryDisplayName(category, t)
   if (category.percentChange === 0) {
-    return t('comparison.insights.categorySame', { category: category.name })
+    return t('comparison.insights.categorySame', { category: categoryName })
   }
   const key = category.percentChange > 0 ? 'comparison.insights.categoryMore' : 'comparison.insights.categoryLess'
-  return t(key, { percent: formatPercentMagnitude(category.percentChange), category: category.name })
+  return t(key, { percent: formatPercentMagnitude(category.percentChange), category: categoryName })
 }
 
 function buildTotalInsight(t: TFunction, comparison: PeriodComparison): string | null {
@@ -97,7 +99,7 @@ function buildInsights(t: TFunction, comparison: PeriodComparison): string[] {
 }
 
 export function Analytics() {
-  const { t } = useTranslation('analytics')
+  const { t } = useTranslation(['analytics', 'categories'])
   const [periodType, setPeriodType] = useState<PeriodType>('month')
   const { stats, spendingByCategory, trendData, comparison, loading, error } = useAnalytics(periodType)
 
@@ -215,7 +217,7 @@ export function Analytics() {
                           className={s.categoryDot}
                           style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                         />
-                        <span className={s.categoryName}>{category.name}</span>
+                        <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>
                         <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
                       </li>
@@ -238,7 +240,7 @@ export function Analytics() {
                         className={s.categoryDot}
                         style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                       />
-                      <span className={s.categoryName}>{category.name}</span>
+                      <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                       <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
                     </li>
                   ))}
@@ -269,7 +271,7 @@ export function Analytics() {
                           className={s.categoryDot}
                           style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                         />
-                        <span className={s.categoryName}>{category.name}</span>
+                        <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.comparisonAmounts}>
                           {currencyFormatter.format(category.previousAmount)} → {currencyFormatter.format(category.currentAmount)}
                         </span>

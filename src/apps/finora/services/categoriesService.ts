@@ -1,7 +1,10 @@
 import { supabase } from './supabaseClient'
 
 export function getCategories() {
-  return supabase.from('categories').select('id, name, icon, color, parent_id').order('name', { ascending: true })
+  return supabase
+    .from('categories')
+    .select('id, name, icon, color, parent_id, translationKey:translation_key')
+    .order('name', { ascending: true })
 }
 
 export interface NewCategoryInput {
@@ -31,6 +34,8 @@ export async function createCategory(data: NewCategoryInput) {
     }
   }
 
+  // translation_key is intentionally never set here - it only exists on the
+  // seed categories, so a user-created category always displays its raw name.
   return supabase
     .from('categories')
     .insert({ name: trimmedName, icon: data.icon, color: data.color, parent_id: parentId })

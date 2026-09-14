@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { TransactionWithCategory } from '../../../services/transactionsService'
 import { deleteTransaction } from '../../../services/transactionsService'
+import { getCategoryDisplayName } from '../../../domain/category'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '../../atoms/Icon/Icon'
 import s from './TransactionItem.module.css'
@@ -27,7 +28,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 export function TransactionItem({ transaction, onDeleted }: TransactionItemProps) {
-  const { t } = useTranslation(['transactions', 'common'])
+  const { t } = useTranslation(['transactions', 'common', 'categories'])
   const navigate = useNavigate()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -36,7 +37,8 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
   const isIncome = transaction.type === 'income'
   const isReimbursement = transaction.type === 'reimbursement'
   const amountLabel = `${isIncome || isReimbursement ? '+' : '-'}${currencyFormatter.format(Math.abs(transaction.amount))}`
-  const fallbackIcon = transaction.category?.name?.[0] || '•'
+  const categoryDisplayName = transaction.category ? getCategoryDisplayName(transaction.category, t) : null
+  const fallbackIcon = categoryDisplayName?.[0] || '•'
   const paymentMethodsLabel = transaction.payments.map((payment) => payment.payment_method).join(' + ')
 
   const handleEditClick = useCallback(() => {
@@ -114,7 +116,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
         <div className={s.info}>
           <p className={s.description}>{transaction.description}</p>
           <p className={s.meta}>
-            {transaction.category?.name ?? t('item.uncategorized')}
+            {categoryDisplayName ?? t('item.uncategorized')}
             {paymentMethodsLabel ? ` · ${paymentMethodsLabel}` : ''}
           </p>
         </div>

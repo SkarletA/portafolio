@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildCategoryTree,
+  getCategoryDisplayName,
   getCategoryIdsForRollup,
   getGrossSpendByCategory,
   getRawGrossSpendByCategory,
@@ -8,10 +9,24 @@ import {
   type Category,
 } from './category'
 
-const food: Category = { id: 'food', name: 'Food', icon: 'utensils', color: null, parent_id: null }
-const meat: Category = { id: 'meat', name: 'Carne', icon: 'beef', color: null, parent_id: 'food' }
-const market: Category = { id: 'market', name: 'Mercado', icon: 'shopping-cart', color: null, parent_id: 'food' }
-const transport: Category = { id: 'transport', name: 'Transportation', icon: 'car', color: null, parent_id: null }
+const food: Category = { id: 'food', name: 'Food', icon: 'utensils', color: null, parent_id: null, translationKey: 'food' }
+const meat: Category = { id: 'meat', name: 'Carne', icon: 'beef', color: null, parent_id: 'food', translationKey: 'meat' }
+const market: Category = {
+  id: 'market',
+  name: 'Mercado',
+  icon: 'shopping-cart',
+  color: null,
+  parent_id: 'food',
+  translationKey: 'groceries',
+}
+const transport: Category = {
+  id: 'transport',
+  name: 'Transportation',
+  icon: 'car',
+  color: null,
+  parent_id: null,
+  translationKey: 'transportation',
+}
 
 const categories = [food, meat, market, transport]
 
@@ -138,5 +153,26 @@ describe('getReimbursementsByCategory', () => {
     ]
 
     expect(getReimbursementsByCategory(entries, categories).transport).toBe(0)
+  })
+})
+
+describe('getCategoryDisplayName', () => {
+  const t = (key: string) => `translated:${key}`
+
+  it('translates a seed category via its translationKey, ignoring its stored name', () => {
+    expect(getCategoryDisplayName(food, t)).toBe('translated:categories:food')
+  })
+
+  it('falls back to the stored name as-is when translationKey is null', () => {
+    const custom: Category = {
+      id: 'custom',
+      name: 'My Custom Category',
+      icon: null,
+      color: null,
+      parent_id: null,
+      translationKey: null,
+    }
+
+    expect(getCategoryDisplayName(custom, t)).toBe('My Custom Category')
   })
 })

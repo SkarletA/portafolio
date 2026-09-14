@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { BudgetWithProgress } from '../../../hooks/useBudgets'
+import { getCategoryDisplayName } from '../../../domain/category'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCard.module.css'
 
@@ -22,9 +23,9 @@ const STATUS_LABEL_KEYS = {
 } as const
 
 export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
-  const { t } = useTranslation('budgets')
+  const { t } = useTranslation(['budgets', 'categories'])
   const { category, monthly_limit: monthlyLimit, effectiveLimit, spent, percentage, status } = budget
-  const categoryName = category?.name ?? t('card.uncategorized')
+  const categoryName = category ? getCategoryDisplayName(category, t) : t('card.uncategorized')
   const fallbackIcon = categoryName[0] || '•'
   const cappedPercentage = Math.min(Math.max(percentage, 0), 100)
   const statusLabel = t(STATUS_LABEL_KEYS[status])

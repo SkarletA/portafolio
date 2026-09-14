@@ -4,6 +4,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 
 import enCommon from './locales/en/common.json'
 import enAuth from './locales/en/auth.json'
+import enCategories from './locales/en/categories.json'
 import enDashboard from './locales/en/dashboard.json'
 import enTransactions from './locales/en/transactions.json'
 import enBudgets from './locales/en/budgets.json'
@@ -13,6 +14,7 @@ import enSettings from './locales/en/settings.json'
 
 import esCommon from './locales/es/common.json'
 import esAuth from './locales/es/auth.json'
+import esCategories from './locales/es/categories.json'
 import esDashboard from './locales/es/dashboard.json'
 import esTransactions from './locales/es/transactions.json'
 import esBudgets from './locales/es/budgets.json'
@@ -34,6 +36,7 @@ i18n
       en: {
         common: enCommon,
         auth: enAuth,
+        categories: enCategories,
         dashboard: enDashboard,
         transactions: enTransactions,
         budgets: enBudgets,
@@ -44,6 +47,7 @@ i18n
       es: {
         common: esCommon,
         auth: esAuth,
+        categories: esCategories,
         dashboard: esDashboard,
         transactions: esTransactions,
         budgets: esBudgets,
@@ -55,7 +59,7 @@ i18n
     fallbackLng: 'en',
     supportedLngs: ['en', 'es'],
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'transactions', 'budgets', 'analytics', 'goals', 'settings'],
+    ns: ['common', 'auth', 'categories', 'dashboard', 'transactions', 'budgets', 'analytics', 'goals', 'settings'],
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

@@ -1,0 +1,16 @@
+{
+  "food": "Food",
+  "housing": "Housing",
+  "transportation": "Transportation",
+  "shopping": "Shopping",
+  "entertainment": "Entertainment",
+  "meat": "Meat",
+  "groceries": "Groceries",
+  "restaurants": "Restaurants",
+  "travels": "Travels",
+  "medicine": "Medicine",
+  "services": "Services",
+  "lunch": "Lunch",
+  "health": "Health",
+  "insurance": "Insurance"
+}

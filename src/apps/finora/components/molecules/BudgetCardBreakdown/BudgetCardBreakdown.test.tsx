@@ -4,9 +4,9 @@ import { BudgetCardBreakdown } from './BudgetCardBreakdown'
 import type { BudgetBreakdownItem } from '../../../hooks/useBudgets'
 
 const items: BudgetBreakdownItem[] = [
-  { category_id: 'market', name: 'Groceries', icon: 'shopping-cart', color: '#2563eb', amount: 300 },
-  { category_id: 'meat', name: 'Meat', icon: 'beef', color: '#7c3aed', amount: 150 },
-  { category_id: 'restaurants', name: 'Restaurants', icon: 'utensils', color: '#f59e0b', amount: 0 },
+  { category_id: 'market', name: 'Groceries', icon: 'shopping-cart', color: '#2563eb', translationKey: null, amount: 300 },
+  { category_id: 'meat', name: 'Meat', icon: 'beef', color: '#7c3aed', translationKey: null, amount: 150 },
+  { category_id: 'restaurants', name: 'Restaurants', icon: 'utensils', color: '#f59e0b', translationKey: null, amount: 0 },
 ]
 
 describe('BudgetCardBreakdown', () => {
@@ -59,7 +59,7 @@ describe('BudgetCardBreakdown', () => {
         categoryId="food"
         categoryName="Food"
         limit={100}
-        items={[{ category_id: 'market', name: 'Groceries', icon: null, color: null, amount: 300 }]}
+        items={[{ category_id: 'market', name: 'Groceries', icon: null, color: null, translationKey: null, amount: 300 }]}
       />
     )
 

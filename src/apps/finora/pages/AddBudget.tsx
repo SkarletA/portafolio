@@ -5,6 +5,7 @@ import { Button } from '../components/atoms/Button/Button'
 import { useCategories } from '../hooks/useCategories'
 import { useBudgets } from '../hooks/useBudgets'
 import { createBudget, type NewBudgetInput } from '../services/budgetsService'
+import { getCategoryDisplayName } from '../domain/category'
 import s from './AddBudget.module.css'
 
 interface FormErrors {
@@ -13,7 +14,7 @@ interface FormErrors {
 }
 
 export function AddBudget() {
-  const { t } = useTranslation(['budgets', 'common'])
+  const { t } = useTranslation(['budgets', 'common', 'categories'])
   const navigate = useNavigate()
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories()
   const { budgets, loading: budgetsLoading } = useBudgets()
@@ -111,7 +112,7 @@ export function AddBudget() {
             )}
             {availableCategories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.name}
+                {getCategoryDisplayName(category, t)}
               </option>
             ))}
           </select>

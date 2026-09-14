@@ -6,6 +6,17 @@ export interface Category {
   icon: string | null
   color: string | null
   parent_id: string | null
+  translationKey: string | null
+}
+
+// Seed categories carry a translationKey so their name follows the active
+// UI language; a user-created category has translationKey: null and always
+// displays its stored name as-is, since it's free text, not UI copy.
+export function getCategoryDisplayName(
+  category: Pick<Category, 'name' | 'translationKey'>,
+  t: (key: string) => string
+): string {
+  return category.translationKey ? t(`categories:${category.translationKey}`) : category.name
 }
 
 export interface CategoryGroup {

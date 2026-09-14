@@ -1,0 +1,16 @@
+{
+  "food": "Comida",
+  "housing": "Vivienda",
+  "transportation": "Transporte",
+  "shopping": "Compras",
+  "entertainment": "Entretenimiento",
+  "meat": "Carne",
+  "groceries": "Mercado",
+  "restaurants": "Restaurantes",
+  "travels": "Viajes",
+  "medicine": "Medicina",
+  "services": "Servicios",
+  "lunch": "Almuerzo",
+  "health": "Salud",
+  "insurance": "Seguros de Gastos"
+}

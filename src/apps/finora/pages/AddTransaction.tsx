@@ -16,7 +16,7 @@ import { useCategories } from '../hooks/useCategories'
 import { useTransaction } from '../hooks/useTransaction'
 import { createCategory } from '../services/categoriesService'
 import { createTransaction, updateTransaction, type NewTransactionInput } from '../services/transactionsService'
-import { buildCategoryTree } from '../domain/category'
+import { buildCategoryTree, getCategoryDisplayName } from '../domain/category'
 import { PAYMENT_METHODS, type TransactionType } from '../domain/transaction'
 import s from './AddTransaction.module.css'
 
@@ -67,7 +67,7 @@ interface AddTransactionProps {
 }
 
 export function AddTransaction({ mode }: AddTransactionProps) {
-  const { t } = useTranslation(['transactions', 'common'])
+  const { t } = useTranslation(['transactions', 'common', 'categories'])
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const { categories, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories()
@@ -510,7 +510,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             </option>
             {categoryGroups.map((group) => (
               <option key={group.parent.id} value={group.parent.id}>
-                {group.parent.name}
+                {getCategoryDisplayName(group.parent, t)}
               </option>
             ))}
             <option value={CREATE_NEW_CATEGORY_VALUE}>{t('transactions:form.createNewCategory')}</option>
@@ -543,11 +543,11 @@ export function AddTransaction({ mode }: AddTransactionProps) {
               data-testid="add-transaction-subcategory-select"
             >
               <option value={NONE_SUBCATEGORY_VALUE}>
-                {t('transactions:form.noneUseDirectly', { category: selectedGroup.parent.name })}
+                {t('transactions:form.noneUseDirectly', { category: getCategoryDisplayName(selectedGroup.parent, t) })}
               </option>
               {selectedGroup.children.map((child) => (
                 <option key={child.id} value={child.id}>
-                  {child.name}
+                  {getCategoryDisplayName(child, t)}
                 </option>
               ))}
               <option value={OTHERS_SUBCATEGORY_VALUE}>{t('transactions:form.createNewSubcategory')}</option>
@@ -600,7 +600,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 <option value="">{t('transactions:form.noneTopLevel')}</option>
                 {categoryGroups.map((group) => (
                   <option key={group.parent.id} value={group.parent.id}>
-                    {group.parent.name}
+                    {getCategoryDisplayName(group.parent, t)}
                   </option>
                 ))}
               </select>

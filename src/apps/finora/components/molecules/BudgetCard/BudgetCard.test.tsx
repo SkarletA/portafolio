@@ -9,7 +9,7 @@ const baseBudget: BudgetWithProgress = {
   category_id: 'c1',
   monthly_limit: 400,
   created_at: null,
-  category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b' },
+  category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b', translationKey: null },
   spent: 120,
   effectiveLimit: 400,
   percentage: 30,
@@ -73,7 +73,7 @@ describe('BudgetCard', () => {
   it('falls back to the category initial when the icon is not a known icon name', () => {
     render(
       <BudgetCard
-        budget={{ ...baseBudget, category: { id: 'c1', name: 'Food', icon: null, color: null } }}
+        budget={{ ...baseBudget, category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null } }}
       />
     )
 

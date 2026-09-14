@@ -8,10 +8,11 @@ import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
 import { Button } from '../components/atoms/Button/Button'
 import { Icon } from '../components/atoms/Icon/Icon'
 import { PAYMENT_METHODS } from '../domain/transaction'
+import { getCategoryDisplayName } from '../domain/category'
 import s from './Transactions.module.css'
 
 export function Transactions() {
-  const { t } = useTranslation(['transactions', 'common'])
+  const { t } = useTranslation(['transactions', 'common', 'categories'])
   const { transactions, loading, error, refetch } = useTransactions()
   const { categories, loading: categoriesLoading } = useCategories()
   const navigate = useNavigate()
@@ -93,7 +94,7 @@ export function Transactions() {
           <option value="">{t('transactions:filters.allCategories')}</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.name}
+              {getCategoryDisplayName(category, t)}
             </option>
           ))}
         </select>

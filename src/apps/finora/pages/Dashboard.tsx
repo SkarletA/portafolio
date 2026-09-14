@@ -10,6 +10,7 @@ import { useProfile } from '../hooks/useProfile'
 import { useTransactions } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
+import { getCategoryDisplayName } from '../domain/category'
 import { TransactionItem } from '../components/molecules/TransactionItem/TransactionItem'
 import { BudgetCard } from '../components/molecules/BudgetCard/BudgetCard'
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
@@ -35,7 +36,7 @@ function formatPercentage(value: number) {
 }
 
 export function Dashboard() {
-  const { t } = useTranslation(['dashboard', 'common'])
+  const { t } = useTranslation(['dashboard', 'common', 'categories'])
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
@@ -171,7 +172,7 @@ export function Dashboard() {
                       className={s.categoryDot}
                       style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                     />
-                    <span className={s.categoryName}>{category.name}</span>
+                    <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                     <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
                   </li>
                 ))}
