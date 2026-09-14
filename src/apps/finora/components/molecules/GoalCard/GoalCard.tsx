@@ -1,4 +1,5 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../../atoms/Icon/Icon'
 import { Button } from '../../atoms/Button/Button'
 import { addFundsToGoal } from '../../../services/goalsService'
@@ -23,6 +24,7 @@ const targetDateFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
+  const { t } = useTranslation(['goals', 'common'])
   const [isAddingFunds, setIsAddingFunds] = useState(false)
   const [amount, setAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +54,7 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
       const parsedAmount = Number(amount)
 
       if (!amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-        setError('Enter an amount greater than 0')
+        setError(t('common:validation.amountGreaterThanZero'))
         return
       }
 
@@ -71,7 +73,7 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
       setAmount('')
       onFundsAdded()
     },
-    [amount, goal.id, onFundsAdded]
+    [amount, goal.id, onFundsAdded, t]
   )
 
   return (
@@ -83,7 +85,9 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
         <div>
           <p className={s.name}>{goal.name}</p>
           {goal.target_date && (
-            <p className={s.targetDate}>Target: {targetDateFormatter.format(new Date(goal.target_date))}</p>
+            <p className={s.targetDate}>
+              {t('goals:card.targetDate', { date: targetDateFormatter.format(new Date(goal.target_date)) })}
+            </p>
           )}
         </div>
       </div>
@@ -99,13 +103,15 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
         aria-valuenow={cappedPercentage}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${goal.name} progress`}
+        aria-label={t('goals:card.progressAriaLabel', { name: goal.name })}
       >
         <div className={s.progressFill} style={{ width: `${cappedPercentage}%` }} />
       </div>
 
       <div className={s.footer}>
-        <span className={s.remaining}>{currencyFormatter.format(goal.remaining)} remaining</span>
+        <span className={s.remaining}>
+          {t('goals:card.remaining', { amount: currencyFormatter.format(goal.remaining) })}
+        </span>
         <span className={s.percentageBadge}>{Math.round(goal.percentage)}%</span>
       </div>
 
@@ -117,7 +123,7 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
           className={s.addFundsButton}
           onClick={handleAddFundsClick}
         >
-          Add funds
+          {t('goals:card.addFunds')}
         </Button>
       )}
 
@@ -128,11 +134,11 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
             inputMode="decimal"
             min="0"
             step="0.01"
-            placeholder="Amount"
+            placeholder={t('goals:card.amountPlaceholder')}
             value={amount}
             onChange={handleAmountChange}
             className={s.addFundsInput}
-            aria-label={`Amount to add to ${goal.name}`}
+            aria-label={t('goals:card.amountAriaLabel', { name: goal.name })}
             aria-invalid={!!error}
             data-testid={`goal-card-${goal.id}-amount-input`}
           />
@@ -144,7 +150,7 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
               className={s.actionButton}
               disabled={submitting}
             >
-              {submitting ? 'Adding…' : 'Confirm'}
+              {submitting ? t('common:buttons.adding') : t('common:buttons.confirm')}
             </Button>
             <Button
               id={`goal-card-${goal.id}-cancel-button`}
@@ -155,7 +161,7 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
               onClick={handleCancelClick}
               disabled={submitting}
             >
-              Cancel
+              {t('common:buttons.cancel')}
             </Button>
           </div>
           {error && (

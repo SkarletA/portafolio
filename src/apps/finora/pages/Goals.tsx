@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useGoals } from '../hooks/useGoals'
 import { GoalCard } from '../components/molecules/GoalCard/GoalCard'
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
@@ -7,6 +8,7 @@ import { Button } from '../components/atoms/Button/Button'
 import s from './Goals.module.css'
 
 export function Goals() {
+  const { t } = useTranslation('goals')
   const { goals, loading, error, refetch } = useGoals()
   const navigate = useNavigate()
 
@@ -18,11 +20,11 @@ export function Goals() {
     <section className={s.section}>
       <div className={s.header}>
         <div>
-          <h1 className={s.title}>Financial goals</h1>
-          <p className={s.subtitle}>Track progress toward what matters</p>
+          <h1 className={s.title}>{t('title')}</h1>
+          <p className={s.subtitle}>{t('subtitle')}</p>
         </div>
         <Button id="goals-new-button" data-testid="goals-new-button" onClick={handleNewGoalClick}>
-          New goal
+          {t('newGoal')}
         </Button>
       </div>
 
@@ -30,9 +32,9 @@ export function Goals() {
         loading={loading}
         error={error}
         isEmpty={goals.length === 0}
-        loadingLabel="Loading goals…"
-        errorMessage="We couldn't load your goals. Please try again later."
-        emptyMessage="You don't have any financial goals set up yet."
+        loadingLabel={t('list.loading')}
+        errorMessage={t('list.error')}
+        emptyMessage={t('list.empty')}
         skeletonCount={3}
         skeletonWrapClassName={s.skeletonWrap}
         skeletonItemClassName={s.skeletonCard}

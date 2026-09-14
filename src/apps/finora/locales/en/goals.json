@@ -1,1 +1,29 @@
-{}
+{
+  "title": "Financial goals",
+  "subtitle": "Track progress toward what matters",
+  "newGoal": "New goal",
+  "list": {
+    "loading": "Loading goals…",
+    "error": "We couldn't load your goals. Please try again later.",
+    "empty": "You don't have any financial goals set up yet."
+  },
+  "card": {
+    "targetDate": "Target: {{date}}",
+    "remaining": "{{amount}} remaining",
+    "progressAriaLabel": "{{name}} progress",
+    "addFunds": "Add funds",
+    "amountPlaceholder": "Amount",
+    "amountAriaLabel": "Amount to add to {{name}}"
+  },
+  "form": {
+    "title": "New goal",
+    "name": "Name",
+    "targetAmount": "Target amount",
+    "startingAmount": "Starting amount",
+    "targetDate": "Target date",
+    "saveGoal": "Save goal"
+  },
+  "validation": {
+    "targetAmountGreaterThanZero": "Enter a target amount greater than 0"
+  }
+}
