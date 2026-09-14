@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/atoms/Button/Button'
 import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
 import { PasswordStrengthHint } from '../components/molecules/PasswordStrengthHint/PasswordStrengthHint'
@@ -11,6 +12,7 @@ import type { SignUpMetadata } from '../services/authService'
 import s from './Register.module.css'
 
 export function Register() {
+  const { t } = useTranslation(['auth', 'common'])
   const { signUp } = useAuth()
   const [firstName, setFirstName] = useState('')
   const [firstNameError, setFirstNameError] = useState<string | null>(null)
@@ -27,17 +29,31 @@ export function Register() {
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password])
 
-  const handleFirstNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value
-    setFirstName(value)
-    setFirstNameError(isValidName(value) ? null : "Name shouldn't contain numbers or symbols")
-  }, [])
+  const handleFirstNameChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setFirstName(value)
+      setFirstNameError(
+        isValidName(value)
+          ? null
+          : t('common:validation.invalidNameField', { field: t('common:profileFields.firstName') })
+      )
+    },
+    [t]
+  )
 
-  const handleLastNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value
-    setLastName(value)
-    setLastNameError(isValidName(value) ? null : "Last name shouldn't contain numbers or symbols")
-  }, [])
+  const handleLastNameChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setLastName(value)
+      setLastNameError(
+        isValidName(value)
+          ? null
+          : t('common:validation.invalidNameField', { field: t('common:profileFields.lastName') })
+      )
+    },
+    [t]
+  )
 
   const handleEmailChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setEmail(event.target.value)
@@ -64,12 +80,12 @@ export function Register() {
       event.preventDefault()
 
       if (!isValidName(firstName) || !isValidName(lastName)) {
-        setError('Fix the highlighted fields before continuing')
+        setError(t('common:validation.fixHighlightedFields'))
         return
       }
 
       if (!passwordStrength.isValid) {
-        setError('Your password does not meet the requirements below')
+        setError(t('auth:shared.passwordRequirementsNotMet'))
         return
       }
 
@@ -98,26 +114,26 @@ export function Register() {
 
       setConfirmationSent(true)
     },
-    [firstName, lastName, email, phone, nationality, dateOfBirth, password, passwordStrength.isValid, signUp]
+    [firstName, lastName, email, phone, nationality, dateOfBirth, password, passwordStrength.isValid, signUp, t]
   )
 
   if (confirmationSent) {
     return (
       <section className={s.sectionCentered}>
-        <h1 className={s.title}>Check your email</h1>
-        <p className={s.confirmationText}>We sent a confirmation email to {email}. Check your inbox.</p>
+        <h1 className={s.title}>{t('auth:shared.checkYourEmailTitle')}</h1>
+        <p className={s.confirmationText}>{t('auth:register.confirmationSentTo', { email })}</p>
       </section>
     )
   }
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>Create account</h1>
+      <h1 className={s.title}>{t('auth:register.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form}>
         <div className={s.fieldRow}>
           <label className={s.field}>
-            First name
+            {t('common:profileFields.firstName')}
             <input
               type="text"
               required
@@ -134,7 +150,7 @@ export function Register() {
           </label>
 
           <label className={s.field}>
-            Last name
+            {t('common:profileFields.lastName')}
             <input
               type="text"
               required
@@ -152,7 +168,7 @@ export function Register() {
         </div>
 
         <label className={s.field}>
-          Email
+          {t('common:profileFields.email')}
           <input
             type="email"
             required
@@ -165,7 +181,7 @@ export function Register() {
 
         <div className={s.fieldRow}>
           <label className={s.field}>
-            Phone <span className={s.hint}>(optional)</span>
+            {t('common:profileFields.phone')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
             <PhoneInput
               value={phone}
               onChange={handlePhoneChange}
@@ -175,14 +191,15 @@ export function Register() {
           </label>
 
           <label className={s.field}>
-            Nationality <span className={s.hint}>(optional)</span>
+            {t('common:profileFields.nationality')}{' '}
+            <span className={s.hint}>{t('common:profileFields.optional')}</span>
             <select
               value={nationality}
               onChange={handleNationalityChange}
               className={s.select}
               data-testid="register-nationality-select"
             >
-              <option value="">Select a country</option>
+              <option value="">{t('common:profileFields.selectCountry')}</option>
               {COUNTRIES.map((country) => (
                 <option key={country} value={country}>
                   {country}
@@ -193,7 +210,8 @@ export function Register() {
         </div>
 
         <label className={s.field}>
-          Date of birth <span className={s.hint}>(optional)</span>
+          {t('common:profileFields.dateOfBirth')}{' '}
+          <span className={s.hint}>{t('common:profileFields.optional')}</span>
           <input
             type="date"
             value={dateOfBirth}
@@ -204,7 +222,7 @@ export function Register() {
         </label>
 
         <PasswordInput
-          label="Password"
+          label={t('auth:shared.password')}
           value={password}
           onChange={handlePasswordChange}
           testId="register-password-input"
@@ -215,12 +233,15 @@ export function Register() {
         {error && <p className={s.error}>{error}</p>}
 
         <Button id="register-submit-button" data-testid="register-submit-button" type="submit" disabled={submitting}>
-          {submitting ? 'Creating account…' : 'Create account'}
+          {submitting ? t('auth:register.submitting') : t('auth:register.submit')}
         </Button>
       </form>
 
       <p className={s.footer}>
-        Already have an account? <Link to="/finora/login" data-testid="register-login-link">Sign in</Link>
+        {t('auth:register.hasAccount')}{' '}
+        <Link to="/finora/login" data-testid="register-login-link">
+          {t('auth:register.signIn')}
+        </Link>
       </p>
     </section>
   )

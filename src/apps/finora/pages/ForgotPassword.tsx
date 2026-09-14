@@ -1,10 +1,12 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/atoms/Button/Button'
 import { useAuth } from '../context/AuthContext'
 import s from './ForgotPassword.module.css'
 
 export function ForgotPassword() {
+  const { t } = useTranslation(['auth', 'common'])
   const { requestPasswordReset } = useAuth()
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -38,21 +40,19 @@ export function ForgotPassword() {
   if (resetSent) {
     return (
       <section className={s.sectionCentered}>
-        <h1 className={s.title}>Revisa tu correo</h1>
-        <p className={s.confirmationText}>
-          Si existe una cuenta con {email}, te enviamos un correo para restablecer tu contraseña.
-        </p>
+        <h1 className={s.title}>{t('auth:shared.checkYourEmailTitle')}</h1>
+        <p className={s.confirmationText}>{t('auth:forgotPassword.resetEmailSentTo', { email })}</p>
       </section>
     )
   }
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>Recuperar contraseña</h1>
+      <h1 className={s.title}>{t('auth:forgotPassword.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form}>
         <label className={s.field}>
-          Email
+          {t('common:profileFields.email')}
           <input
             type="email"
             required
@@ -71,12 +71,14 @@ export function ForgotPassword() {
           type="submit"
           disabled={submitting}
         >
-          {submitting ? 'Enviando…' : 'Enviar instrucciones'}
+          {submitting ? t('auth:forgotPassword.submitting') : t('auth:forgotPassword.submit')}
         </Button>
       </form>
 
       <p className={s.footer}>
-        <Link to="/finora/login" data-testid="forgot-password-login-link">Volver a iniciar sesión</Link>
+        <Link to="/finora/login" data-testid="forgot-password-login-link">
+          {t('auth:forgotPassword.backToSignIn')}
+        </Link>
       </p>
     </section>
   )

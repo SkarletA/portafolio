@@ -1,4 +1,5 @@
 import cn from 'clsx'
+import { useTranslation } from 'react-i18next'
 import { getPasswordStrength } from '../../../domain/password'
 import s from './PasswordStrengthHint.module.css'
 
@@ -6,21 +7,17 @@ interface PasswordStrengthHintProps {
   password: string
 }
 
-const REQUIREMENTS = [
-  { key: 'minLength', label: 'At least 8 characters' },
-  { key: 'hasUppercase', label: 'One uppercase letter' },
-  { key: 'hasNumber', label: 'One number' },
-  { key: 'hasSymbol', label: 'One symbol (e.g. ! @ # $ %)' },
-] as const
+const REQUIREMENTS = ['minLength', 'hasUppercase', 'hasNumber', 'hasSymbol'] as const
 
 export function PasswordStrengthHint({ password }: PasswordStrengthHintProps) {
+  const { t } = useTranslation('auth')
   const strength = getPasswordStrength(password)
 
   return (
     <ul className={s.list}>
       {REQUIREMENTS.map((requirement) => (
-        <li key={requirement.key} className={cn(s.item, strength[requirement.key] && s.met)}>
-          {requirement.label}
+        <li key={requirement} className={cn(s.item, strength[requirement] && s.met)}>
+          {t(`passwordStrength.${requirement}`)}
         </li>
       ))}
     </ul>

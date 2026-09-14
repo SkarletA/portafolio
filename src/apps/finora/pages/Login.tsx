@@ -1,11 +1,13 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/atoms/Button/Button'
 import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
 import { useAuth } from '../context/AuthContext'
 import s from './Login.module.css'
 
 export function Login() {
+  const { t } = useTranslation(['auth', 'common'])
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -33,25 +35,23 @@ export function Login() {
 
       if (signInError) {
         setError(
-          signInError.message === 'Email not confirmed'
-            ? 'Confirm your email before signing in'
-            : signInError.message
+          signInError.message === 'Email not confirmed' ? t('auth:login.emailNotConfirmed') : signInError.message
         )
         return
       }
 
       navigate('/finora')
     },
-    [email, password, signIn, navigate]
+    [email, password, signIn, navigate, t]
   )
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>Sign in</h1>
+      <h1 className={s.title}>{t('auth:login.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form}>
         <label className={s.field}>
-          Email
+          {t('common:profileFields.email')}
           <input
             type="email"
             required
@@ -63,7 +63,7 @@ export function Login() {
         </label>
 
         <PasswordInput
-          label="Password"
+          label={t('auth:shared.password')}
           value={password}
           onChange={handlePasswordChange}
           testId="login-password-input"
@@ -73,18 +73,21 @@ export function Login() {
         {error && <p className={s.error}>{error}</p>}
 
         <Button id="login-submit-button" data-testid="login-submit-button" type="submit" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Sign in'}
+          {submitting ? t('auth:login.submitting') : t('auth:login.submit')}
         </Button>
       </form>
 
       <p className={s.footer}>
         <Link to="/finora/forgot-password" data-testid="login-forgot-password-link">
-          Forgot your password?
+          {t('auth:login.forgotPassword')}
         </Link>
       </p>
 
       <p className={s.footer}>
-        Don&apos;t have an account? <Link to="/finora/register" data-testid="login-register-link">Create account</Link>
+        {t('auth:login.noAccount')}{' '}
+        <Link to="/finora/register" data-testid="login-register-link">
+          {t('auth:login.createAccount')}
+        </Link>
       </p>
     </section>
   )
