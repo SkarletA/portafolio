@@ -1,1 +1,49 @@
-{}
+{
+  "title": "Settings",
+  "subtitle": "Manage your account and preferences",
+  "profile": {
+    "title": "Profile",
+    "uploading": "Uploading…",
+    "changePhoto": "Change photo",
+    "saveSuccess": "Your profile was updated."
+  },
+  "preferences": {
+    "title": "Preferences",
+    "weeklySummary": {
+      "label": "Weekly summary email",
+      "description": "Get a recap of income and spending every Monday"
+    },
+    "budgetAlerts": {
+      "label": "Budget alerts",
+      "description": "Notify me when a category is close to its limit"
+    },
+    "darkMode": {
+      "label": "Dark mode",
+      "description": "Switch the interface to a darker palette"
+    },
+    "language": {
+      "label": "Language",
+      "description": "Choose the language used across Finora",
+      "en": "EN",
+      "es": "ES"
+    }
+  },
+  "security": {
+    "title": "Security",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "changePassword": "Change password",
+    "saveSuccess": "Your password was updated."
+  },
+  "dangerZone": {
+    "title": "Danger zone",
+    "deleteAccount": "Delete account",
+    "deleteAccountDescription": "Permanently remove your Finora account and data",
+    "delete": "Delete",
+    "modalTitle": "Delete your account?",
+    "modalTextBefore": "This permanently deletes your account and all of your data. This can't be undone. Type",
+    "modalTextAfter": "or your email address to confirm.",
+    "deleteMyAccount": "Delete my account"
+  }
+}
