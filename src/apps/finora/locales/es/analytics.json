@@ -1,1 +1,45 @@
-{}
+{
+  "title": "Analíticas",
+  "subtitle": "Entiende en qué se va tu dinero",
+  "period": {
+    "ariaLabel": "Periodo de análisis",
+    "daily": "Diario",
+    "monthly": "Mensual",
+    "yearly": "Anual"
+  },
+  "state": {
+    "loading": "Cargando analíticas…",
+    "error": "No pudimos cargar tus analíticas. Inténtalo de nuevo más tarde.",
+    "empty": "Aún no hay transacciones registradas en este periodo."
+  },
+  "stats": {
+    "totalSpent": "Total gastado",
+    "avgPerDay": "Promedio diario",
+    "savingsRate": "Tasa de ahorro"
+  },
+  "chart": {
+    "title": "Gastos a lo largo del tiempo",
+    "empty": "Aún no hay gastos registrados en este periodo."
+  },
+  "categoryBreakdown": {
+    "title": "Gastos por categoría",
+    "empty": "No hay gastos registrados en este periodo."
+  },
+  "topCategories": {
+    "title": "Principales categorías de gasto",
+    "empty": "No hay gastos registrados en este periodo."
+  },
+  "comparison": {
+    "title": "Comparación",
+    "noPreviousData": "No hay datos del periodo anterior para comparar.",
+    "new": "Nuevo",
+    "insights": {
+      "categoryMore": "Gastaste {{percent}}% más en {{category}} que en el periodo anterior.",
+      "categoryLess": "Gastaste {{percent}}% menos en {{category}} que en el periodo anterior.",
+      "categorySame": "Tu gasto en {{category}} se mantuvo igual que en el periodo anterior.",
+      "totalMore": "En general, gastaste {{percent}}% más que en el periodo anterior.",
+      "totalLess": "En general, gastaste {{percent}}% menos que en el periodo anterior.",
+      "totalSame": "Tu gasto total se mantuvo igual que en el periodo anterior."
+    }
+  }
+}

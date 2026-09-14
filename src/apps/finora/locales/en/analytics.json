@@ -1,1 +1,45 @@
-{}
+{
+  "title": "Analytics",
+  "subtitle": "Understand where your money goes",
+  "period": {
+    "ariaLabel": "Analytics period",
+    "daily": "Daily",
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
+  "state": {
+    "loading": "Loading analytics…",
+    "error": "We couldn't load your analytics. Please try again later.",
+    "empty": "No transactions recorded for this period yet."
+  },
+  "stats": {
+    "totalSpent": "Total spent",
+    "avgPerDay": "Average per day",
+    "savingsRate": "Savings rate"
+  },
+  "chart": {
+    "title": "Spending over time",
+    "empty": "No expenses recorded yet for this period."
+  },
+  "categoryBreakdown": {
+    "title": "Spending by category",
+    "empty": "No spending recorded for this period."
+  },
+  "topCategories": {
+    "title": "Top spending categories",
+    "empty": "No spending recorded for this period."
+  },
+  "comparison": {
+    "title": "Comparison",
+    "noPreviousData": "No previous period data to compare.",
+    "new": "New",
+    "insights": {
+      "categoryMore": "You spent {{percent}}% more on {{category}} than the previous period.",
+      "categoryLess": "You spent {{percent}}% less on {{category}} than the previous period.",
+      "categorySame": "Your spending on {{category}} stayed the same as the previous period.",
+      "totalMore": "Overall, you spent {{percent}}% more than the previous period.",
+      "totalLess": "Overall, you spent {{percent}}% less than the previous period.",
+      "totalSame": "Your total spending stayed the same as the previous period."
+    }
+  }
+}
