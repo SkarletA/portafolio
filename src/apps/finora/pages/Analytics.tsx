@@ -10,8 +10,12 @@ import s from './Analytics.module.css'
 
 const TOP_CATEGORIES_LIMIT = 3
 const TOP_CHANGES_LIMIT = 2
-const NEUTRAL_CATEGORY_COLOR = '#94a3b8'
-const LINE_COLOR = '#2563eb'
+// CSS custom properties, not literal colors, so the chart follows the
+// active theme (light/dark) - both recharts' SVG attributes and inline
+// style backgroundColor resolve var(...) against the cascade at paint time.
+const NEUTRAL_CATEGORY_COLOR = 'var(--color-finora-icon-fallback-bg)'
+const LINE_COLOR = 'var(--color-finora-primary)'
+const GRID_COLOR = 'var(--color-finora-surface-muted)'
 
 const PERIOD_OPTIONS: { value: PeriodType; label: string }[] = [
   { value: 'day', label: 'Daily' },
@@ -177,7 +181,7 @@ export function Analytics() {
                   <div className={s.chartWrap}>
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_COLOR} />
                         <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
                         <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={formatChartValue} />
                         <Tooltip formatter={formatChartValue} />

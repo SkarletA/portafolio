@@ -21,7 +21,7 @@
 }
 
 .searchField {
-  @apply flex min-w-50 max-w-80 flex-1 items-center gap-2 rounded-lg border border-finora-border bg-white px-3 py-2.5;
+  @apply flex min-w-50 max-w-80 flex-1 items-center gap-2 rounded-lg border border-finora-border bg-finora-surface px-3 py-2.5;
 }
 
 .searchInput {
@@ -29,7 +29,7 @@
 }
 
 .select {
-  @apply rounded-lg border border-finora-border bg-white py-2.5 pl-3 pr-8 text-sm font-medium text-finora-ink;
+  @apply rounded-lg border border-finora-border bg-finora-surface py-2.5 pl-3 pr-8 text-sm font-medium text-finora-ink;
 }
 
 .addIcon {
@@ -41,7 +41,7 @@
 }
 
 .card {
-  @apply rounded-xl border border-finora-border bg-white px-2 py-1 shadow-sm sm:px-5;
+  @apply rounded-xl border border-finora-border bg-finora-surface px-2 py-1 shadow-sm sm:px-5;
 }
 
 .tableHead {
@@ -57,7 +57,7 @@
 }
 
 .skeletonRow {
-  @apply h-12 animate-pulse rounded-lg bg-slate-100;
+  @apply h-12 animate-pulse rounded-lg bg-finora-surface-muted;
 }
 
 .stateMessage {

@@ -5,7 +5,7 @@
 }
 
 .prefix {
-  @apply flex items-center bg-slate-50 px-3 text-sm font-medium text-finora-ink-muted;
+  @apply flex items-center bg-finora-surface-muted px-3 text-sm font-medium text-finora-ink-muted;
 }
 
 .input {

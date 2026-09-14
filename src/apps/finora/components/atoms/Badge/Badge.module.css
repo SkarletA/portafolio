@@ -5,9 +5,9 @@
 }
 
 .success {
-  @apply bg-green-50 text-finora-success;
+  @apply bg-finora-success-bg text-finora-success;
 }
 
 .neutral {
-  @apply bg-slate-100 text-finora-ink-muted;
+  @apply bg-finora-surface-muted text-finora-ink-muted;
 }

@@ -17,7 +17,7 @@
 }
 
 .periodPill {
-  @apply hidden items-center gap-2 rounded-full border border-finora-border bg-white px-4 py-2 text-sm font-medium text-finora-ink-muted sm:inline-flex;
+  @apply hidden items-center gap-2 rounded-full border border-finora-border bg-finora-surface px-4 py-2 text-sm font-medium text-finora-ink-muted sm:inline-flex;
 }
 
 .statGrid {
@@ -29,7 +29,7 @@
 }
 
 .card {
-  @apply rounded-xl border border-finora-border bg-white p-5 shadow-sm;
+  @apply rounded-xl border border-finora-border bg-finora-surface p-5 shadow-sm;
 }
 
 .chartCard {
@@ -81,7 +81,7 @@
 }
 
 .topCategoryRank {
-  @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-finora-ink-muted;
+  @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-finora-surface-muted text-xs font-bold text-finora-ink-muted;
 }
 
 .skeletonWrap {
@@ -89,15 +89,15 @@
 }
 
 .skeletonCard {
-  @apply h-24 animate-pulse rounded-xl bg-slate-100;
+  @apply h-24 animate-pulse rounded-xl bg-finora-surface-muted;
 }
 
 .stateMessage {
-  @apply rounded-xl border border-finora-border bg-white py-10 text-center text-sm text-finora-ink-muted;
+  @apply rounded-xl border border-finora-border bg-finora-surface py-10 text-center text-sm text-finora-ink-muted;
 }
 
 .periodToggle {
-  @apply mb-6 inline-flex gap-1 rounded-lg bg-slate-100 p-1;
+  @apply mb-6 inline-flex gap-1 rounded-lg bg-finora-surface-muted p-1;
 }
 
 .periodButton {
@@ -105,7 +105,7 @@
 }
 
 .periodButtonActive {
-  @apply bg-white text-finora-ink shadow-sm;
+  @apply bg-finora-surface text-finora-ink shadow-sm;
 }
 
 .insightList {

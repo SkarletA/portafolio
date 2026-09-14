@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEv
 import { useNavigate } from 'react-router-dom'
 import cn from 'clsx'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { useProfile } from '../hooks/useProfile'
 import { updateProfile, uploadAvatar } from '../services/profilesService'
 import { Avatar } from '../components/atoms/Avatar/Avatar'
@@ -27,16 +28,11 @@ const PREFERENCE_ITEMS = [
     description: 'Notify me when a category is close to its limit',
     defaultOn: true,
   },
-  {
-    key: 'dark-mode',
-    label: 'Dark mode',
-    description: 'Switch the interface to a darker palette',
-    defaultOn: false,
-  },
 ]
 
 export function Settings() {
   const { user, changePassword, deleteAccount, signOut } = useAuth()
+  const { theme, setTheme } = useTheme()
   const { profile, refetch: refetchProfile } = useProfile()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -226,6 +222,10 @@ export function Settings() {
     },
     [currentPassword, newPassword, confirmNewPassword, changePassword]
   )
+
+  const handleThemeToggle = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }, [theme, setTheme])
 
   const handleOpenDeleteModal = useCallback(() => {
     setIsDeleteModalOpen(true)
@@ -429,6 +429,20 @@ export function Settings() {
               />
             </div>
           ))}
+          <div className={s.row}>
+            <div>
+              <p className={s.rowLabel}>Dark mode</p>
+              <p className={s.rowSub}>Switch the interface to a darker palette</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={theme === 'dark'}
+              onClick={handleThemeToggle}
+              className={cn(s.switch, theme === 'dark' && s.switchOn)}
+              data-testid="settings-preference-dark-mode-toggle"
+            />
+          </div>
         </div>
 
         <div className={s.block}>
@@ -470,16 +484,6 @@ export function Settings() {
               {changingPassword ? 'Updating…' : 'Change password'}
             </Button>
           </form>
-        </div>
-
-        <div className={s.block}>
-          <h2 className={s.blockTitle}>Linked accounts</h2>
-          <p className={s.stateMessage}>Not available yet.</p>
-        </div>
-
-        <div className={s.block}>
-          <h2 className={s.blockTitle}>Billing</h2>
-          <p className={s.stateMessage}>Not available yet.</p>
         </div>
 
         <div className={cn(s.block, s.dangerBlock)}>

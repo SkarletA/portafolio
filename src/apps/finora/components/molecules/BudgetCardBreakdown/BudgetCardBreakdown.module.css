@@ -1,7 +1,7 @@
 @reference '../../../styles/theme.css';
 
 .wrapper {
-  @apply rounded-b-xl border border-t-0 border-finora-border bg-white p-3;
+  @apply rounded-b-xl border border-t-0 border-finora-border bg-finora-surface p-3;
 }
 
 .toggle {
@@ -33,7 +33,7 @@
 }
 
 .iconFallbackBg {
-  @apply bg-slate-400 text-finora-ink-muted;
+  @apply bg-finora-icon-fallback-bg text-finora-ink-muted;
 }
 
 .categoryIcon {
@@ -49,7 +49,7 @@
 }
 
 .progressTrack {
-  @apply h-1.5 w-full overflow-hidden rounded-full bg-slate-100;
+  @apply h-1.5 w-full overflow-hidden rounded-full bg-finora-surface-muted;
 }
 
 .progressFill {

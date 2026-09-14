@@ -17,7 +17,9 @@ import s from './Dashboard.module.css'
 const RECENT_TRANSACTIONS_LIMIT = 5
 const BUDGETS_PREVIEW_LIMIT = 3
 const TOP_CATEGORIES_LIMIT = 3
-const NEUTRAL_CATEGORY_COLOR = '#94a3b8'
+// A CSS custom property, not a literal color, so the fallback dot follows
+// the active theme (light/dark).
+const NEUTRAL_CATEGORY_COLOR = 'var(--color-finora-icon-fallback-bg)'
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',

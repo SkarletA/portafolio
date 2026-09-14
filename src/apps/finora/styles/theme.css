@@ -14,5 +14,36 @@
   --color-finora-danger: #dc2626;
   --color-finora-accent: #3ddc97;
 
+  --color-finora-surface: #ffffff;
+  --color-finora-surface-muted: #f1f5f9;
+  --color-finora-icon-fallback-bg: #94a3b8;
+  --color-finora-success-bg: #f0fdf4;
+  --color-finora-danger-bg: #fef2f2;
+  --color-finora-warning: #f59e0b;
+  --color-finora-warning-bg: #fffbeb;
+
   --tracking-finora-eyebrow: 0.2em;
+}
+
+/* Dark mode overrides - a plain rule (not inside @theme), so it can target a
+   data-theme attribute on a descendant element (Finora's own AppShell root,
+   not <html>/<body> - keeps the portfolio's separate styling boundary
+   untouched) rather than only :root. Every utility generated from the
+   tokens above compiles to `var(--color-finora-x)`, so redefining the
+   variable here is all that's needed - no component CSS is duplicated. */
+[data-theme='dark'] {
+  --color-finora-bg: #020617;
+  --color-finora-surface: #0f172a;
+  --color-finora-surface-muted: #1e293b;
+  --color-finora-border: #334155;
+  --color-finora-ink: #f8fafc;
+  --color-finora-ink-muted: #94a3b8;
+  --color-finora-icon-fallback-bg: #475569;
+  --color-finora-primary: #3b82f6;
+  --color-finora-success: #22c55e;
+  --color-finora-success-bg: rgb(34 197 94 / 0.15);
+  --color-finora-danger: #ef4444;
+  --color-finora-danger-bg: rgb(239 68 68 / 0.15);
+  --color-finora-warning: #fbbf24;
+  --color-finora-warning-bg: rgb(251 191 36 / 0.15);
 }

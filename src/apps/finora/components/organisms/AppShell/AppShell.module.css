@@ -5,7 +5,7 @@
 }
 
 .mobileHeader {
-  @apply flex items-center gap-2 border-b border-finora-border bg-white px-4 py-4 text-[15px] font-bold sm:hidden;
+  @apply flex items-center gap-2 border-b border-finora-border bg-finora-surface px-4 py-4 text-[15px] font-bold sm:hidden;
 }
 
 .brandMark {
@@ -29,7 +29,7 @@
 }
 
 .bottomNav {
-  @apply fixed inset-x-0 bottom-0 z-50 flex items-center border-t border-finora-border bg-white px-2 py-2 sm:hidden;
+  @apply fixed inset-x-0 bottom-0 z-50 flex items-center border-t border-finora-border bg-finora-surface px-2 py-2 sm:hidden;
 }
 
 .addButton {

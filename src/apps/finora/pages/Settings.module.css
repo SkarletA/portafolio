@@ -21,7 +21,7 @@
 }
 
 .block {
-  @apply rounded-xl border border-finora-border bg-white p-5 shadow-sm;
+  @apply rounded-xl border border-finora-border bg-finora-surface p-5 shadow-sm;
 }
 
 .blockTitle {
@@ -53,7 +53,7 @@
 }
 
 .input:disabled {
-  @apply cursor-not-allowed bg-slate-50 text-finora-ink-muted;
+  @apply cursor-not-allowed bg-finora-surface-muted text-finora-ink-muted;
 }
 
 .select {
@@ -81,15 +81,11 @@
 }
 
 .switch {
-  @apply relative h-5.5 w-9.5 shrink-0 rounded-full bg-slate-200 transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-4.5 after:w-4.5 after:rounded-full after:bg-white after:shadow after:transition-all;
+  @apply relative h-5.5 w-9.5 shrink-0 rounded-full bg-finora-border transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-4.5 after:w-4.5 after:rounded-full after:bg-finora-surface after:shadow after:transition-all;
 }
 
 .switchOn {
   @apply bg-finora-primary after:left-4.5;
-}
-
-.stateMessage {
-  @apply text-sm text-finora-ink-muted;
 }
 
 .dangerBlock {
@@ -105,7 +101,7 @@
 }
 
 .modal {
-  @apply w-full max-w-sm rounded-xl bg-white p-6 shadow-lg;
+  @apply w-full max-w-sm rounded-xl bg-finora-surface p-6 shadow-lg;
 }
 
 .modalTitle {

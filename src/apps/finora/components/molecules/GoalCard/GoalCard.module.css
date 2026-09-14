@@ -1,7 +1,7 @@
 @reference '../../../styles/theme.css';
 
 .card {
-  @apply flex flex-col rounded-xl border border-finora-border bg-white p-5 shadow-sm;
+  @apply flex flex-col rounded-xl border border-finora-border bg-finora-surface p-5 shadow-sm;
 }
 
 .top {
@@ -37,7 +37,7 @@
 }
 
 .progressTrack {
-  @apply mb-2 h-2 w-full overflow-hidden rounded-full bg-slate-100;
+  @apply mb-2 h-2 w-full overflow-hidden rounded-full bg-finora-surface-muted;
 }
 
 .progressFill {

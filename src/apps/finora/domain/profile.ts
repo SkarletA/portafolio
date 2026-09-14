@@ -1,3 +1,5 @@
+export type Theme = 'light' | 'dark'
+
 export interface Profile {
   userId: string
   firstName: string | null
@@ -6,6 +8,7 @@ export interface Profile {
   nationality: string | null
   dateOfBirth: string | null
   avatarUrl: string | null
+  theme: Theme
 }
 
 export interface ProfileRow {
@@ -16,6 +19,7 @@ export interface ProfileRow {
   nationality: string | null
   date_of_birth: string | null
   avatar_url: string | null
+  theme: Theme
 }
 
 export function toProfile(row: ProfileRow): Profile {
@@ -27,6 +31,7 @@ export function toProfile(row: ProfileRow): Profile {
     nationality: row.nationality,
     dateOfBirth: row.date_of_birth,
     avatarUrl: row.avatar_url,
+    theme: row.theme,
   }
 }
 
