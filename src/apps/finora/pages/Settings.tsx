@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEv
 import { useNavigate } from 'react-router-dom'
 import cn from 'clsx'
 import { useAuth } from '../context/AuthContext'
+import { useProfile } from '../hooks/useProfile'
+import { updateProfile, uploadAvatar } from '../services/profilesService'
+import { Avatar } from '../components/atoms/Avatar/Avatar'
 import { Button } from '../components/atoms/Button/Button'
+import { COUNTRIES } from '../domain/profile'
 import s from './Settings.module.css'
 
 const DELETE_CONFIRMATION_KEYWORD = 'DELETE'
@@ -30,20 +34,20 @@ const PREFERENCE_ITEMS = [
 ]
 
 export function Settings() {
-  const { user, updateProfile, updateEmail, uploadAvatar, changePassword, deleteAccount, signOut } = useAuth()
+  const { user, changePassword, deleteAccount, signOut } = useAuth()
+  const { profile, refetch: refetchProfile } = useProfile()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const deleteInputRef = useRef<HTMLInputElement>(null)
 
-  const [fullName, setFullName] = useState(user?.fullName ?? '')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [nationality, setNationality] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState(false)
-
-  const [email, setEmail] = useState(user?.email ?? '')
-  const [savingEmail, setSavingEmail] = useState(false)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [emailPendingConfirmation, setEmailPendingConfirmation] = useState<string | null>(null)
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
@@ -60,17 +64,45 @@ export function Settings() {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const initials = (user?.fullName || user?.email || '?')[0]?.toUpperCase() ?? '?'
   const canConfirmDelete =
     deleteConfirmationText.trim() === DELETE_CONFIRMATION_KEYWORD ||
     (!!user?.email && deleteConfirmationText.trim().toLowerCase() === user.email.toLowerCase())
 
   useEffect(() => {
+    if (!profile) return
+    setFirstName(profile.firstName ?? '')
+    setLastName(profile.lastName ?? '')
+    setPhone(profile.phone ?? '')
+    setNationality(profile.nationality ?? '')
+    setDateOfBirth(profile.dateOfBirth ?? '')
+  }, [profile])
+
+  useEffect(() => {
     if (isDeleteModalOpen) deleteInputRef.current?.focus()
   }, [isDeleteModalOpen])
 
-  const handleFullNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setFullName(event.target.value)
+  const handleFirstNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setFirstName(event.target.value)
+    setProfileSuccess(false)
+  }, [])
+
+  const handleLastNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setLastName(event.target.value)
+    setProfileSuccess(false)
+  }, [])
+
+  const handlePhoneChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setPhone(event.target.value)
+    setProfileSuccess(false)
+  }, [])
+
+  const handleNationalityChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
+    setNationality(event.target.value)
+    setProfileSuccess(false)
+  }, [])
+
+  const handleDateOfBirthChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setDateOfBirth(event.target.value)
     setProfileSuccess(false)
   }, [])
 
@@ -81,7 +113,13 @@ export function Settings() {
       setProfileError(null)
       setProfileSuccess(false)
 
-      const { error } = await updateProfile({ fullName: fullName.trim() })
+      const { error } = await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+        nationality,
+        dateOfBirth,
+      })
 
       setSavingProfile(false)
 
@@ -91,38 +129,9 @@ export function Settings() {
       }
 
       setProfileSuccess(true)
+      refetchProfile()
     },
-    [fullName, updateProfile]
-  )
-
-  const handleEmailChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setEmail(event.target.value)
-    setEmailPendingConfirmation(null)
-  }, [])
-
-  const handleSaveEmail = useCallback(
-    async (event: FormEvent) => {
-      event.preventDefault()
-
-      const trimmedEmail = email.trim()
-      if (!trimmedEmail || trimmedEmail === user?.email) return
-
-      setSavingEmail(true)
-      setEmailError(null)
-      setEmailPendingConfirmation(null)
-
-      const { error } = await updateEmail(trimmedEmail)
-
-      setSavingEmail(false)
-
-      if (error) {
-        setEmailError(error.message)
-        return
-      }
-
-      setEmailPendingConfirmation(trimmedEmail)
-    },
-    [email, user?.email, updateEmail]
+    [firstName, lastName, phone, nationality, dateOfBirth, refetchProfile]
   )
 
   const handleChangePhotoClick = useCallback(() => {
@@ -144,9 +153,12 @@ export function Settings() {
 
       if (error) {
         setAvatarError(error.message)
+        return
       }
+
+      refetchProfile()
     },
-    [uploadAvatar]
+    [refetchProfile]
   )
 
   const handleCurrentPasswordChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
@@ -245,11 +257,14 @@ export function Settings() {
           <h2 className={s.blockTitle}>Profile</h2>
 
           <div className={s.profileRow}>
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" className={s.avatarImage} />
-            ) : (
-              <div className={s.avatarFallback}>{initials}</div>
-            )}
+            <Avatar
+              userId={user?.id ?? ''}
+              avatarUrl={profile?.avatarUrl}
+              firstName={profile?.firstName}
+              lastName={profile?.lastName}
+              email={user?.email}
+              size="lg"
+            />
             <input
               ref={fileInputRef}
               type="file"
@@ -274,23 +289,88 @@ export function Settings() {
             </p>
           )}
 
+          <label className={s.field}>
+            Email
+            <input
+              type="email"
+              value={user?.email ?? ''}
+              readOnly
+              disabled
+              className={s.input}
+              data-testid="settings-email-input"
+            />
+          </label>
+
           <form onSubmit={handleSaveProfile} className={s.form}>
+            <div className={s.fieldRow}>
+              <label className={s.field}>
+                First name
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={handleFirstNameChange}
+                  className={s.input}
+                  data-testid="settings-first-name-input"
+                />
+              </label>
+              <label className={s.field}>
+                Last name
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={handleLastNameChange}
+                  className={s.input}
+                  data-testid="settings-last-name-input"
+                />
+              </label>
+            </div>
+
+            <div className={s.fieldRow}>
+              <label className={s.field}>
+                Phone
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className={s.input}
+                  data-testid="settings-phone-input"
+                />
+              </label>
+              <label className={s.field}>
+                Nationality
+                <select
+                  value={nationality}
+                  onChange={handleNationalityChange}
+                  className={s.select}
+                  data-testid="settings-nationality-select"
+                >
+                  <option value="">Select a country</option>
+                  {COUNTRIES.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
             <label className={s.field}>
-              Full name
+              Date of birth
               <input
-                type="text"
-                value={fullName}
-                onChange={handleFullNameChange}
+                type="date"
+                value={dateOfBirth}
+                onChange={handleDateOfBirthChange}
                 className={s.input}
-                data-testid="settings-full-name-input"
+                data-testid="settings-date-of-birth-input"
               />
             </label>
+
             {profileError && (
               <p role="alert" className={s.error}>
                 {profileError}
               </p>
             )}
-            {profileSuccess && <p className={s.success}>Your name was updated.</p>}
+            {profileSuccess && <p className={s.success}>Your profile was updated.</p>}
             <Button
               id="settings-save-profile-button"
               data-testid="settings-save-profile-button"
@@ -298,39 +378,6 @@ export function Settings() {
               disabled={savingProfile}
             >
               {savingProfile ? 'Saving…' : 'Save changes'}
-            </Button>
-          </form>
-
-          <form onSubmit={handleSaveEmail} className={s.form}>
-            <label className={s.field}>
-              Email address
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={handleEmailChange}
-                className={s.input}
-                data-testid="settings-email-input"
-              />
-            </label>
-            {emailError && (
-              <p role="alert" className={s.error}>
-                {emailError}
-              </p>
-            )}
-            {emailPendingConfirmation && (
-              <p className={s.success}>
-                We sent a confirmation email to {emailPendingConfirmation}. The change will apply once you confirm
-                it.
-              </p>
-            )}
-            <Button
-              id="settings-save-email-button"
-              data-testid="settings-save-email-button"
-              type="submit"
-              disabled={savingEmail || !email.trim() || email.trim() === user?.email}
-            >
-              {savingEmail ? 'Sending…' : 'Save changes'}
             </Button>
           </form>
         </div>

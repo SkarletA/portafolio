@@ -1,8 +1,10 @@
 import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
+import { useProfile } from '../../../hooks/useProfile'
 import { NavItem } from '../../molecules/NavItem/NavItem'
 import { Icon } from '../../atoms/Icon/Icon'
+import { Avatar } from '../../atoms/Avatar/Avatar'
 import s from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -15,8 +17,8 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const { user, signOut } = useAuth()
-  const displayName = user?.fullName || user?.email || ''
-  const initials = displayName ? displayName[0].toUpperCase() : '?'
+  const { profile } = useProfile()
+  const displayName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || user?.email || ''
 
   const handleSignOutClick = useCallback(() => {
     signOut()
@@ -44,11 +46,14 @@ export function Sidebar() {
         </Link>
 
         <div className={s.profile}>
-          {user?.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className={s.avatarImage} />
-          ) : (
-            <div className={s.avatar}>{initials}</div>
-          )}
+          <Avatar
+            userId={user?.id ?? ''}
+            avatarUrl={profile?.avatarUrl}
+            firstName={profile?.firstName}
+            lastName={profile?.lastName}
+            email={user?.email}
+            size="sm"
+          />
           <p className={s.email}>{displayName}</p>
           <button
             id="sidebar-sign-out-button"

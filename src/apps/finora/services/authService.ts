@@ -1,11 +1,24 @@
 import { supabase } from './supabaseClient'
 
-export function signUp(email: string, password: string) {
+export interface SignUpMetadata {
+  first_name: string
+  last_name: string
+  phone?: string
+  nationality?: string
+  date_of_birth?: string
+}
+
+// Metadata is read by the on_auth_user_created trigger (raw_user_meta_data)
+// to create the matching profiles row - omit optional keys entirely rather
+// than sending an empty string, since the trigger casts date_of_birth to
+// `date` and ''::date fails.
+export function signUp(email: string, password: string, metadata: SignUpMetadata) {
   return supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: `${window.location.origin}/finora`,
+      data: metadata,
     },
   })
 }
@@ -51,45 +64,6 @@ export async function changePassword(currentPassword: string, newPassword: strin
   }
 
   return supabase.auth.updateUser({ password: newPassword })
-}
-
-export function updateProfile({ fullName }: { fullName: string }) {
-  return supabase.auth.updateUser({ data: { full_name: fullName } })
-}
-
-// Supabase requires confirming an email change via a link sent to the new
-// address before it takes effect - this never applies the change immediately.
-// The caller should treat any non-error response as "confirmation sent", not
-// as the email having already changed.
-export function updateEmail(newEmail: string) {
-  return supabase.auth.updateUser({ email: newEmail })
-}
-
-const AVATAR_BUCKET = 'avatars'
-
-export async function uploadAvatar(file: File) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
-  // No extension in the path (contentType is passed explicitly instead), so
-  // re-uploading a different image type still overwrites the same object
-  // instead of leaving the previous one orphaned in storage.
-  const filePath = `${userData.user.id}/avatar`
-
-  const { error: uploadError } = await supabase.storage
-    .from(AVATAR_BUCKET)
-    .upload(filePath, file, { upsert: true, contentType: file.type })
-
-  if (uploadError) return { data: null, error: uploadError }
-
-  const { data: publicUrlData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(filePath)
-  // Cache-busted so the browser doesn't keep serving a stale image after a
-  // re-upload to the same path.
-  const avatarUrl = `${publicUrlData.publicUrl}?updated=${Date.now()}`
-
-  return supabase.auth.updateUser({ data: { avatar_url: avatarUrl } })
 }
 
 // Invokes the delete-account Edge Function, which verifies the caller's JWT

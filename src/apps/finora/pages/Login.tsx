@@ -1,6 +1,7 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/atoms/Button/Button'
+import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
 import { useAuth } from '../context/AuthContext'
 import s from './Login.module.css'
 
@@ -33,7 +34,7 @@ export function Login() {
       if (signInError) {
         setError(
           signInError.message === 'Email not confirmed'
-            ? 'Confirma tu correo antes de iniciar sesión'
+            ? 'Confirm your email before signing in'
             : signInError.message
         )
         return
@@ -46,7 +47,7 @@ export function Login() {
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>Iniciar sesión</h1>
+      <h1 className={s.title}>Sign in</h1>
 
       <form onSubmit={handleSubmit} className={s.form}>
         <label className={s.field}>
@@ -61,31 +62,29 @@ export function Login() {
           />
         </label>
 
-        <label className={s.field}>
-          Contraseña
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={handlePasswordChange}
-            className={s.input}
-            data-testid="login-password-input"
-          />
-        </label>
+        <PasswordInput
+          label="Password"
+          value={password}
+          onChange={handlePasswordChange}
+          testId="login-password-input"
+          required
+        />
 
         {error && <p className={s.error}>{error}</p>}
 
         <Button id="login-submit-button" data-testid="login-submit-button" type="submit" disabled={submitting}>
-          {submitting ? 'Ingresando…' : 'Iniciar sesión'}
+          {submitting ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
 
       <p className={s.footer}>
-        <Link to="/finora/forgot-password" data-testid="login-forgot-password-link">¿Olvidaste tu contraseña?</Link>
+        <Link to="/finora/forgot-password" data-testid="login-forgot-password-link">
+          Forgot your password?
+        </Link>
       </p>
 
       <p className={s.footer}>
-        ¿No tenés cuenta? <Link to="/finora/register" data-testid="login-register-link">Crear cuenta</Link>
+        Don&apos;t have an account? <Link to="/finora/register" data-testid="login-register-link">Create account</Link>
       </p>
     </section>
   )

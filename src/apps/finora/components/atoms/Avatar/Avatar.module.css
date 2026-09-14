@@ -1,0 +1,21 @@
+@reference '../../../styles/theme.css';
+
+.avatar {
+  @apply shrink-0 rounded-full object-cover;
+}
+
+.fallback {
+  @apply flex items-center justify-center font-semibold text-white;
+}
+
+.sm {
+  @apply h-8 w-8 text-sm;
+}
+
+.md {
+  @apply h-14 w-14 text-lg;
+}
+
+.lg {
+  @apply h-20 w-20 text-2xl;
+}

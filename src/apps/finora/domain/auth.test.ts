@@ -20,37 +20,8 @@ describe('toAuthUser', () => {
     expect(toAuthUser(undefined)).toBeNull()
   })
 
-  it('maps id and email, defaulting fullName/avatarUrl to null when metadata is empty', () => {
-    expect(toAuthUser(buildUser())).toEqual({
-      id: 'u1',
-      email: 'mariana@finora.app',
-      fullName: null,
-      avatarUrl: null,
-    })
-  })
-
-  it('reads full_name and avatar_url from user_metadata', () => {
-    const user = buildUser({
-      user_metadata: { full_name: 'Mariana Ruiz', avatar_url: 'https://example.com/avatar.png' },
-    })
-
-    expect(toAuthUser(user)).toEqual({
-      id: 'u1',
-      email: 'mariana@finora.app',
-      fullName: 'Mariana Ruiz',
-      avatarUrl: 'https://example.com/avatar.png',
-    })
-  })
-
-  it('ignores non-string metadata values instead of surfacing them as-is', () => {
-    const user = buildUser({ user_metadata: { full_name: 42, avatar_url: false } })
-
-    expect(toAuthUser(user)).toEqual({
-      id: 'u1',
-      email: 'mariana@finora.app',
-      fullName: null,
-      avatarUrl: null,
-    })
+  it('maps id and email', () => {
+    expect(toAuthUser(buildUser())).toEqual({ id: 'u1', email: 'mariana@finora.app' })
   })
 
   it('falls back to a null email when the user has none', () => {
