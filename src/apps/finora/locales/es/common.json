@@ -1,4 +1,5 @@
 {
+  "addTransaction": "Agregar transacción",
   "buttons": {
     "save": "Guardar",
     "saveChanges": "Guardar cambios",

@@ -1,4 +1,5 @@
 {
+  "addTransaction": "Add transaction",
   "buttons": {
     "save": "Save",
     "saveChanges": "Save changes",
