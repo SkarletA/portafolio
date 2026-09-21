@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../context/AuthContext'
 import { useProfile } from '../../../hooks/useProfile'
 import { NavItem } from '../../molecules/NavItem/NavItem'
+import { LocaleBadge } from '../../molecules/LocaleBadge/LocaleBadge'
 import { Icon } from '../../atoms/Icon/Icon'
 import { Avatar } from '../../atoms/Avatar/Avatar'
 import s from './Sidebar.module.css'
@@ -50,6 +51,8 @@ export function Sidebar() {
         <Link to="/" className={s.backLink} data-testid="sidebar-back-to-portfolio-link">
           {t('nav.backToPortfolio')}
         </Link>
+
+        <LocaleBadge />
 
         <div className={s.profile}>
           <Avatar

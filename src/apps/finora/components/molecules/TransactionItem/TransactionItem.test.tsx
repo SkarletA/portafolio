@@ -12,6 +12,9 @@ vi.mock('../../../services/transactionsService', async () => {
   return { ...actual, deleteTransaction: vi.fn() }
 })
 
+vi.mock('../../../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
+vi.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+
 const baseTransaction: TransactionWithCategory = {
   id: '1',
   user_id: 'u1',

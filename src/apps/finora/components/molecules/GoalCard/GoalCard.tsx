@@ -4,18 +4,15 @@ import { Icon } from '../../atoms/Icon/Icon'
 import { Button } from '../../atoms/Button/Button'
 import { addFundsToGoal } from '../../../services/goalsService'
 import type { GoalWithProgress } from '../../../hooks/useGoals'
+import { formatCurrency, getLocaleForLanguage } from '../../../domain/currency'
+import { useCurrency } from '../../../context/CurrencyContext'
+import { useLanguage } from '../../../context/LanguageContext'
 import s from './GoalCard.module.css'
 
 interface GoalCardProps {
   goal: GoalWithProgress
   onFundsAdded: () => void
 }
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 const targetDateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -25,6 +22,9 @@ const targetDateFormatter = new Intl.DateTimeFormat('en-US', {
 
 export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
   const { t } = useTranslation(['goals', 'common'])
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const locale = getLocaleForLanguage(language)
   const [isAddingFunds, setIsAddingFunds] = useState(false)
   const [amount, setAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -93,8 +93,12 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
       </div>
 
       <div className={s.amounts}>
-        <span className={s.current}>{currencyFormatter.format(goal.current_amount)}</span>
-        <span className={s.of}>/ {currencyFormatter.format(goal.target_amount)}</span>
+        <span className={s.current}>
+          {formatCurrency(goal.current_amount, currency, locale, { maximumFractionDigits: 0 })}
+        </span>
+        <span className={s.of}>
+          / {formatCurrency(goal.target_amount, currency, locale, { maximumFractionDigits: 0 })}
+        </span>
       </div>
 
       <div
@@ -110,7 +114,9 @@ export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
 
       <div className={s.footer}>
         <span className={s.remaining}>
-          {t('goals:card.remaining', { amount: currencyFormatter.format(goal.remaining) })}
+          {t('goals:card.remaining', {
+            amount: formatCurrency(goal.remaining, currency, locale, { maximumFractionDigits: 0 }),
+          })}
         </span>
         <span className={s.percentageBadge}>{Math.round(goal.percentage)}%</span>
       </div>

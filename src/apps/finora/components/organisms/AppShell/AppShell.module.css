@@ -16,6 +16,10 @@
   @apply h-4 w-4 text-white;
 }
 
+.brandName {
+  @apply flex-1;
+}
+
 .navIcon {
   @apply h-5 w-5;
 }

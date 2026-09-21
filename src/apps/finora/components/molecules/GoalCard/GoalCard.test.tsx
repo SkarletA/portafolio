@@ -8,6 +8,9 @@ vi.mock('../../../services/goalsService', () => ({
   addFundsToGoal: vi.fn(),
 }))
 
+vi.mock('../../../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
+vi.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+
 const baseGoal: GoalWithProgress = {
   id: '1',
   user_id: 'u1',

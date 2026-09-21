@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { toProfile, type Language, type ProfileRow, type Theme } from '../domain/profile'
+import { toProfile, type Currency, type Language, type ProfileRow, type Theme } from '../domain/profile'
 
 const AVATAR_BUCKET = 'avatars'
 
@@ -61,6 +61,15 @@ export async function updateLanguage(language: Language) {
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
   return supabase.from('profiles').update({ language }).eq('user_id', userData.user.id)
+}
+
+export async function updateCurrency(currency: Currency) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+
+  if (userError) return { data: null, error: userError }
+  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
+
+  return supabase.from('profiles').update({ currency }).eq('user_id', userData.user.id)
 }
 
 export async function uploadAvatar(file: File) {

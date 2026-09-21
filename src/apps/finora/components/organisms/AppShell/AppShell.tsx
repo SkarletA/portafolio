@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Sidebar } from './Sidebar'
 import { NavItem } from '../../molecules/NavItem/NavItem'
+import { LocaleBadge } from '../../molecules/LocaleBadge/LocaleBadge'
 import { Icon } from '../../atoms/Icon/Icon'
 import { useTheme } from '../../../context/ThemeContext'
 import s from './AppShell.module.css'
@@ -35,7 +36,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <span className={s.brandMark}>
           <Icon name="brand-mark" className={s.brandMarkIcon} />
         </span>
-        Finora
+        <span className={s.brandName}>Finora</span>
+        <LocaleBadge />
       </header>
 
       <main className={s.main}>{children}</main>

@@ -26,6 +26,13 @@
       "description": "Choose the language used across Finora",
       "en": "EN",
       "es": "ES"
+    },
+    "currency": {
+      "label": "Currency",
+      "description": "Choose how amounts are displayed across Finora",
+      "mxn": "MXN",
+      "usd": "USD",
+      "eur": "EUR"
     }
   },
   "security": {

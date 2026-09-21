@@ -18,6 +18,9 @@ import { createCategory } from '../services/categoriesService'
 import { createTransaction, updateTransaction, type NewTransactionInput } from '../services/transactionsService'
 import { buildCategoryTree, getCategoryDisplayName } from '../domain/category'
 import { PAYMENT_METHODS, type TransactionType } from '../domain/transaction'
+import { formatCurrency, getLocaleForLanguage } from '../domain/currency'
+import { useCurrency } from '../context/CurrencyContext'
+import { useLanguage } from '../context/LanguageContext'
 import s from './AddTransaction.module.css'
 
 const CATEGORY_COLORS = ['#2563eb', '#7c3aed', '#0ea5e9', '#f59e0b', '#ec4899', '#16a34a', '#dc2626', '#64748b']
@@ -25,12 +28,6 @@ const CATEGORY_COLORS = ['#2563eb', '#7c3aed', '#0ea5e9', '#f59e0b', '#ec4899', 
 const CREATE_NEW_CATEGORY_VALUE = '__create_new_category__'
 const NONE_SUBCATEGORY_VALUE = '__none_subcategory__'
 const OTHERS_SUBCATEGORY_VALUE = '__others_subcategory__'
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-})
 
 function getTodayLocalDate() {
   const today = new Date()
@@ -70,6 +67,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const { t } = useTranslation(['transactions', 'common', 'categories'])
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const locale = getLocaleForLanguage(language)
   const { categories, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories()
   const {
     transaction,
@@ -351,8 +351,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
           if (Math.abs(assigned - parsedAmount) > 0.001) {
             nextErrors.payments = t('transactions:validation.assignedMustEqualTotal', {
-              assigned: currencyFormatter.format(assigned),
-              total: currencyFormatter.format(parsedAmount || 0),
+              assigned: formatCurrency(assigned, currency, locale),
+              total: formatCurrency(parsedAmount || 0, currency, locale),
             })
           }
         }
@@ -389,7 +389,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
       navigate('/finora/transactions')
     },
-    [amount, description, categoryId, date, notes, type, payments, mode, id, navigate, t]
+    [amount, description, categoryId, date, notes, type, payments, mode, id, navigate, t, currency, locale]
   )
 
   const assignedTotal = payments.reduce(
@@ -711,8 +711,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           </div>
           <p className={cn(s.paymentSummary, assignedTotal !== totalAmount && s.paymentSummaryMismatch)}>
             {t('transactions:form.assignedSummary', {
-              assigned: currencyFormatter.format(assignedTotal),
-              total: currencyFormatter.format(totalAmount),
+              assigned: formatCurrency(assignedTotal, currency, locale),
+              total: formatCurrency(totalAmount, currency, locale),
             })}
           </p>
           {errors.payments && (

@@ -46,5 +46,8 @@
   "passwordVisibility": {
     "show": "Mostrar contraseña",
     "hide": "Ocultar contraseña"
+  },
+  "localeBadge": {
+    "ariaLabel": "Idioma {{language}}, moneda {{currency}}. Ir a configuración."
   }
 }

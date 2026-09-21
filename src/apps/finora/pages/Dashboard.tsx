@@ -6,11 +6,14 @@ import { Icon } from '../components/atoms/Icon/Icon'
 import { Avatar } from '../components/atoms/Avatar/Avatar'
 import { StatCard } from '../components/molecules/StatCard/StatCard'
 import { useAuth } from '../context/AuthContext'
+import { useCurrency } from '../context/CurrencyContext'
+import { useLanguage } from '../context/LanguageContext'
 import { useProfile } from '../hooks/useProfile'
 import { useTransactions } from '../hooks/useTransactions'
 import { useBudgets } from '../hooks/useBudgets'
 import { useDashboardSummary } from '../hooks/useDashboardSummary'
 import { getCategoryDisplayName } from '../domain/category'
+import { formatCurrency, getLocaleForLanguage } from '../domain/currency'
 import { TransactionItem } from '../components/molecules/TransactionItem/TransactionItem'
 import { BudgetCard } from '../components/molecules/BudgetCard/BudgetCard'
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
@@ -23,12 +26,6 @@ const TOP_CATEGORIES_LIMIT = 3
 // the active theme (light/dark).
 const NEUTRAL_CATEGORY_COLOR = 'var(--color-finora-icon-fallback-bg)'
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
 function formatPercentage(value: number) {
@@ -40,6 +37,9 @@ export function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const locale = getLocaleForLanguage(language)
   const displayName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || user?.email || ''
 
   const { transactions, loading, error, refetch } = useTransactions()
@@ -103,10 +103,20 @@ export function Dashboard() {
           <div className={s.overviewGrid}>
             <div className={s.balanceCard}>
               <p className={s.balanceLabel}>{t('dashboard:balanceThisMonth')}</p>
-              <p className={s.balanceValue}>{currencyFormatter.format(balance)}</p>
+              <p className={s.balanceValue}>
+                {formatCurrency(balance, currency, locale, { maximumFractionDigits: 0 })}
+              </p>
             </div>
-            <StatCard testId="dashboard-income-stat" label={t('dashboard:stats.income')} value={currencyFormatter.format(stats.totalIncome)} />
-            <StatCard testId="dashboard-expenses-stat" label={t('dashboard:stats.expenses')} value={currencyFormatter.format(stats.totalSpent)} />
+            <StatCard
+              testId="dashboard-income-stat"
+              label={t('dashboard:stats.income')}
+              value={formatCurrency(stats.totalIncome, currency, locale, { maximumFractionDigits: 0 })}
+            />
+            <StatCard
+              testId="dashboard-expenses-stat"
+              label={t('dashboard:stats.expenses')}
+              value={formatCurrency(stats.totalSpent, currency, locale, { maximumFractionDigits: 0 })}
+            />
             <StatCard
               testId="dashboard-savings-rate-stat"
               label={t('dashboard:stats.savingsRate')}
@@ -173,7 +183,9 @@ export function Dashboard() {
                       style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                     />
                     <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
-                    <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
+                    <span className={s.categoryAmount}>
+                      {formatCurrency(category.amount, currency, locale, { maximumFractionDigits: 0 })}
+                    </span>
                   </li>
                 ))}
               </ul>

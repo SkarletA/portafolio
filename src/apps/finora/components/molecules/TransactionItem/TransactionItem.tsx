@@ -5,6 +5,9 @@ import cn from 'clsx'
 import type { TransactionWithCategory } from '../../../services/transactionsService'
 import { deleteTransaction } from '../../../services/transactionsService'
 import { getCategoryDisplayName } from '../../../domain/category'
+import { formatCurrency, getLocaleForLanguage } from '../../../domain/currency'
+import { useCurrency } from '../../../context/CurrencyContext'
+import { useLanguage } from '../../../context/LanguageContext'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '../../atoms/Icon/Icon'
 import s from './TransactionItem.module.css'
@@ -13,12 +16,6 @@ interface TransactionItemProps {
   transaction: TransactionWithCategory
   onDeleted: () => void
 }
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -30,13 +27,16 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 export function TransactionItem({ transaction, onDeleted }: TransactionItemProps) {
   const { t } = useTranslation(['transactions', 'common', 'categories'])
   const navigate = useNavigate()
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
+  const locale = getLocaleForLanguage(language)
   const isIncome = transaction.type === 'income'
   const isReimbursement = transaction.type === 'reimbursement'
-  const amountLabel = `${isIncome || isReimbursement ? '+' : '-'}${currencyFormatter.format(Math.abs(transaction.amount))}`
+  const amountLabel = `${isIncome || isReimbursement ? '+' : '-'}${formatCurrency(Math.abs(transaction.amount), currency, locale, { maximumFractionDigits: 0 })}`
   const categoryDisplayName = transaction.category ? getCategoryDisplayName(transaction.category, t) : null
   const fallbackIcon = categoryDisplayName?.[0] || '•'
   const paymentMethodsLabel = transaction.payments.map((payment) => payment.payment_method).join(' + ')

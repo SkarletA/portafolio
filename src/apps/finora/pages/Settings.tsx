@@ -14,6 +14,7 @@ import cn from 'clsx'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useLanguage } from '../context/LanguageContext'
+import { useCurrency } from '../context/CurrencyContext'
 import { useProfile } from '../hooks/useProfile'
 import { updateProfile, uploadAvatar } from '../services/profilesService'
 import { Avatar } from '../components/atoms/Avatar/Avatar'
@@ -21,7 +22,7 @@ import { Button } from '../components/atoms/Button/Button'
 import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
 import { PhoneInput } from '../components/molecules/PhoneInput/PhoneInput'
 import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '../domain/profile'
-import type { Language } from '../domain/profile'
+import type { Currency, Language } from '../domain/profile'
 import s from './Settings.module.css'
 
 const DELETE_CONFIRMATION_KEYWORD = 'DELETE'
@@ -47,11 +48,18 @@ const LANGUAGE_OPTIONS: { value: Language; labelKey: string }[] = [
   { value: 'es', labelKey: 'preferences.language.es' },
 ]
 
+const CURRENCY_OPTIONS: { value: Currency; labelKey: string }[] = [
+  { value: 'MXN', labelKey: 'preferences.currency.mxn' },
+  { value: 'USD', labelKey: 'preferences.currency.usd' },
+  { value: 'EUR', labelKey: 'preferences.currency.eur' },
+]
+
 export function Settings() {
   const { t } = useTranslation(['settings', 'common'])
   const { user, changePassword, deleteAccount, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
   const { language, setLanguage } = useLanguage()
+  const { currency, setCurrency } = useCurrency()
   const { profile, refetch: refetchProfile } = useProfile()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -266,6 +274,14 @@ export function Settings() {
       if (nextLanguage) setLanguage(nextLanguage)
     },
     [setLanguage]
+  )
+
+  const handleCurrencyButtonClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const nextCurrency = event.currentTarget.dataset.currency as Currency | undefined
+      if (nextCurrency) setCurrency(nextCurrency)
+    },
+    [setCurrency]
   )
 
   const handleOpenDeleteModal = useCallback(() => {
@@ -499,6 +515,27 @@ export function Settings() {
                   onClick={handleLanguageButtonClick}
                   className={cn(s.languageButton, language === option.value && s.languageButtonActive)}
                   data-testid={`settings-preference-language-${option.value}-button`}
+                >
+                  {t(option.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={s.row}>
+            <div>
+              <p className={s.rowLabel}>{t('settings:preferences.currency.label')}</p>
+              <p className={s.rowSub}>{t('settings:preferences.currency.description')}</p>
+            </div>
+            <div className={s.languageToggle} role="group" aria-label={t('settings:preferences.currency.label')}>
+              {CURRENCY_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-currency={option.value}
+                  aria-pressed={currency === option.value}
+                  onClick={handleCurrencyButtonClick}
+                  className={cn(s.languageButton, currency === option.value && s.languageButtonActive)}
+                  data-testid={`settings-preference-currency-${option.value.toLowerCase()}-button`}
                 >
                   {t(option.labelKey)}
                 </button>
