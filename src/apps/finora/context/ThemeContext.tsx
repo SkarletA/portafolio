@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { useProfile } from '../hooks/useProfile'
-import { updateTheme } from '../services/profilesService'
-import type { Theme } from '../domain/profile'
+import { useProfile } from '@hooks/useProfile'
+import { updateTheme } from '@services/profilesService'
+import type { Theme } from '@domain/profile'
 
 interface ThemeContextValue {
   theme: Theme

@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCategories } from './useCategories'
-import { getCategories } from '../services/categoriesService'
+import { getCategories } from '@services/categoriesService'
 
 vi.mock('../services/categoriesService', () => ({
   getCategories: vi.fn(),

@@ -1,6 +1,6 @@
 import cn from 'clsx'
 import { useTranslation } from 'react-i18next'
-import { getPasswordStrength } from '../../../domain/password'
+import { getPasswordStrength } from '@domain/password'
 import s from './PasswordStrengthHint.module.css'
 
 interface PasswordStrengthHintProps {

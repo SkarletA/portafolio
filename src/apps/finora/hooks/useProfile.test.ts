@@ -1,8 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useProfile } from './useProfile'
-import { useAuth } from '../context/AuthContext'
-import { getProfile } from '../services/profilesService'
+import { useAuth } from '@context/AuthContext'
+import { getProfile } from '@services/profilesService'
 
 vi.mock('../context/AuthContext', () => ({
   useAuth: vi.fn(),

@@ -1,8 +1,8 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button } from '../components/atoms/Button/Button'
-import { createGoal, type NewGoalInput } from '../services/goalsService'
+import { Button } from '@atoms/Button/Button'
+import { createGoal, type NewGoalInput } from '@services/goalsService'
 import s from './AddGoal.module.css'
 
 interface FormErrors {

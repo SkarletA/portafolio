@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { BudgetCard } from './BudgetCard'
-import type { BudgetWithProgress } from '../../../hooks/useBudgets'
+import type { BudgetWithProgress } from '@hooks/useBudgets'
 
 vi.mock('../../../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
 vi.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))

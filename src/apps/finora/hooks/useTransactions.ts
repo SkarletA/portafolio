@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getTransactions, type TransactionWithCategory } from '../services/transactionsService'
+import { getTransactions, type TransactionWithCategory } from '@services/transactionsService'
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<TransactionWithCategory[]>([])

@@ -4,8 +4,8 @@ import {
   getSpendingByCategory,
   type CategorySpending,
   type MonthlyStats,
-} from '../services/analyticsService'
-import { getPeriodRange } from '../domain/analytics'
+} from '@services/analyticsService'
+import { getPeriodRange } from '@domain/analytics'
 
 // Current-month stats and category spend for the Dashboard overview - the
 // same functions and range Analytics uses (so the numbers always agree), but

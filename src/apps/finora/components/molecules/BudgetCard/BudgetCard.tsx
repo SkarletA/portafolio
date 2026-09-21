@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
-import type { BudgetWithProgress } from '../../../hooks/useBudgets'
-import { getCategoryDisplayName } from '../../../domain/category'
-import { formatCurrency, getLocaleForLanguage } from '../../../domain/currency'
-import { useCurrency } from '../../../context/CurrencyContext'
-import { useLanguage } from '../../../context/LanguageContext'
-import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
+import type { BudgetWithProgress } from '@hooks/useBudgets'
+import { getCategoryDisplayName } from '@domain/category'
+import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { useCurrency } from '@context/CurrencyContext'
+import { useLanguage } from '@context/LanguageContext'
+import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCard.module.css'
 
 interface BudgetCardProps {

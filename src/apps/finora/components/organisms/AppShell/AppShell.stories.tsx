@@ -1,6 +1,6 @@
 import { MemoryRouter } from 'react-router-dom'
 import { AppShell } from './AppShell'
-import { AuthProvider } from '../../../context/AuthContext'
+import { AuthProvider } from '@context/AuthContext'
 
 export default {
   title: 'Finora/Organisms/AppShell',

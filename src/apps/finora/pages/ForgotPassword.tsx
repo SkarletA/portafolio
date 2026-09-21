@@ -1,8 +1,8 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button } from '../components/atoms/Button/Button'
-import { useAuth } from '../context/AuthContext'
+import { Button } from '@atoms/Button/Button'
+import { useAuth } from '@context/AuthContext'
 import s from './ForgotPassword.module.css'
 
 export function ForgotPassword() {

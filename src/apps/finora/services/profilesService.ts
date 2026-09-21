@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { toProfile, type Currency, type Language, type ProfileRow, type Theme } from '../domain/profile'
+import { toProfile, type Currency, type Language, type ProfileRow, type Theme } from '@domain/profile'
 
 const AVATAR_BUCKET = 'avatars'
 

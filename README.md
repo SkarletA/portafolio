@@ -20,9 +20,11 @@ The portfolio is being developed as a living project, continuously evolving alon
 
 ### Finora
 
-**Finora** is a personal expense management application focused on helping users understand, organize, and manage their finances through a simple and intuitive experience.
+**Finora** is a personal expense management application focused on helping users understand, organize, and manage their finances through a simple and intuitive experience. It's embedded in this repository as an independent application, live at `/finora`, and doubles as a case study for this portfolio.
 
-The project is part of this portfolio and serves as a practical demonstration of:
+For the full technical write-up — architecture, features, tech stack, ADRs, and how to run it locally — see **[Finora's own README](src/apps/finora/README.md)**.
+
+The project serves as a practical demonstration of:
 
 * React application architecture
 * State management

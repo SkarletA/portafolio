@@ -8,8 +8,8 @@ import {
   type MonthlyStats,
   type PeriodComparison,
   type TrendPoint,
-} from '../services/analyticsService'
-import { getPeriodRange, type PeriodType } from '../domain/analytics'
+} from '@services/analyticsService'
+import { getPeriodRange, type PeriodType } from '@domain/analytics'
 
 export function useAnalytics(periodType: PeriodType = 'month') {
   const [stats, setStats] = useState<MonthlyStats | null>(null)

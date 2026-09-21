@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { useProfile } from '../hooks/useProfile'
-import { updateCurrency } from '../services/profilesService'
-import type { Currency } from '../domain/profile'
+import { useProfile } from '@hooks/useProfile'
+import { updateCurrency } from '@services/profilesService'
+import type { Currency } from '@domain/profile'
 
 interface CurrencyContextValue {
   currency: Currency

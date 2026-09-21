@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getBudgets, type BudgetWithCategory } from '../services/budgetsService'
-import { getCurrentMonthRange, getExpensesByCategory } from '../services/transactionsService'
-import { getCategories } from '../services/categoriesService'
-import { getBudgetProgress, type BudgetStatus } from '../domain/budget'
-import type { Category } from '../domain/category'
+import { getBudgets, type BudgetWithCategory } from '@services/budgetsService'
+import { getCurrentMonthRange, getExpensesByCategory } from '@services/transactionsService'
+import { getCategories } from '@services/categoriesService'
+import { getBudgetProgress, type BudgetStatus } from '@domain/budget'
+import type { Category } from '@domain/category'
 
 export interface BudgetBreakdownItem {
   category_id: string

@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button } from '../components/atoms/Button/Button'
-import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
-import { PasswordStrengthHint } from '../components/molecules/PasswordStrengthHint/PasswordStrengthHint'
-import { useAuth } from '../context/AuthContext'
-import { getPasswordStrength } from '../domain/password'
+import { Button } from '@atoms/Button/Button'
+import { PasswordInput } from '@molecules/PasswordInput/PasswordInput'
+import { PasswordStrengthHint } from '@molecules/PasswordStrengthHint/PasswordStrengthHint'
+import { useAuth } from '@context/AuthContext'
+import { getPasswordStrength } from '@domain/password'
 import s from './ResetPassword.module.css'
 
 export function ResetPassword() {

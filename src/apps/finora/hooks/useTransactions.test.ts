@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTransactions } from './useTransactions'
-import { getTransactions } from '../services/transactionsService'
+import { getTransactions } from '@services/transactionsService'
 
 vi.mock('../services/transactionsService', () => ({
   getTransactions: vi.fn(),

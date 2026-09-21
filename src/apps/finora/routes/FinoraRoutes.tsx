@@ -12,7 +12,7 @@ import { Register } from '../pages/Register'
 import { ResetPassword } from '../pages/ResetPassword'
 import { Settings } from '../pages/Settings'
 import { Transactions } from '../pages/Transactions'
-import { ProtectedRoute } from '../components/ProtectedRoute'
+import { ProtectedRoute } from '@components/ProtectedRoute'
 
 export function FinoraRoutes() {
   return (

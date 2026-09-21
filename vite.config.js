@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -5,6 +6,26 @@ import { coverageConfigDefaults } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    // Finora-only aliases - pages/ and routes/ deliberately keep relative
+    // imports (see src/apps/finora/../../CLAUDE.md). Shared by both `vite
+    // build`/`vite dev` and the `test` block below, since Vitest reads this
+    // same resolved config.
+    alias: {
+      '@hooks': fileURLToPath(new URL('./src/apps/finora/hooks', import.meta.url)),
+      '@domain': fileURLToPath(new URL('./src/apps/finora/domain', import.meta.url)),
+      '@components': fileURLToPath(new URL('./src/apps/finora/components', import.meta.url)),
+      '@services': fileURLToPath(new URL('./src/apps/finora/services', import.meta.url)),
+      '@context': fileURLToPath(new URL('./src/apps/finora/context', import.meta.url)),
+      // More specific than @components - used for imports that reach directly
+      // into one of the three Atomic Design tiers instead of a bare
+      // components/ file (only ProtectedRoute.tsx today, which still goes
+      // through @components).
+      '@atoms': fileURLToPath(new URL('./src/apps/finora/components/atoms', import.meta.url)),
+      '@molecules': fileURLToPath(new URL('./src/apps/finora/components/molecules', import.meta.url)),
+      '@organisms': fileURLToPath(new URL('./src/apps/finora/components/organisms', import.meta.url)),
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: './vitest.setup.js',
