@@ -14,6 +14,8 @@ export type IconName =
   | 'search'
   | 'edit'
   | 'trash'
+  | 'language'
+  | 'currency'
 
 interface IconProps {
   name: IconName
@@ -92,6 +94,27 @@ function SettingsGlyph() {
   )
 }
 
+function LanguageGlyph() {
+  return (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12 H21" />
+      <path d="M12 3 C15 6.5 15 17.5 12 21" />
+      <path d="M12 3 C9 6.5 9 17.5 12 21" />
+    </>
+  )
+}
+
+function CurrencyGlyph() {
+  return (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 6 V18" />
+      <path d="M15.5 9 a3 2.2 0 0 0 -3.5 -1.6 3 2 0 0 0 0 4 3 2 0 0 1 0 4 3 2.2 0 0 1 -3.5 -1.6" />
+    </>
+  )
+}
+
 function PlusGlyph() {
   return (
     <>
@@ -143,6 +166,8 @@ const GLYPHS: Record<IconName, () => ReactElement> = {
   search: SearchGlyph,
   edit: EditGlyph,
   trash: TrashGlyph,
+  language: LanguageGlyph,
+  currency: CurrencyGlyph,
 }
 
 export function Icon({ name, className }: IconProps) {

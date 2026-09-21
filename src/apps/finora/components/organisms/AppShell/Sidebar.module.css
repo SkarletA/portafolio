@@ -33,11 +33,15 @@
 }
 
 .backLink {
-  @apply flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium text-finora-ink-muted transition-colors hover:text-finora-ink;
+  @apply flex items-center rounded-lg px-2.5 py-1.5 text-xs text-finora-ink-muted transition-colors hover:text-finora-ink;
 }
 
 .profile {
   @apply mt-2 flex items-center gap-2.5 rounded-lg border border-finora-border p-2.5;
+}
+
+.profileLink {
+  @apply flex min-w-0 flex-1 items-center gap-2.5 rounded-md transition-opacity hover:opacity-80;
 }
 
 .email {
