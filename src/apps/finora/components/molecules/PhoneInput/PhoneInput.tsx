@@ -1,5 +1,5 @@
 import { useCallback, type ChangeEvent } from 'react'
-import { MAX_PHONE_DIGITS } from '../../../domain/profile'
+import { MAX_PHONE_DIGITS } from '@domain/profile'
 import s from './PhoneInput.module.css'
 
 interface PhoneInputProps {

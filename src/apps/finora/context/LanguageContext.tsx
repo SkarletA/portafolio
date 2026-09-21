@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import i18n from '../i18n'
-import { useProfile } from '../hooks/useProfile'
-import { updateLanguage } from '../services/profilesService'
-import type { Language } from '../domain/profile'
+import { useProfile } from '@hooks/useProfile'
+import { updateLanguage } from '@services/profilesService'
+import type { Language } from '@domain/profile'
 
 interface LanguageContextValue {
   language: Language

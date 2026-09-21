@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GoalCard } from './GoalCard'
-import { addFundsToGoal } from '../../../services/goalsService'
-import type { GoalWithProgress } from '../../../hooks/useGoals'
+import { addFundsToGoal } from '@services/goalsService'
+import type { GoalWithProgress } from '@hooks/useGoals'
 
 vi.mock('../../../services/goalsService', () => ({
   addFundsToGoal: vi.fn(),

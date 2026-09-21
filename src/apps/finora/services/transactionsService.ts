@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient'
-import type { Transaction, TransactionType } from '../domain/transaction'
-import type { Category } from '../domain/category'
-import { getGrossSpendByCategory, getRawGrossSpendByCategory, getReimbursementsByCategory } from '../domain/category'
+import type { Transaction, TransactionType } from '@domain/transaction'
+import type { Category } from '@domain/category'
+import { getGrossSpendByCategory, getRawGrossSpendByCategory, getReimbursementsByCategory } from '@domain/category'
 import { getCategories } from './categoriesService'
 
 export type TransactionWithCategory = Transaction & {

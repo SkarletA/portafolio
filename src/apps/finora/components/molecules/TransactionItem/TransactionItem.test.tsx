@@ -2,11 +2,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionItem } from './TransactionItem'
-import { deleteTransaction } from '../../../services/transactionsService'
-import type { TransactionWithCategory } from '../../../services/transactionsService'
+import { deleteTransaction } from '@services/transactionsService'
+import type { TransactionWithCategory } from '@services/transactionsService'
 
 vi.mock('../../../services/transactionsService', async () => {
-  const actual = await vi.importActual<typeof import('../../../services/transactionsService')>(
+  const actual = await vi.importActual<typeof import('@services/transactionsService')>(
     '../../../services/transactionsService'
   )
   return { ...actual, deleteTransaction: vi.fn() }

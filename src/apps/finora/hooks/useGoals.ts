@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getGoals } from '../services/goalsService'
-import { getGoalProgress, type Goal, type GoalProgress } from '../domain/goal'
+import { getGoals } from '@services/goalsService'
+import { getGoalProgress, type Goal, type GoalProgress } from '@domain/goal'
 
 export type GoalWithProgress = Goal & GoalProgress
 

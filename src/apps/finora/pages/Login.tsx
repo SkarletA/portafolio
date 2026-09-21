@@ -1,8 +1,8 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button } from '../components/atoms/Button/Button'
-import { PasswordInput } from '../components/molecules/PasswordInput/PasswordInput'
+import { Button } from '@components/atoms/Button/Button'
+import { PasswordInput } from '@components/molecules/PasswordInput/PasswordInput'
 import { useAuth } from '../context/AuthContext'
 import s from './Login.module.css'
 

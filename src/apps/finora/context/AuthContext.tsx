@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../services/supabaseClient'
-import * as authService from '../services/authService'
-import { toAuthUser, type AuthUser } from '../domain/auth'
+import { supabase } from '@services/supabaseClient'
+import * as authService from '@services/authService'
+import { toAuthUser, type AuthUser } from '@domain/auth'
 
 interface AuthContextValue {
   user: AuthUser | null

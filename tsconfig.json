@@ -13,7 +13,13 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@hooks/*": ["./src/apps/finora/hooks/*"],
+      "@domain/*": ["./src/apps/finora/domain/*"],
+      "@components/*": ["./src/apps/finora/components/*"],
+      "@services/*": ["./src/apps/finora/services/*"]
+    }
   },
   "include": ["src"]
 }

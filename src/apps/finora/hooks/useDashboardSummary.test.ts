@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDashboardSummary } from './useDashboardSummary'
-import { getMonthlyStats, getSpendingByCategory } from '../services/analyticsService'
+import { getMonthlyStats, getSpendingByCategory } from '@services/analyticsService'
 
 vi.mock('../services/analyticsService', () => ({
   getMonthlyStats: vi.fn(),

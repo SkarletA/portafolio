@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient'
-import type { Budget } from '../domain/budget'
-import type { Category } from '../domain/category'
+import type { Budget } from '@domain/budget'
+import type { Category } from '@domain/category'
 
 export type BudgetWithCategory = Budget & {
   category: Pick<Category, 'id' | 'name' | 'icon' | 'color' | 'translationKey'> | null

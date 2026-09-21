@@ -9,8 +9,8 @@ import {
   getSavingsRate,
   type DateRange,
   type PeriodType,
-} from '../domain/analytics'
-import type { Category } from '../domain/category'
+} from '@domain/analytics'
+import type { Category } from '@domain/category'
 
 export interface MonthlyStats {
   totalSpent: number
