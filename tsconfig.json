@@ -25,5 +25,5 @@
       "@organisms/*": ["./src/apps/finora/components/organisms/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", ".storybook"]
 }

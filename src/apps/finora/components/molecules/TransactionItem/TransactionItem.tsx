@@ -14,6 +14,7 @@ import s from './TransactionItem.module.css'
 
 interface TransactionItemProps {
   transaction: TransactionWithCategory
+  /** Called after a successful delete, so the caller can refresh its list. */
   onDeleted: () => void
 }
 
@@ -24,6 +25,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'UTC',
 })
 
+/** A single transaction row: description, category, date, signed amount, and edit/delete actions. */
 export function TransactionItem({ transaction, onDeleted }: TransactionItemProps) {
   const { t } = useTranslation(['transactions', 'common', 'categories'])
   const navigate = useNavigate()

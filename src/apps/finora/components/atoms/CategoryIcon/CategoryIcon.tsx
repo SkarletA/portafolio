@@ -44,11 +44,14 @@ export const DEFAULT_CATEGORY_ICON = 'tag'
 export const CATEGORY_ICON_NAMES = Object.keys(CATEGORY_ICONS)
 
 interface CategoryIconProps {
+  /** One of the known icon keys (see CATEGORY_ICON_NAMES); unknown or null falls back to text. */
   name: string | null
+  /** Shown instead of an icon when `name` isn't a recognized key - typically the category's initial. */
   fallbackLabel: string
   className?: string
 }
 
+/** A category's icon, looked up by name from a fixed set; falls back to a short text label. */
 export function CategoryIcon({ name, fallbackLabel, className }: CategoryIconProps) {
   const LucideComponent = name ? CATEGORY_ICONS[name] : undefined
 

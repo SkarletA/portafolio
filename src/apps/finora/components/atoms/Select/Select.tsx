@@ -6,27 +6,35 @@ import s from './Select.module.css'
 export interface SelectOption {
   value: string
   label: string
+  /** Shown but not selectable. */
   disabled?: boolean
 }
 
 export interface SelectProps {
   options: SelectOption[]
+  /** The currently selected option's value, or `''` for no selection. */
   value: string
   onChange: (value: string) => void
+  /** Shown in place of a label when nothing is selected yet. */
   placeholder?: string
   disabled?: boolean
+  /** Base for this instance's `data-testid`s: `{testId}-trigger` and `{testId}-option-{value}`. */
   testId: string
+  /** Accessible name for the trigger and the options panel, for fields with no visible `<label>`. */
   ariaLabel?: string
   ariaInvalid?: boolean
+  /** Id of an element (e.g. a validation message) that describes this field. */
   ariaDescribedBy?: string
   className?: string
 }
 
-// A hand-built listbox rather than a native <select> - the browser paints a
-// native select's option list with the OS/system palette, not our CSS
-// variables, so it's unreadable in dark mode. Follows the same
-// trigger-button + own-DOM-panel shape as PreferenceDropdown (click-outside
-// and Escape-to-close), plus real keyboard navigation via useListboxNavigation.
+/**
+ * A dropdown list of options to choose one from, styled to match the rest of
+ * Finora's inputs and legible in both light and dark mode - unlike a native
+ * `<select>`, whose option list the browser paints with the OS palette
+ * regardless of page theme. Supports arrow-key navigation, Enter to select,
+ * and Escape to close.
+ */
 export function Select({
   options,
   value,

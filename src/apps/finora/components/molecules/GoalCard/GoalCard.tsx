@@ -11,6 +11,7 @@ import s from './GoalCard.module.css'
 
 interface GoalCardProps {
   goal: GoalWithProgress
+  /** Called after funds are successfully added, so the caller can refresh the goal's data. */
   onFundsAdded: () => void
 }
 
@@ -20,6 +21,7 @@ const targetDateFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'UTC',
 })
 
+/** A savings goal's progress toward its target amount, with an inline form to add funds. */
 export function GoalCard({ goal, onFundsAdded }: GoalCardProps) {
   const { t } = useTranslation(['goals', 'common'])
   const { currency } = useCurrency()

@@ -11,9 +11,12 @@ import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCardBreakdown.module.css'
 
 interface BudgetCardBreakdownProps {
+  /** Used to build a stable, unique id/testid for the show/hide toggle. */
   categoryId: string
   categoryName: string
+  /** The parent category's effective monthly limit, used to size each subcategory's mini progress bar. */
   limit: number
+  /** Subcategories to list once expanded; renders nothing when empty. */
   items: BudgetBreakdownItem[]
 }
 
@@ -21,6 +24,7 @@ function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
+/** A collapsible list of subcategory spend under a budget card, hidden until the user asks to see it. */
 export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: BudgetCardBreakdownProps) {
   const { t } = useTranslation(['budgets', 'categories'])
   const { currency } = useCurrency()

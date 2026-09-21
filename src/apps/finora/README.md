@@ -181,4 +181,4 @@ The portfolio (Finora included, as it's part of the same bundle) deploys automat
 
 ## 10. License
 
-No license file is currently published for this repository — all rights reserved unless a `LICENSE` file is added and states otherwise.
+**All rights reserved.** This is proprietary, source-available code shared as part of a professional portfolio — not open-source, and not licensed under MIT or any other open license. See [`LICENSE`](../../../LICENSE) for the full terms.

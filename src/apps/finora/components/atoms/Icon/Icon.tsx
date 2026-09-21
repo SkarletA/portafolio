@@ -18,7 +18,9 @@ export type IconName =
   | 'currency'
 
 interface IconProps {
+  /** Which glyph to render. */
   name: IconName
+  /** Extra classes, typically to set the icon's size and color. */
   className?: string
 }
 
@@ -170,6 +172,7 @@ const GLYPHS: Record<IconName, () => ReactElement> = {
   currency: CurrencyGlyph,
 }
 
+/** A hand-drawn line icon from Finora's own glyph set, sized and colored via `className`. */
 export function Icon({ name, className }: IconProps) {
   const Glyph = GLYPHS[name]
 

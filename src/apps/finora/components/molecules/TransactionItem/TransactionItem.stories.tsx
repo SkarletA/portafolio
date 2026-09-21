@@ -1,17 +1,28 @@
-import type { ReactElement } from 'react'
-import { MemoryRouter } from 'react-router-dom'
 import { TransactionItem } from './TransactionItem'
 
 export default {
   title: 'Finora/Molecules/TransactionItem',
   component: TransactionItem,
-  decorators: [
-    (Story: () => ReactElement) => (
-      <MemoryRouter>
-        <Story />
-      </MemoryRouter>
-    ),
-  ],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A single transaction row: description, category, date, signed amount, and edit/delete actions.',
+      },
+    },
+  },
+  argTypes: {
+    transaction: {
+      description: 'The transaction to display, including its category and payment method breakdown.',
+      control: false,
+      table: { type: { summary: 'TransactionWithCategory' } },
+    },
+    onDeleted: {
+      description: 'Called after a successful delete, so the caller can refresh its list.',
+      action: 'deleted',
+      table: { type: { summary: 'function' } },
+    },
+  },
 }
 
 export const Expense = {

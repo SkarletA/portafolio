@@ -3,6 +3,41 @@ import { Icon, type IconName } from './Icon'
 export default {
   title: 'Finora/Atoms/Icon',
   component: Icon,
+  args: { className: 'h-6 w-6' },
+  parameters: {
+    docs: {
+      description: {
+        component: "A hand-drawn line icon from Finora's own glyph set, sized and colored via `className`.",
+      },
+    },
+  },
+  argTypes: {
+    name: {
+      description: 'Which glyph to render.',
+      control: 'select',
+      options: [
+        'brand-mark',
+        'dashboard',
+        'transactions',
+        'budgets',
+        'analytics',
+        'goals',
+        'settings',
+        'plus',
+        'search',
+        'edit',
+        'trash',
+        'language',
+        'currency',
+      ],
+      table: { type: { summary: 'IconName' } },
+    },
+    className: {
+      description: "Extra classes, typically to set the icon's size and color.",
+      control: 'text',
+      table: { type: { summary: 'string' } },
+    },
+  },
 }
 
 export const Dashboard = {

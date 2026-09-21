@@ -6,10 +6,13 @@ import s from './NavItem.module.css'
 interface NavItemProps {
   label: string
   icon: ReactNode
+  /** Route to link to; omitted renders a disabled, non-interactive item. */
   to?: string
+  /** `sidebar` for the desktop side nav, `bottom` for the mobile tab bar. */
   variant?: 'sidebar' | 'bottom'
 }
 
+/** A single navigation link, highlighted when its route is the current page. */
 export function NavItem({ label, icon, to, variant = 'sidebar' }: NavItemProps) {
   const baseClass = variant === 'sidebar' ? s.item : s.itemBottom
 

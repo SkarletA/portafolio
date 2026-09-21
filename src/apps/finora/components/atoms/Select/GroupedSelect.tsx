@@ -11,9 +11,12 @@ export interface GroupedSelectOption {
 }
 
 export interface GroupedSelectGroup {
+  /** The group's own value - it's directly selectable, not just a heading. */
   value: string
   label: string
+  /** Shown but not selectable - e.g. a category that's already in use elsewhere. */
   disabled?: boolean
+  /** Indented options shown under this group's header. */
   children: GroupedSelectOption[]
 }
 
@@ -24,6 +27,7 @@ export interface GroupedSelectSpecialOption {
 
 export interface GroupedSelectProps {
   groups: GroupedSelectGroup[]
+  /** The currently selected value (a group's own value or one of its children's), or `''` for no selection. */
   value: string
   onChange: (value: string) => void
   placeholder?: string
@@ -32,9 +36,7 @@ export interface GroupedSelectProps {
   ariaLabel?: string
   ariaInvalid?: boolean
   ariaDescribedBy?: string
-  // Rendered at the end of the panel, below a separator with a "+" icon -
-  // e.g. "Create new category". Distinct from a group: it has no children
-  // and is never rendered as a header.
+  /** Rendered at the end of the panel, below a separator with a "+" icon - e.g. "Create new category". */
   specialOption?: GroupedSelectSpecialOption
   className?: string
 }
@@ -48,13 +50,13 @@ interface FlatItem {
   kind: FlatKind
 }
 
-// Same listbox mechanics as Select, but each group's own value is itself a
-// selectable option styled as a header, with its children indented below -
-// a category can be budgeted/assigned directly (e.g. "Food") or via one of
-// its subcategories (e.g. "Food > Meat"), so the parent can't be a
-// non-selectable label the way a native <optgroup> heading is. A group with
-// no children simply has nothing indented under its header - no separate
-// "collapsed" state to manage.
+/**
+ * A dropdown list of options organized into labeled groups, with each
+ * group's own value directly selectable alongside its indented children -
+ * e.g. picking "Food" itself or one of its subcategories like "Food > Meat"
+ * from the same list. Otherwise the same as Select: legible in both themes,
+ * with arrow-key navigation, Enter to select, and Escape to close.
+ */
 export function GroupedSelect({
   groups,
   value,

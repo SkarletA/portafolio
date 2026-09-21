@@ -1,19 +1,23 @@
-import { MemoryRouter } from 'react-router-dom'
 import { AppShell } from './AppShell'
-import { AuthProvider } from '@context/AuthContext'
 
 export default {
   title: 'Finora/Organisms/AppShell',
   component: AppShell,
-  decorators: [
-    (Story: () => React.ReactElement) => (
-      <MemoryRouter initialEntries={['/finora']}>
-        <AuthProvider>
-          <Story />
-        </AuthProvider>
-      </MemoryRouter>
-    ),
-  ],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'The app-wide frame around every Finora page: desktop sidebar or mobile header/tab bar, and the page content between them.',
+      },
+    },
+  },
+  argTypes: {
+    children: {
+      description: "The current page's content, rendered inside the shell's main content area.",
+      control: false,
+      table: { type: { summary: 'ReactNode' } },
+    },
+  },
 }
 
 export const Default = {

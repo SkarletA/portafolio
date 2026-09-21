@@ -19,7 +19,13 @@ const BOTTOM_NAV_RIGHT_DEFS = [
   { labelKey: 'nav.goals', to: '/finora/goals', icon: <Icon name="goals" className={s.navIcon} /> },
 ] as const
 
-export function AppShell({ children }: { children: ReactNode }) {
+interface AppShellProps {
+  /** The current page's content, rendered inside the shell's main content area. */
+  children: ReactNode
+}
+
+/** The app-wide frame around every Finora page: desktop sidebar or mobile header/tab bar, and the page content between them. */
+export function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation('common')
   const navigate = useNavigate()
   const { theme } = useTheme()
