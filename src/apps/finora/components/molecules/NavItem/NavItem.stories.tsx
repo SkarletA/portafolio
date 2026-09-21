@@ -10,6 +10,36 @@ const SampleIcon = () => (
 export default {
   title: 'Finora/Molecules/NavItem',
   component: NavItem,
+  parameters: {
+    docs: {
+      description: {
+        component: "A single navigation link, highlighted when its route is the current page.",
+      },
+    },
+  },
+  argTypes: {
+    label: {
+      description: 'Link text.',
+      control: 'text',
+      table: { type: { summary: 'string' } },
+    },
+    icon: {
+      description: 'Icon shown next to the label.',
+      control: false,
+      table: { type: { summary: 'ReactNode' } },
+    },
+    to: {
+      description: 'Route to link to; omitted renders a disabled, non-interactive item.',
+      control: 'text',
+      table: { type: { summary: 'string' } },
+    },
+    variant: {
+      description: 'The desktop side nav (`sidebar`) or the mobile tab bar (`bottom`).',
+      control: 'select',
+      options: ['sidebar', 'bottom'],
+      table: { type: { summary: 'string' }, defaultValue: { summary: 'sidebar' } },
+    },
+  },
   decorators: [
     (Story: () => React.ReactElement) => (
       <MemoryRouter initialEntries={['/finora/transactions']}>

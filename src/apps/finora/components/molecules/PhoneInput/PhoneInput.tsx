@@ -3,12 +3,16 @@ import { MAX_PHONE_DIGITS } from '@domain/profile'
 import s from './PhoneInput.module.css'
 
 interface PhoneInputProps {
+  /** Digits only, no country code. */
   value: string
+  /** Receives the new value already stripped to digits, capped at MAX_PHONE_DIGITS. */
   onChange: (digits: string) => void
+  /** Calling code shown as a fixed prefix, e.g. "+52"; falls back to a plain "+" when unknown. */
   countryCode?: string
   testId: string
 }
 
+/** A phone number field with a fixed, non-editable country calling-code prefix. */
 export function PhoneInput({ value, onChange, countryCode, testId }: PhoneInputProps) {
   const handleChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {

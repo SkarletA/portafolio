@@ -13,10 +13,13 @@ const COLOR_PALETTE = [
 ]
 
 interface AvatarProps {
+  /** Used to derive a stable fallback color when there's no photo, so it's consistent across sessions. */
   userId: string
+  /** Uploaded profile photo; falls back to initials when absent. */
   avatarUrl?: string | null
   firstName?: string | null
   lastName?: string | null
+  /** Used for the fallback initial when no name is set. */
   email?: string | null
   size?: 'sm' | 'md' | 'lg'
 }
@@ -41,6 +44,7 @@ function getColorClass(userId: string): string {
   return COLOR_PALETTE[hash % COLOR_PALETTE.length]
 }
 
+/** A round profile photo, or initials on a deterministic color when no photo is set. */
 export function Avatar({ userId, avatarUrl, firstName, lastName, email, size = 'md' }: AvatarProps) {
   if (avatarUrl) {
     const name = [firstName, lastName].filter(Boolean).join(' ') || email || 'User'

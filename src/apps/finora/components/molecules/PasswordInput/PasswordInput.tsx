@@ -7,10 +7,12 @@ interface PasswordInputProps {
   label: string
   value: string
   onChange: (event: ChangeEvent<HTMLInputElement>) => void
+  /** Base id for this field's own testid and its visibility-toggle button's testid. */
   testId: string
   required?: boolean
 }
 
+/** A password field with a show/hide toggle. */
 export function PasswordInput({ label, value, onChange, testId, required = false }: PasswordInputProps) {
   const { t } = useTranslation('common')
   const [visible, setVisible] = useState(false)

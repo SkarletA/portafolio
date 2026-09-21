@@ -10,6 +10,7 @@ import s from './BudgetCard.module.css'
 
 interface BudgetCardProps {
   budget: BudgetWithProgress
+  /** Removes outer padding, for placing this card flush against a container's own edges. */
   flush?: boolean
 }
 
@@ -19,6 +20,7 @@ const STATUS_LABEL_KEYS = {
   exceeded: 'card.status.exceeded',
 } as const
 
+/** A category's monthly spending progress: amount spent against its limit, with a status badge and progress bar. */
 export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
   const { t } = useTranslation(['budgets', 'categories'])
   const { currency } = useCurrency()

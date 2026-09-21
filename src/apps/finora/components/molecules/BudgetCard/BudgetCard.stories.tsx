@@ -3,6 +3,26 @@ import { BudgetCard } from './BudgetCard'
 export default {
   title: 'Finora/Molecules/BudgetCard',
   component: BudgetCard,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          "A category's monthly spending progress: amount spent against its limit, with a status badge and progress bar.",
+      },
+    },
+  },
+  argTypes: {
+    budget: {
+      description: 'The budgeted category, its spend/limit figures, and computed progress status.',
+      control: false,
+      table: { type: { summary: 'BudgetWithProgress' } },
+    },
+    flush: {
+      description: "Removes outer padding, for placing this card flush against a container's own edges.",
+      control: 'boolean',
+      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' } },
+    },
+  },
 }
 
 export const OnTrack = {

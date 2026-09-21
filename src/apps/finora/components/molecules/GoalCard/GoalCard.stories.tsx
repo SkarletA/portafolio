@@ -3,6 +3,25 @@ import { GoalCard } from './GoalCard'
 export default {
   title: 'Finora/Molecules/GoalCard',
   component: GoalCard,
+  parameters: {
+    docs: {
+      description: {
+        component: "A savings goal's progress toward its target amount, with an inline form to add funds.",
+      },
+    },
+  },
+  argTypes: {
+    goal: {
+      description: 'The goal, its target/current amounts, and computed progress.',
+      control: false,
+      table: { type: { summary: 'GoalWithProgress' } },
+    },
+    onFundsAdded: {
+      description: 'Called after funds are successfully added, so the caller can refresh the goal’s data.',
+      action: 'funds added',
+      table: { type: { summary: 'function' } },
+    },
+  },
 }
 
 export const OnTrack = {

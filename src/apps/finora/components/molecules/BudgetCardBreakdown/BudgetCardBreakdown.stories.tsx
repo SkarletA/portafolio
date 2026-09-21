@@ -3,6 +3,35 @@ import { BudgetCardBreakdown } from './BudgetCardBreakdown'
 export default {
   title: 'Finora/Molecules/BudgetCardBreakdown',
   component: BudgetCardBreakdown,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A collapsible list of subcategory spend under a budget card, hidden until the user asks to see it.',
+      },
+    },
+  },
+  argTypes: {
+    categoryId: {
+      description: 'Used to build a stable, unique id/testid for the show/hide toggle.',
+      control: 'text',
+      table: { type: { summary: 'string' } },
+    },
+    categoryName: {
+      control: 'text',
+      table: { type: { summary: 'string' } },
+    },
+    limit: {
+      description: "The parent category's effective monthly limit, used to size each subcategory's mini progress bar.",
+      control: 'number',
+      table: { type: { summary: 'number' } },
+    },
+    items: {
+      description: 'Subcategories to list once expanded; renders nothing when empty.',
+      control: false,
+      table: { type: { summary: 'BudgetBreakdownItem[]' } },
+    },
+  },
 }
 
 export const WithSubcategories = {

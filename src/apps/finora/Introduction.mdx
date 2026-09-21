@@ -1,0 +1,71 @@
+import { Meta, ColorPalette, ColorItem, Typeset } from '@storybook/addon-docs/blocks'
+
+<Meta title="Finora/Introduction" />
+
+# Finora
+
+Finora is a personal finance app for tracking income, expenses, budgets, and savings
+goals by hand — no bank connection required. This Storybook is its design system: the
+building blocks the app's screens are assembled from, in isolation, in both light and
+dark mode.
+
+## Typography
+
+Finora pairs a serif display face for headings with a plain sans-serif for everything
+else that needs to read quickly — amounts, labels, body copy.
+
+<Typeset
+  fontFamily="Fraunces, Georgia, serif"
+  fontSizes={[16, 20, 24, 32]}
+  sampleText="Track your spending"
+/>
+
+<Typeset
+  fontFamily="Inter, system-ui, sans-serif"
+  fontSizes={[12, 14, 16, 20]}
+  sampleText="Groceries · Credit Card · $42.50"
+/>
+
+## Colors
+
+Every color below is a CSS custom property (`--color-finora-*` in `styles/theme.css`),
+each with its own dark-mode value — components should always reference the token, never
+a hardcoded color, so they render correctly in both themes automatically.
+
+<ColorPalette>
+  <ColorItem
+    title="Brand"
+    subtitle="Primary action color and its darker/lighter variants"
+    colors={{ primary: '#2563eb', 'primary-dark': '#1e3a8a', accent: '#3ddc97' }}
+  />
+  <ColorItem
+    title="Feedback"
+    subtitle="Success, danger, and warning states, with a soft background for each"
+    colors={{
+      success: '#16a34a',
+      'success-bg': '#f0fdf4',
+      danger: '#dc2626',
+      'danger-bg': '#fef2f2',
+      warning: '#f59e0b',
+      'warning-bg': '#fffbeb',
+    }}
+  />
+  <ColorItem
+    title="Neutrals"
+    subtitle="Text, borders, and surfaces (light mode values shown)"
+    colors={{
+      ink: '#0f172a',
+      'ink-muted': '#64748b',
+      border: '#e2e8f0',
+      bg: '#f8fafc',
+      surface: '#ffffff',
+      'surface-muted': '#f1f5f9',
+    }}
+  />
+</ColorPalette>
+
+## How this is organized
+
+Components are grouped by how small and reusable they are: simple, single-purpose
+pieces first, then compositions of those pieces into more complete UI. Every component
+has its own colocated tests (`*.test.tsx`) alongside its story.
