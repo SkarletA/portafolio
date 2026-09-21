@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../context/AuthContext'
 import { useProfile } from '../../../hooks/useProfile'
+import { useLanguage } from '../../../context/LanguageContext'
+import { useCurrency } from '../../../context/CurrencyContext'
 import { NavItem } from '../../molecules/NavItem/NavItem'
-import { LocaleBadge } from '../../molecules/LocaleBadge/LocaleBadge'
+import { PreferenceDropdown } from '../../molecules/PreferenceDropdown/PreferenceDropdown'
 import { Icon } from '../../atoms/Icon/Icon'
 import { Avatar } from '../../atoms/Avatar/Avatar'
+import type { Currency, Language } from '../../../domain/profile'
 import s from './Sidebar.module.css'
 
 const NAV_ITEM_DEFS = [
@@ -15,17 +18,45 @@ const NAV_ITEM_DEFS = [
   { labelKey: 'nav.budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
   { labelKey: 'nav.analytics', to: '/finora/analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
   { labelKey: 'nav.goals', to: '/finora/goals', icon: <Icon name="goals" className={s.navIcon} /> },
+  { labelKey: 'nav.settings', to: '/finora/settings', icon: <Icon name="settings" className={s.navIcon} /> },
 ] as const
 
 export function Sidebar() {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'settings'])
   const { user, signOut } = useAuth()
   const { profile } = useProfile()
+  const { language, setLanguage } = useLanguage()
+  const { currency, setCurrency } = useCurrency()
   const displayName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') || user?.email || ''
+
+  const languageOptions = [
+    { value: 'en', label: t('settings:preferences.language.en') },
+    { value: 'es', label: t('settings:preferences.language.es') },
+  ]
+
+  const currencyOptions = [
+    { value: 'MXN', label: t('settings:preferences.currency.mxn') },
+    { value: 'USD', label: t('settings:preferences.currency.usd') },
+    { value: 'EUR', label: t('settings:preferences.currency.eur') },
+  ]
 
   const handleSignOutClick = useCallback(() => {
     signOut()
   }, [signOut])
+
+  const handleLanguageSelect = useCallback(
+    (nextValue: string) => {
+      setLanguage(nextValue as Language)
+    },
+    [setLanguage]
+  )
+
+  const handleCurrencySelect = useCallback(
+    (nextValue: string) => {
+      setCurrency(nextValue as Currency)
+    },
+    [setCurrency]
+  )
 
   return (
     <aside className={s.sidebar}>
@@ -43,27 +74,39 @@ export function Sidebar() {
       </nav>
 
       <div className={s.bottomSection}>
-        <NavItem
-          label={t('nav.settings')}
-          icon={<Icon name="settings" className={s.navIcon} />}
-          to="/finora/settings"
+        <PreferenceDropdown
+          icon={<Icon name="language" className={s.navIcon} />}
+          label={t('settings:preferences.language.label')}
+          value={language}
+          options={languageOptions}
+          onSelect={handleLanguageSelect}
+          testId="sidebar-language"
         />
+        <PreferenceDropdown
+          icon={<Icon name="currency" className={s.navIcon} />}
+          label={t('settings:preferences.currency.label')}
+          value={currency}
+          options={currencyOptions}
+          onSelect={handleCurrencySelect}
+          testId="sidebar-currency"
+        />
+
         <Link to="/" className={s.backLink} data-testid="sidebar-back-to-portfolio-link">
           {t('nav.backToPortfolio')}
         </Link>
 
-        <LocaleBadge />
-
         <div className={s.profile}>
-          <Avatar
-            userId={user?.id ?? ''}
-            avatarUrl={profile?.avatarUrl}
-            firstName={profile?.firstName}
-            lastName={profile?.lastName}
-            email={user?.email}
-            size="sm"
-          />
-          <p className={s.email}>{displayName}</p>
+          <Link to="/finora/settings" className={s.profileLink} data-testid="sidebar-profile-settings-link">
+            <Avatar
+              userId={user?.id ?? ''}
+              avatarUrl={profile?.avatarUrl}
+              firstName={profile?.firstName}
+              lastName={profile?.lastName}
+              email={user?.email}
+              size="sm"
+            />
+            <p className={s.email}>{displayName}</p>
+          </Link>
           <button
             id="sidebar-sign-out-button"
             data-testid="sidebar-sign-out-button"
