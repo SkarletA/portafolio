@@ -5,9 +5,9 @@ import cn from 'clsx'
 import type { BudgetBreakdownItem } from '@hooks/useBudgets'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
-import { useCurrency } from '../../../context/CurrencyContext'
-import { useLanguage } from '../../../context/LanguageContext'
-import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
+import { useCurrency } from '@context/CurrencyContext'
+import { useLanguage } from '@context/LanguageContext'
+import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCardBreakdown.module.css'
 
 interface BudgetCardBreakdownProps {

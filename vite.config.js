@@ -16,6 +16,14 @@ export default defineConfig({
       '@domain': fileURLToPath(new URL('./src/apps/finora/domain', import.meta.url)),
       '@components': fileURLToPath(new URL('./src/apps/finora/components', import.meta.url)),
       '@services': fileURLToPath(new URL('./src/apps/finora/services', import.meta.url)),
+      '@context': fileURLToPath(new URL('./src/apps/finora/context', import.meta.url)),
+      // More specific than @components - used for imports that reach directly
+      // into one of the three Atomic Design tiers instead of a bare
+      // components/ file (only ProtectedRoute.tsx today, which still goes
+      // through @components).
+      '@atoms': fileURLToPath(new URL('./src/apps/finora/components/atoms', import.meta.url)),
+      '@molecules': fileURLToPath(new URL('./src/apps/finora/components/molecules', import.meta.url)),
+      '@organisms': fileURLToPath(new URL('./src/apps/finora/components/organisms', import.meta.url)),
     },
   },
   test: {

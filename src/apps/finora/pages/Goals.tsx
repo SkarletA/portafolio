@@ -2,9 +2,9 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useGoals } from '@hooks/useGoals'
-import { GoalCard } from '@components/molecules/GoalCard/GoalCard'
-import { AsyncState } from '@components/molecules/AsyncState/AsyncState'
-import { Button } from '@components/atoms/Button/Button'
+import { GoalCard } from '@molecules/GoalCard/GoalCard'
+import { AsyncState } from '@molecules/AsyncState/AsyncState'
+import { Button } from '@atoms/Button/Button'
 import s from './Goals.module.css'
 
 export function Goals() {

@@ -1,11 +1,11 @@
 import './styles/theme.css'
 import './i18n'
-import { AppShell } from './components/organisms/AppShell/AppShell'
+import { AppShell } from '@organisms/AppShell/AppShell'
 import { FinoraRoutes } from './routes/FinoraRoutes'
-import { AuthProvider } from './context/AuthContext'
-import { ThemeProvider } from './context/ThemeContext'
-import { LanguageProvider } from './context/LanguageContext'
-import { CurrencyProvider } from './context/CurrencyContext'
+import { AuthProvider } from '@context/AuthContext'
+import { ThemeProvider } from '@context/ThemeContext'
+import { LanguageProvider } from '@context/LanguageContext'
+import { CurrencyProvider } from '@context/CurrencyContext'
 
 export default function FinoraApp() {
   return (

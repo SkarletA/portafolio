@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@components/atoms/Button/Button'
+import { Button } from '@atoms/Button/Button'
 import { useCategories } from '@hooks/useCategories'
 import { useBudgets } from '@hooks/useBudgets'
 import { createBudget, type NewBudgetInput } from '@services/budgetsService'

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useCurrency } from '../../../context/CurrencyContext'
-import { useLanguage } from '../../../context/LanguageContext'
+import { useCurrency } from '@context/CurrencyContext'
+import { useLanguage } from '@context/LanguageContext'
 import s from './LocaleBadge.module.css'
 
 export function LocaleBadge() {

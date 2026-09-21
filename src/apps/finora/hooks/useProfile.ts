@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '@context/AuthContext'
 import { getProfile } from '@services/profilesService'
 import type { Profile } from '@domain/profile'
 
