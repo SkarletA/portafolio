@@ -1,0 +1,66 @@
+@reference '../../../styles/theme.css';
+
+.wrapper {
+  @apply relative;
+}
+
+.trigger {
+  @apply flex w-full items-center justify-between gap-2 rounded-lg border border-finora-border bg-finora-surface py-2 pl-3 pr-3 text-left text-sm text-finora-ink transition-colors;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finora-primary;
+  @apply disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.value {
+  @apply min-w-0 flex-1 truncate;
+}
+
+.placeholder {
+  @apply text-finora-ink-muted;
+}
+
+.chevron {
+  @apply h-4 w-4 shrink-0 text-finora-ink-muted transition-transform;
+}
+
+.chevronOpen {
+  @apply rotate-180;
+}
+
+.panel {
+  @apply absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-finora-border bg-finora-surface p-1 shadow-lg;
+}
+
+.option {
+  @apply flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-finora-ink transition-colors;
+  @apply hover:bg-finora-surface-muted;
+  @apply focus-visible:outline-none focus-visible:bg-finora-surface-muted;
+  @apply disabled:cursor-not-allowed disabled:text-finora-ink-muted disabled:hover:bg-transparent;
+}
+
+.optionSelected {
+  @apply bg-blue-50 font-medium text-finora-primary;
+}
+
+.optionActive {
+  @apply bg-finora-surface-muted;
+}
+
+.optionHeader {
+  @apply font-semibold;
+}
+
+.optionChild {
+  @apply pl-6 text-finora-ink-muted;
+}
+
+.separator {
+  @apply my-1 border-t border-finora-border;
+}
+
+.optionSpecial {
+  @apply flex items-center gap-2 text-finora-primary;
+}
+
+.specialIcon {
+  @apply h-4 w-4 shrink-0;
+}
