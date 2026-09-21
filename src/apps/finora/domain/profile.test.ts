@@ -13,6 +13,7 @@ describe('toProfile', () => {
       avatar_url: 'https://example.com/avatar.png',
       theme: 'dark',
       language: 'es',
+      currency: 'MXN',
     }
 
     expect(toProfile(row)).toEqual({
@@ -25,6 +26,7 @@ describe('toProfile', () => {
       avatarUrl: 'https://example.com/avatar.png',
       theme: 'dark',
       language: 'es',
+      currency: 'MXN',
     })
   })
 
@@ -39,6 +41,7 @@ describe('toProfile', () => {
       avatar_url: null,
       theme: 'light',
       language: 'en',
+      currency: 'USD',
     }
 
     expect(toProfile(row)).toEqual({
@@ -51,6 +54,7 @@ describe('toProfile', () => {
       avatarUrl: null,
       theme: 'light',
       language: 'en',
+      currency: 'USD',
     })
   })
 })

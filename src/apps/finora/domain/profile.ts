@@ -1,5 +1,6 @@
 export type Theme = 'light' | 'dark'
 export type Language = 'en' | 'es'
+export type Currency = 'MXN' | 'USD' | 'EUR'
 
 export interface Profile {
   userId: string
@@ -11,6 +12,7 @@ export interface Profile {
   avatarUrl: string | null
   theme: Theme
   language: Language
+  currency: Currency
 }
 
 export interface ProfileRow {
@@ -23,6 +25,7 @@ export interface ProfileRow {
   avatar_url: string | null
   theme: Theme
   language: Language
+  currency: Currency
 }
 
 export function toProfile(row: ProfileRow): Profile {
@@ -36,6 +39,7 @@ export function toProfile(row: ProfileRow): Profile {
     avatarUrl: row.avatar_url,
     theme: row.theme,
     language: row.language,
+    currency: row.currency,
   }
 }
 
