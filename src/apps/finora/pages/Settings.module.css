@@ -56,10 +56,6 @@
   @apply cursor-not-allowed bg-finora-surface-muted text-finora-ink-muted;
 }
 
-.select {
-  @apply rounded-lg border border-finora-border px-3 py-2 text-sm font-normal text-finora-ink;
-}
-
 .error {
   @apply text-sm text-finora-danger;
 }

@@ -11,6 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import { Button } from '@atoms/Button/Button'
+import { Select } from '@atoms/Select/Select'
 import { CategoryIcon, CATEGORY_ICON_NAMES, DEFAULT_CATEGORY_ICON } from '@atoms/CategoryIcon/CategoryIcon'
 import { useCategories } from '@hooks/useCategories'
 import { useTransaction } from '@hooks/useTransaction'
@@ -116,6 +117,35 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
   const selectedParent = selectedGroup?.parent ?? null
 
+  const categoryOptions = useMemo(
+    () => [
+      ...categoryGroups.map((group) => ({ value: group.parent.id, label: getCategoryDisplayName(group.parent, t) })),
+      { value: CREATE_NEW_CATEGORY_VALUE, label: t('transactions:form.createNewCategory') },
+    ],
+    [categoryGroups, t]
+  )
+
+  const subcategoryOptions = useMemo(() => {
+    if (!selectedGroup) return []
+
+    return [
+      {
+        value: NONE_SUBCATEGORY_VALUE,
+        label: t('transactions:form.noneUseDirectly', { category: getCategoryDisplayName(selectedGroup.parent, t) }),
+      },
+      ...selectedGroup.children.map((child) => ({ value: child.id, label: getCategoryDisplayName(child, t) })),
+      { value: OTHERS_SUBCATEGORY_VALUE, label: t('transactions:form.createNewSubcategory') },
+    ]
+  }, [selectedGroup, t])
+
+  const newCategoryParentOptions = useMemo(
+    () => [
+      { value: '', label: t('transactions:form.noneTopLevel') },
+      ...categoryGroups.map((group) => ({ value: group.parent.id, label: getCategoryDisplayName(group.parent, t) })),
+    ],
+    [categoryGroups, t]
+  )
+
   useEffect(() => {
     if (mode !== 'edit' || !transaction || hasPreloaded) return
 
@@ -149,9 +179,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setErrors((prev) => (prev.description ? { ...prev, description: undefined } : prev))
   }, [])
 
-  const handleCategoryChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value
-
+  const handleCategoryChange = useCallback((value: string) => {
     if (value === CREATE_NEW_CATEGORY_VALUE) {
       setIsCreatingCategory(true)
       return
@@ -165,9 +193,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   }, [])
 
   const handleSubcategoryChange = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      const value = event.target.value
-
+    (value: string) => {
       if (value === OTHERS_SUBCATEGORY_VALUE) {
         setIsCreatingSubcategory(true)
         return
@@ -260,8 +286,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setCategoryCreateError(null)
   }, [])
 
-  const handleNewCategoryParentChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    setNewCategoryParentId(event.target.value)
+  const handleNewCategoryParentChange = useCallback((value: string) => {
+    setNewCategoryParentId(value)
   }, [])
 
   const handleNewCategoryColorClick = useCallback((event: MouseEvent<HTMLButtonElement>) => {
@@ -495,26 +521,16 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
         <label className={s.field}>
           {t('transactions:form.category')}
-          <select
-            required
+          <Select
+            options={categoryOptions}
             value={selectedParent?.id ?? ''}
             onChange={handleCategoryChange}
-            className={s.select}
+            placeholder={categoriesLoading ? t('transactions:form.loadingCategories') : t('transactions:form.selectCategory')}
             disabled={categoriesLoading}
-            aria-invalid={!!errors.category_id}
-            aria-describedby={errors.category_id ? 'add-transaction-category-error' : undefined}
-            data-testid="add-transaction-category-select"
-          >
-            <option value="" disabled={categories.length > 0}>
-              {categoriesLoading ? t('transactions:form.loadingCategories') : t('transactions:form.selectCategory')}
-            </option>
-            {categoryGroups.map((group) => (
-              <option key={group.parent.id} value={group.parent.id}>
-                {getCategoryDisplayName(group.parent, t)}
-              </option>
-            ))}
-            <option value={CREATE_NEW_CATEGORY_VALUE}>{t('transactions:form.createNewCategory')}</option>
-          </select>
+            ariaInvalid={!!errors.category_id}
+            ariaDescribedBy={errors.category_id ? 'add-transaction-category-error' : undefined}
+            testId="add-transaction-category-select"
+          />
           {errors.category_id && (
             <p id="add-transaction-category-error" role="alert" className={s.error}>
               {errors.category_id}
@@ -530,7 +546,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         {selectedGroup && (
           <label className={s.field}>
             {t('transactions:form.subcategory')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
-            <select
+            <Select
+              options={subcategoryOptions}
               value={
                 isCreatingSubcategory
                   ? OTHERS_SUBCATEGORY_VALUE
@@ -539,19 +556,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                     : categoryId
               }
               onChange={handleSubcategoryChange}
-              className={s.select}
-              data-testid="add-transaction-subcategory-select"
-            >
-              <option value={NONE_SUBCATEGORY_VALUE}>
-                {t('transactions:form.noneUseDirectly', { category: getCategoryDisplayName(selectedGroup.parent, t) })}
-              </option>
-              {selectedGroup.children.map((child) => (
-                <option key={child.id} value={child.id}>
-                  {getCategoryDisplayName(child, t)}
-                </option>
-              ))}
-              <option value={OTHERS_SUBCATEGORY_VALUE}>{t('transactions:form.createNewSubcategory')}</option>
-            </select>
+              testId="add-transaction-subcategory-select"
+            />
             {isCreatingSubcategory && (
               <>
                 <input
@@ -591,19 +597,12 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
             <label className={s.field}>
               {t('transactions:form.parentCategory')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
-              <select
+              <Select
+                options={newCategoryParentOptions}
                 value={newCategoryParentId}
                 onChange={handleNewCategoryParentChange}
-                className={s.select}
-                data-testid="add-transaction-new-category-parent-select"
-              >
-                <option value="">{t('transactions:form.noneTopLevel')}</option>
-                {categoryGroups.map((group) => (
-                  <option key={group.parent.id} value={group.parent.id}>
-                    {getCategoryDisplayName(group.parent, t)}
-                  </option>
-                ))}
-              </select>
+                testId="add-transaction-new-category-parent-select"
+              />
             </label>
 
             <div className={s.field}>

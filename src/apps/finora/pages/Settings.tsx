@@ -19,6 +19,7 @@ import { useProfile } from '@hooks/useProfile'
 import { updateProfile, uploadAvatar } from '@services/profilesService'
 import { Avatar } from '@atoms/Avatar/Avatar'
 import { Button } from '@atoms/Button/Button'
+import { Select } from '@atoms/Select/Select'
 import { PasswordInput } from '@molecules/PasswordInput/PasswordInput'
 import { PhoneInput } from '@molecules/PhoneInput/PhoneInput'
 import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '@domain/profile'
@@ -47,6 +48,8 @@ const LANGUAGE_OPTIONS: { value: Language; labelKey: string }[] = [
   { value: 'en', labelKey: 'preferences.language.en' },
   { value: 'es', labelKey: 'preferences.language.es' },
 ]
+
+const COUNTRY_OPTIONS = COUNTRIES.map((country) => ({ value: country, label: country }))
 
 const CURRENCY_OPTIONS: { value: Currency; labelKey: string }[] = [
   { value: 'MXN', labelKey: 'preferences.currency.mxn' },
@@ -144,8 +147,8 @@ export function Settings() {
     setProfileSuccess(false)
   }, [])
 
-  const handleNationalityChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    setNationality(event.target.value)
+  const handleNationalityChange = useCallback((nextNationality: string) => {
+    setNationality(nextNationality)
     setProfileSuccess(false)
   }, [])
 
@@ -423,19 +426,13 @@ export function Settings() {
               </label>
               <label className={s.field}>
                 {t('common:profileFields.nationality')}
-                <select
+                <Select
+                  options={COUNTRY_OPTIONS}
                   value={nationality}
                   onChange={handleNationalityChange}
-                  className={s.select}
-                  data-testid="settings-nationality-select"
-                >
-                  <option value="">{t('common:profileFields.selectCountry')}</option>
-                  {COUNTRIES.map((country) => (
-                    <option key={country} value={country}>
-                      {country}
-                    </option>
-                  ))}
-                </select>
+                  placeholder={t('common:profileFields.selectCountry')}
+                  testId="settings-nationality-select"
+                />
               </label>
             </div>
 
