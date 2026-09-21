@@ -2,10 +2,11 @@ import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
+import { GroupedSelect } from '@atoms/Select/GroupedSelect'
 import { useCategories } from '@hooks/useCategories'
 import { useBudgets } from '@hooks/useBudgets'
 import { createBudget, type NewBudgetInput } from '@services/budgetsService'
-import { getCategoryDisplayName } from '@domain/category'
+import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
 import s from './AddBudget.module.css'
 
 interface FormErrors {
@@ -27,16 +28,31 @@ export function AddBudget() {
 
   const budgetedCategoryIds = useMemo(() => new Set(budgets.map((budget) => budget.category_id)), [budgets])
 
-  const availableCategories = useMemo(
-    () => categories.filter((category) => !budgetedCategoryIds.has(category.id)),
-    [categories, budgetedCategoryIds]
-  )
+  const categoryTree = useMemo(() => buildCategoryTree(categories), [categories])
+
+  // A parent that's already budgeted is kept as a (disabled) group header
+  // only if it still has un-budgeted children under it - a category and its
+  // subcategories can each carry their own budget independently (see
+  // docs/adr/001-net-category-spend-calculation.md), so a budgeted parent
+  // doesn't imply its children are unavailable too.
+  const budgetGroups = useMemo(() => {
+    return categoryTree
+      .map((group) => ({
+        value: group.parent.id,
+        label: getCategoryDisplayName(group.parent, t),
+        disabled: budgetedCategoryIds.has(group.parent.id),
+        children: group.children
+          .filter((child) => !budgetedCategoryIds.has(child.id))
+          .map((child) => ({ value: child.id, label: getCategoryDisplayName(child, t) })),
+      }))
+      .filter((group) => !group.disabled || group.children.length > 0)
+  }, [categoryTree, budgetedCategoryIds, t])
 
   const loadingOptions = categoriesLoading || budgetsLoading
-  const noAvailableCategories = !loadingOptions && !categoriesError && availableCategories.length === 0
+  const noAvailableCategories = !loadingOptions && !categoriesError && budgetGroups.length === 0
 
-  const handleCategoryChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    setCategoryId(event.target.value)
+  const handleCategoryChange = useCallback((nextCategoryId: string) => {
+    setCategoryId(nextCategoryId)
     setErrors((prev) => (prev.category_id ? { ...prev, category_id: undefined } : prev))
   }, [])
 
@@ -92,30 +108,22 @@ export function AddBudget() {
       <form onSubmit={handleSubmit} className={s.form} noValidate>
         <label className={s.field}>
           {t('budgets:form.category')}
-          <select
-            required
+          <GroupedSelect
+            groups={budgetGroups}
             value={categoryId}
             onChange={handleCategoryChange}
-            className={s.select}
+            placeholder={
+              loadingOptions
+                ? t('budgets:form.loadingCategories')
+                : noAvailableCategories
+                  ? t('budgets:form.noCategoriesAvailable')
+                  : t('budgets:form.selectCategory')
+            }
             disabled={loadingOptions || noAvailableCategories}
-            aria-invalid={!!errors.category_id}
-            aria-describedby={errors.category_id ? 'add-budget-category-error' : undefined}
-            data-testid="add-budget-category-select"
-          >
-            <option value="" disabled={availableCategories.length > 0}>
-              {loadingOptions ? t('budgets:form.loadingCategories') : t('budgets:form.selectCategory')}
-            </option>
-            {noAvailableCategories && (
-              <option value="" disabled>
-                {t('budgets:form.noCategoriesAvailable')}
-              </option>
-            )}
-            {availableCategories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {getCategoryDisplayName(category, t)}
-              </option>
-            ))}
-          </select>
+            ariaInvalid={!!errors.category_id}
+            ariaDescribedBy={errors.category_id ? 'add-budget-category-error' : undefined}
+            testId="add-budget-category-select"
+          />
           {errors.category_id && (
             <p id="add-budget-category-error" role="alert" className={s.error}>
               {errors.category_id}

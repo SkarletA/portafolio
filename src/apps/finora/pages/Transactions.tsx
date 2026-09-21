@@ -7,9 +7,12 @@ import { TransactionItem } from '@molecules/TransactionItem/TransactionItem'
 import { AsyncState } from '@molecules/AsyncState/AsyncState'
 import { Button } from '@atoms/Button/Button'
 import { Icon } from '@atoms/Icon/Icon'
+import { Select } from '@atoms/Select/Select'
 import { PAYMENT_METHODS } from '@domain/transaction'
 import { getCategoryDisplayName } from '@domain/category'
 import s from './Transactions.module.css'
+
+const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({ value: method, label: method }))
 
 export function Transactions() {
   const { t } = useTranslation(['transactions', 'common', 'categories'])
@@ -29,13 +32,18 @@ export function Transactions() {
     setSearch(event.target.value)
   }, [])
 
-  const handleCategoryFilterChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    setCategoryId(event.target.value)
+  const handleCategoryFilterChange = useCallback((nextCategoryId: string) => {
+    setCategoryId(nextCategoryId)
   }, [])
 
-  const handlePaymentMethodFilterChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    setPaymentMethod(event.target.value)
+  const handlePaymentMethodFilterChange = useCallback((nextPaymentMethod: string) => {
+    setPaymentMethod(nextPaymentMethod)
   }, [])
+
+  const categoryOptions = useMemo(
+    () => categories.map((category) => ({ value: category.id, label: getCategoryDisplayName(category, t) })),
+    [categories, t]
+  )
 
   const filteredTransactions = useMemo(() => {
     const trimmedSearch = search.trim().toLowerCase()
@@ -83,35 +91,23 @@ export function Transactions() {
             data-testid="transactions-search-input"
           />
         </div>
-        <select
-          aria-label={t('transactions:filters.categoryAriaLabel')}
-          className={s.select}
+        <Select
+          ariaLabel={t('transactions:filters.categoryAriaLabel')}
+          options={categoryOptions}
           value={categoryId}
           onChange={handleCategoryFilterChange}
+          placeholder={t('transactions:filters.allCategories')}
           disabled={categoriesLoading}
-          data-testid="transactions-category-select"
-        >
-          <option value="">{t('transactions:filters.allCategories')}</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {getCategoryDisplayName(category, t)}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label={t('transactions:filters.paymentMethodAriaLabel')}
-          className={s.select}
+          testId="transactions-category-select"
+        />
+        <Select
+          ariaLabel={t('transactions:filters.paymentMethodAriaLabel')}
+          options={PAYMENT_METHOD_OPTIONS}
           value={paymentMethod}
           onChange={handlePaymentMethodFilterChange}
-          data-testid="transactions-payment-method-select"
-        >
-          <option value="">{t('transactions:filters.allPaymentMethods')}</option>
-          {PAYMENT_METHODS.map((method) => (
-            <option key={method} value={method}>
-              {method}
-            </option>
-          ))}
-        </select>
+          placeholder={t('transactions:filters.allPaymentMethods')}
+          testId="transactions-payment-method-select"
+        />
       </div>
 
       <div className={s.card}>

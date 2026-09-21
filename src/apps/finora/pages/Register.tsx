@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
+import { Select } from '@atoms/Select/Select'
 import { PasswordInput } from '@molecules/PasswordInput/PasswordInput'
 import { PasswordStrengthHint } from '@molecules/PasswordStrengthHint/PasswordStrengthHint'
 import { PhoneInput } from '@molecules/PhoneInput/PhoneInput'
@@ -10,6 +11,8 @@ import { getPasswordStrength } from '@domain/password'
 import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '@domain/profile'
 import type { SignUpMetadata } from '@services/authService'
 import s from './Register.module.css'
+
+const COUNTRY_OPTIONS = COUNTRIES.map((country) => ({ value: country, label: country }))
 
 export function Register() {
   const { t } = useTranslation(['auth', 'common'])
@@ -63,8 +66,8 @@ export function Register() {
     setPhone(digits)
   }, [])
 
-  const handleNationalityChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    setNationality(event.target.value)
+  const handleNationalityChange = useCallback((nextNationality: string) => {
+    setNationality(nextNationality)
   }, [])
 
   const handleDateOfBirthChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
@@ -193,19 +196,13 @@ export function Register() {
           <label className={s.field}>
             {t('common:profileFields.nationality')}{' '}
             <span className={s.hint}>{t('common:profileFields.optional')}</span>
-            <select
+            <Select
+              options={COUNTRY_OPTIONS}
               value={nationality}
               onChange={handleNationalityChange}
-              className={s.select}
-              data-testid="register-nationality-select"
-            >
-              <option value="">{t('common:profileFields.selectCountry')}</option>
-              {COUNTRIES.map((country) => (
-                <option key={country} value={country}>
-                  {country}
-                </option>
-              ))}
-            </select>
+              placeholder={t('common:profileFields.selectCountry')}
+              testId="register-nationality-select"
+            />
           </label>
         </div>
 

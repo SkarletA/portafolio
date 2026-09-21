@@ -36,10 +36,6 @@
   @apply rounded-lg border border-finora-ink/20 px-3 py-2;
 }
 
-.select {
-  @apply rounded-lg border border-finora-ink/20 px-3 py-2 text-finora-ink;
-}
-
 .error {
   @apply text-sm text-finora-danger;
 }
