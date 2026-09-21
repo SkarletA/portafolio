@@ -6,6 +6,9 @@ import cn from 'clsx'
 import { useAnalytics } from '../hooks/useAnalytics'
 import { getPeriodRange, type DateRange, type PeriodType } from '../domain/analytics'
 import { getCategoryDisplayName } from '../domain/category'
+import { formatCurrency, getLocaleForLanguage } from '../domain/currency'
+import { useCurrency } from '../context/CurrencyContext'
+import { useLanguage } from '../context/LanguageContext'
 import type { PeriodComparison, PeriodComparisonCategory } from '../services/analyticsService'
 import { StatCard } from '../components/molecules/StatCard/StatCard'
 import { AsyncState } from '../components/molecules/AsyncState/AsyncState'
@@ -26,12 +29,6 @@ const PERIOD_OPTIONS: { value: PeriodType; labelKey: string }[] = [
   { value: 'year', labelKey: 'period.yearly' },
 ]
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 const dayPillFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -47,10 +44,6 @@ const yearLabelFormatter = new Intl.DateTimeFormat('en-US', { year: 'numeric', t
 
 function formatPercentage(value: number) {
   return `${Math.round(value)}%`
-}
-
-function formatChartValue(value: number | string) {
-  return currencyFormatter.format(Number(value))
 }
 
 function formatPeriodPillLabel(periodType: PeriodType, current: DateRange): string {
@@ -100,6 +93,9 @@ function buildInsights(t: TFunction, comparison: PeriodComparison): string[] {
 
 export function Analytics() {
   const { t } = useTranslation(['analytics', 'categories'])
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const locale = getLocaleForLanguage(language)
   const [periodType, setPeriodType] = useState<PeriodType>('month')
   const { stats, spendingByCategory, trendData, comparison, loading, error } = useAnalytics(periodType)
 
@@ -107,6 +103,11 @@ export function Analytics() {
     const nextPeriod = event.currentTarget.dataset.period as PeriodType | undefined
     if (nextPeriod) setPeriodType(nextPeriod)
   }, [])
+
+  const formatChartValue = useCallback(
+    (value: number | string) => formatCurrency(Number(value), currency, locale, { maximumFractionDigits: 0 }),
+    [currency, locale]
+  )
 
   const hasData = !!stats && (stats.totalSpent > 0 || stats.totalIncome > 0)
   const topCategories = spendingByCategory.slice(0, TOP_CATEGORIES_LIMIT)
@@ -164,12 +165,12 @@ export function Analytics() {
               <StatCard
                 testId="analytics-total-spent-stat"
                 label={t('stats.totalSpent')}
-                value={currencyFormatter.format(stats.totalSpent)}
+                value={formatCurrency(stats.totalSpent, currency, locale, { maximumFractionDigits: 0 })}
               />
               <StatCard
                 testId="analytics-avg-per-day-stat"
                 label={t('stats.avgPerDay')}
-                value={currencyFormatter.format(stats.avgPerDay)}
+                value={formatCurrency(stats.avgPerDay, currency, locale, { maximumFractionDigits: 0 })}
               />
               <StatCard
                 testId="analytics-savings-rate-stat"
@@ -219,7 +220,9 @@ export function Analytics() {
                         />
                         <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>
-                        <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
+                        <span className={s.categoryAmount}>
+                          {formatCurrency(category.amount, currency, locale, { maximumFractionDigits: 0 })}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -241,7 +244,9 @@ export function Analytics() {
                         style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
                       />
                       <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
-                      <span className={s.categoryAmount}>{currencyFormatter.format(category.amount)}</span>
+                      <span className={s.categoryAmount}>
+                        {formatCurrency(category.amount, currency, locale, { maximumFractionDigits: 0 })}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -273,7 +278,8 @@ export function Analytics() {
                         />
                         <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.comparisonAmounts}>
-                          {currencyFormatter.format(category.previousAmount)} → {currencyFormatter.format(category.currentAmount)}
+                          {formatCurrency(category.previousAmount, currency, locale, { maximumFractionDigits: 0 })} →{' '}
+                          {formatCurrency(category.currentAmount, currency, locale, { maximumFractionDigits: 0 })}
                         </span>
                         <span
                           className={cn(

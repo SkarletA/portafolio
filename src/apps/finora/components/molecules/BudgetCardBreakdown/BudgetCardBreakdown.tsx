@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { BudgetBreakdownItem } from '../../../hooks/useBudgets'
 import { getCategoryDisplayName } from '../../../domain/category'
+import { formatCurrency, getLocaleForLanguage } from '../../../domain/currency'
+import { useCurrency } from '../../../context/CurrencyContext'
+import { useLanguage } from '../../../context/LanguageContext'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCardBreakdown.module.css'
 
@@ -14,18 +17,15 @@ interface BudgetCardBreakdownProps {
   items: BudgetBreakdownItem[]
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
 function slugify(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
 export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: BudgetCardBreakdownProps) {
   const { t } = useTranslation(['budgets', 'categories'])
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const locale = getLocaleForLanguage(language)
   const [expanded, setExpanded] = useState(false)
 
   const handleToggleClick = useCallback(() => {
@@ -65,7 +65,9 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
                     <CategoryIcon name={item.icon} fallbackLabel={itemDisplayName[0] || '•'} className={s.categoryIcon} />
                   </div>
                   <span className={s.name}>{itemDisplayName}</span>
-                  <span className={s.amount}>{currencyFormatter.format(item.amount)}</span>
+                  <span className={s.amount}>
+                    {formatCurrency(item.amount, currency, locale, { maximumFractionDigits: 0 })}
+                  </span>
                 </div>
                 <div
                   className={s.progressTrack}
@@ -75,8 +77,8 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
                   aria-valuemax={100}
                   aria-label={t('breakdown.progressAriaLabel', {
                     name: itemDisplayName,
-                    spent: currencyFormatter.format(item.amount),
-                    limit: currencyFormatter.format(limit),
+                    spent: formatCurrency(item.amount, currency, locale, { maximumFractionDigits: 0 }),
+                    limit: formatCurrency(limit, currency, locale, { maximumFractionDigits: 0 }),
                   })}
                 >
                   <div className={s.progressFill} style={{ width: `${cappedPercentage}%` }} />

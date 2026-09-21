@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { BudgetCardBreakdown } from './BudgetCardBreakdown'
 import type { BudgetBreakdownItem } from '../../../hooks/useBudgets'
+
+vi.mock('../../../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
+vi.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
 
 const items: BudgetBreakdownItem[] = [
   { category_id: 'market', name: 'Groceries', icon: 'shopping-cart', color: '#2563eb', translationKey: null, amount: 300 },

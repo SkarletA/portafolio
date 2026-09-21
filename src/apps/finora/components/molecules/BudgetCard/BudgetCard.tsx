@@ -2,6 +2,9 @@ import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { BudgetWithProgress } from '../../../hooks/useBudgets'
 import { getCategoryDisplayName } from '../../../domain/category'
+import { formatCurrency, getLocaleForLanguage } from '../../../domain/currency'
+import { useCurrency } from '../../../context/CurrencyContext'
+import { useLanguage } from '../../../context/LanguageContext'
 import { CategoryIcon } from '../../atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCard.module.css'
 
@@ -9,12 +12,6 @@ interface BudgetCardProps {
   budget: BudgetWithProgress
   flush?: boolean
 }
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
 
 const STATUS_LABEL_KEYS = {
   'on-track': 'card.status.onTrack',
@@ -24,6 +21,9 @@ const STATUS_LABEL_KEYS = {
 
 export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
   const { t } = useTranslation(['budgets', 'categories'])
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const locale = getLocaleForLanguage(language)
   const { category, monthly_limit: monthlyLimit, effectiveLimit, spent, percentage, status } = budget
   const categoryName = category ? getCategoryDisplayName(category, t) : t('card.uncategorized')
   const fallbackIcon = categoryName[0] || '•'
@@ -44,11 +44,14 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
         <div className={s.info}>
           <p className={s.categoryName}>{categoryName}</p>
           <p className={s.amounts}>
-            {currencyFormatter.format(spent)} / {currencyFormatter.format(effectiveLimit)}
+            {formatCurrency(spent, currency, locale, { maximumFractionDigits: 0 })} /{' '}
+            {formatCurrency(effectiveLimit, currency, locale, { maximumFractionDigits: 0 })}
           </p>
           {hasReimbursement && (
             <p className={s.reimbursedHint}>
-              {t('card.reimbursedHint', { amount: currencyFormatter.format(reimbursedAmount) })}
+              {t('card.reimbursedHint', {
+                amount: formatCurrency(reimbursedAmount, currency, locale, { maximumFractionDigits: 0 }),
+              })}
             </p>
           )}
         </div>
