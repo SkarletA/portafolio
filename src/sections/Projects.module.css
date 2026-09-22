@@ -1,0 +1,45 @@
+@reference '../index.css';
+
+.section {
+  @apply border-t border-paper/10;
+}
+
+.inner {
+  @apply mx-auto max-w-6xl px-6 py-20;
+}
+
+.title {
+  @apply mb-12 font-display text-3xl text-paper md:text-4xl;
+}
+
+.card {
+  @apply rounded-2xl border border-paper/10 bg-ink-soft p-8 md:p-12;
+}
+
+.eyebrow {
+  @apply mb-3 text-sm uppercase tracking-eyebrow text-ember;
+}
+
+.projectTitle {
+  @apply font-display text-4xl text-paper;
+}
+
+.tagline {
+  @apply mt-4 max-w-2xl text-lg text-paper-muted;
+}
+
+.description {
+  @apply mt-3 max-w-2xl text-paper-muted;
+}
+
+.highlights {
+  @apply mt-8 flex flex-wrap gap-2;
+}
+
+.highlight {
+  @apply rounded-full border border-paper/15 px-3 py-1 text-sm text-paper-muted;
+}
+
+.link {
+  @apply mt-8 inline-flex items-center gap-2 text-sm font-medium text-ember transition-colors hover:text-ember-soft;
+}

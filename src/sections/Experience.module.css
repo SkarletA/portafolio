@@ -1,0 +1,41 @@
+@reference '../index.css';
+
+.section {
+  @apply border-t border-paper/10;
+}
+
+.inner {
+  @apply mx-auto max-w-6xl px-6 py-20;
+}
+
+.title {
+  @apply mb-12 font-display text-3xl text-paper md:text-4xl;
+}
+
+.list {
+  @apply space-y-14;
+}
+
+.row {
+  @apply grid gap-2 md:grid-cols-sidebar md:gap-10;
+}
+
+.date {
+  @apply text-sm text-ember;
+}
+
+.roleTitle {
+  @apply text-xl font-medium text-paper;
+}
+
+.company {
+  @apply mt-1 text-paper-muted;
+}
+
+.context {
+  @apply mt-2 text-sm italic text-paper-muted/90;
+}
+
+.bullets {
+  @apply mt-4 list-disc space-y-2 pl-5 text-paper-muted;
+}

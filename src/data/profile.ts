@@ -1,4 +1,48 @@
-export const profile = {
+export interface SkillGroup {
+  name: string
+  items: string[]
+}
+
+export interface ExperienceEntry {
+  title: string
+  company: string
+  place: string
+  dates: string
+  context?: string
+  bullets: string[]
+}
+
+export interface EducationEntry {
+  title: string
+  org: string
+  dates: string
+  detail?: string
+}
+
+export interface LanguageEntry {
+  name: string
+  level: string
+}
+
+export interface Profile {
+  name: string
+  role: string
+  location: string
+  availability: string
+  email: string
+  phone: string
+  linkedin: string
+  github: string
+  summary: string[]
+  competencies: string[]
+  skills: SkillGroup[]
+  experience: ExperienceEntry[]
+  education: EducationEntry[]
+  certifications: string
+  languages: LanguageEntry[]
+}
+
+export const profile: Profile = {
   name: 'Skarlet Araque',
   role: 'Senior Frontend Developer | Product Tech Lead',
   location: 'San Mateo Atenco, Estado de México, México',
@@ -11,6 +55,7 @@ export const profile = {
     'Senior Frontend Developer and Product Tech Lead with 4+ years of experience building and scaling end-to-end e-commerce platforms (catalog, cart, checkout) for a multi-brand, multi-country retail group operating across Mexico, Chile, and Colombia.',
     'Led cross-functional squads of 6–7 people (QA, Design, Backend, Product Manager, Scrum) using React, Next.js, TypeScript, and Node.js, driving architecture decisions, service definitions, and ADR discussions alongside backend engineers.',
     'Strong track record of embedding product thinking into engineering — through OKRs, CSAT, and A/B experimentation — and close collaboration with Design, QA, Marketing, and Merchandising. Experienced mentor (1:1s and pair programming with a 4-person cohort), comfortable with Scrum, Kanban, and AI-assisted development workflows.',
+    'Finora — a full personal-finance app built end-to-end within this same portfolio — is a working demonstration of these practices outside a work context: a typed React/TypeScript codebase with its own test suite, a component-driven design system in Storybook, documented architecture decisions (ADRs), and a CI pipeline running lint, tests, and build on every pull request.',
   ],
   competencies: [
     'Technical Leadership',
@@ -31,11 +76,11 @@ export const profile = {
     },
     {
       name: 'Frontend',
-      items: ['React', 'Next.js', 'HTML5', 'CSS3'],
+      items: ['React', 'Next.js', 'HTML5', 'CSS3', 'i18next'],
     },
     {
       name: 'Backend & data',
-      items: ['Node.js', 'Python (Odoo Server Actions)', 'MongoDB', 'REST APIs'],
+      items: ['Node.js', 'Python (Odoo Server Actions)', 'MongoDB', 'REST APIs', 'Supabase'],
     },
     {
       name: 'Architecture',
@@ -53,6 +98,8 @@ export const profile = {
         'Vercel',
         'EKS (Kubernetes)',
         'Jest',
+        'Vitest',
+        'Storybook',
         'Git/GitHub',
         'Sentry',
         'Grafana',
@@ -82,8 +129,7 @@ export const profile = {
       company: 'Lentes Galileo, S.A.P.I. (Ben & Frank / bombavista)',
       place: 'Ciudad de México, México',
       dates: 'Jun 2025 – Aug 2026',
-      context:
-        'Multi-brand retail group with operations across Mexico, Chile, and Colombia.',
+      context: 'Multi-brand retail group with operations across Mexico, Chile, and Colombia.',
       bullets: [
         'Led a cross-functional squad of 6–7 people (QA, Design, Backend, Product Manager, Scrum), owning technical prioritization, code review, and mentoring — including 4 direct mentees through 1:1s and pair programming — while remaining an individual contributor (Kanban).',
         'Partnered with Backend on service definitions, mutations, and integrations; participated in ADRs and technical discovery; collaborated with QA via peer-programming against acceptance criteria before release.',
@@ -127,8 +173,7 @@ export const profile = {
       title: 'Frontend Development Program',
       org: 'Laboratoria',
       dates: '2021 – 2022',
-      detail:
-        'Applied projects: REST API/client with Node.js/React for order management; web apps with React and Firebase.',
+      detail: 'Applied projects: REST API/client with Node.js/React for order management; web apps with React and Firebase.',
     },
     {
       title: 'B.Sc. in Chemistry',
