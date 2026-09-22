@@ -84,9 +84,9 @@ portafolio/
 │   │       └── meta.ts
 │   ├── apps/
 │   │   └── finora/          # Finora — see its own README
-│   ├── App.jsx
-│   ├── AppRouter.jsx
-│   └── main.jsx
+│   ├── App.tsx
+│   ├── AppRouter.tsx
+│   └── main.tsx
 ├── docs/
 │   └── adr/
 ├── .storybook/

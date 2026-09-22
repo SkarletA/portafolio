@@ -1,0 +1,41 @@
+@reference '../../index.css';
+
+.figure {
+  @apply mx-auto w-full max-w-sm;
+}
+
+.frame {
+  @apply relative aspect-portrait overflow-hidden rounded-2xl border border-dashed border-paper/25 bg-ink-soft;
+}
+
+.placeholder {
+  @apply flex h-full flex-col items-center justify-center gap-3 px-6 text-center;
+}
+
+.initials {
+  @apply font-display text-5xl text-ember;
+}
+
+.placeholderTitle {
+  @apply text-sm font-medium text-paper;
+}
+
+.placeholderHint {
+  @apply text-sm leading-relaxed text-paper-muted;
+}
+
+.placeholderCode {
+  @apply rounded bg-ink px-1.5 py-0.5 text-ember-soft;
+}
+
+.image {
+  @apply h-full w-full object-cover object-top;
+}
+
+.imageHidden {
+  @apply hidden;
+}
+
+.caption {
+  @apply sr-only;
+}

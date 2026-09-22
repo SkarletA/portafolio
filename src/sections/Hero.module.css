@@ -1,0 +1,21 @@
+@reference '../index.css';
+
+.section {
+  @apply mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-12 md:grid-cols-hero md:pt-20 lg:grid-cols-hero-lg;
+}
+
+.eyebrow {
+  @apply mb-4 text-sm font-medium uppercase tracking-hero-role text-ember;
+}
+
+.name {
+  @apply font-display text-5xl leading-none text-paper md:text-6xl lg:text-7xl;
+}
+
+.tagline {
+  @apply mt-6 max-w-xl text-lg leading-relaxed text-paper-muted;
+}
+
+.meta {
+  @apply mt-4 text-sm text-paper-muted;
+}
