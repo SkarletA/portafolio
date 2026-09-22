@@ -10,6 +10,16 @@
   --color-ember: #e07a3d;
   --color-ember-soft: #f0b089;
   --color-moss: #6f8f72;
+
+  /* Reusable layout/typography values that don't fit Tailwind's native scale
+     closely enough to round to it - kept here instead of repeating them as
+     arbitrary [] values across section components. */
+  --grid-template-columns-sidebar: 220px 1fr;
+  --grid-template-columns-hero: minmax(0, 1fr) 280px;
+  --grid-template-columns-hero-lg: minmax(0, 1fr) 320px;
+  --tracking-eyebrow: 0.16em;
+  --tracking-hero-role: 0.2em;
+  --aspect-portrait: 3 / 4;
 }
 
 html {

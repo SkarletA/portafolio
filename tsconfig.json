@@ -22,7 +22,10 @@
       "@context/*": ["./src/apps/finora/context/*"],
       "@atoms/*": ["./src/apps/finora/components/atoms/*"],
       "@molecules/*": ["./src/apps/finora/components/molecules/*"],
-      "@organisms/*": ["./src/apps/finora/components/organisms/*"]
+      "@organisms/*": ["./src/apps/finora/components/organisms/*"],
+      "@portfolio-components/*": ["./src/components/*"],
+      "@portfolio-sections/*": ["./src/sections/*"],
+      "@portfolio-data/*": ["./src/data/*"]
     }
   },
   "include": ["src", ".storybook"]

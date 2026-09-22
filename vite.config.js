@@ -24,6 +24,11 @@ export default defineConfig({
       '@atoms': fileURLToPath(new URL('./src/apps/finora/components/atoms', import.meta.url)),
       '@molecules': fileURLToPath(new URL('./src/apps/finora/components/molecules', import.meta.url)),
       '@organisms': fileURLToPath(new URL('./src/apps/finora/components/organisms', import.meta.url)),
+      // Portfolio-side aliases - prefixed to avoid colliding with Finora's
+      // own @components above (same key, different target isn't possible).
+      '@portfolio-components': fileURLToPath(new URL('./src/components', import.meta.url)),
+      '@portfolio-sections': fileURLToPath(new URL('./src/sections', import.meta.url)),
+      '@portfolio-data': fileURLToPath(new URL('./src/data', import.meta.url)),
     },
   },
   test: {
