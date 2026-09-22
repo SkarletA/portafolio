@@ -17,13 +17,14 @@
 2. [Screenshots](#2-screenshots)
 3. [Architecture](#3-architecture)
 4. [Process & Workflow](#4-process--workflow)
-5. [Features](#5-features)
-6. [Tech Stack](#6-tech-stack)
-7. [Running Locally](#7-running-locally)
-8. [CI/CD](#8-cicd)
-9. [Technical Decisions](#9-technical-decisions)
-10. [Author](#10-author)
-11. [License](#11-license)
+5. [Explore this Project Interactively](#5-explore-this-project-interactively)
+6. [Features](#6-features)
+7. [Tech Stack](#7-tech-stack)
+8. [Running Locally](#8-running-locally)
+9. [CI/CD](#9-cicd)
+10. [Technical Decisions](#10-technical-decisions)
+11. [Author](#11-author)
+12. [License](#12-license)
 
 ---
 
@@ -103,7 +104,11 @@ Two architecturally significant decisions are documented as ADRs:
 
 Finora went from a rough sketch to a high-fidelity prototype in [Figma](https://www.figma.com/design/WKQEa13ldPtPpgmw4zCxQ3/Finora) before any code was written, then built feature by feature guided by tasks tracked on a ClickUp board. Implementation itself was done with Claude Code, following the conventions and architectural rules documented in [`CLAUDE.md`](../../../CLAUDE.md).
 
-## 5. Features
+## 5. Explore this Project Interactively
+
+🤖 Ask questions about Finora's architecture, decisions, and implementation via its NotebookLM notebook: [Finora NotebookLM notebook](https://notebook.google.com/notebook/86c11272-f7e3-4d0b-bd58-aaad7af40b8d).
+
+## 6. Features
 
 - **Auth** — sign up, sign in, password reset, and account deletion, with email confirmation on sign-up.
 - **Transactions** — expenses, income, and reimbursements; a single transaction can be split across multiple payment methods (e.g. part credit card, part grocery vouchers).
@@ -112,9 +117,9 @@ Finora went from a rough sketch to a high-fidelity prototype in [Figma](https://
 - **Goals** — savings goals with a target amount, an optional target date, and manual fund contributions.
 - **Multi-language** — English and Spanish, switchable instantly from anywhere in the app.
 - **Dark mode** — instant theme toggle, persisted per user.
-- **Configurable currency** — MXN, USD, or EUR display formatting, switchable instantly from anywhere in the app (see [§9](#9-technical-decisions) — this is formatting only, not real conversion).
+- **Configurable currency** — MXN, USD, or EUR display formatting, switchable instantly from anywhere in the app (see [§10](#10-technical-decisions) — this is formatting only, not real conversion).
 
-## 6. Tech Stack
+## 7. Tech Stack
 
 | Layer | Technology | Version |
 |---|---|---|
@@ -135,7 +140,7 @@ Finora went from a rough sketch to a high-fidelity prototype in [Figma](https://
 
 *(Versions as pinned in [`package.json`](../../../package.json) at the repository root — Finora shares one `package.json` with the portfolio.)*
 
-## 7. Running Locally
+## 8. Running Locally
 
 ```bash
 git clone git@github.com:SkarletA/portafolio.git
@@ -159,7 +164,7 @@ npx vitest run        # runs the test suite once
 
 Finora's own Supabase schema (tables, RLS policies, the `delete-account` Edge Function) is managed outside this repository and isn't included here — without a matching project, auth and data calls will fail even though the app boots.
 
-## 8. CI/CD
+## 9. CI/CD
 
 Every pull request runs through GitHub Actions ([`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml)):
 
@@ -170,20 +175,20 @@ Every pull request runs through GitHub Actions ([`.github/workflows/ci.yml`](../
 
 The portfolio (Finora included, as it's part of the same bundle) deploys automatically to **Vercel** on merge to `main`.
 
-## 9. Technical Decisions
+## 10. Technical Decisions
 
 - **Gross spend, not net-of-reimbursements, for a budget's "spent" figure.** A reimbursement widens a budget's *effective limit* instead of netting into what's shown as already spent — the earlier net/floor approach could make a budget's headline number disagree with its own subcategory breakdown. See [ADR-001](../../../docs/adr/001-net-category-spend-calculation.md) and [ADR-002](../../../docs/adr/002-gross-spend-and-effective-limit.md) for the full reasoning and the edge cases it accounts for.
 - **Currency selection is display-formatting only, not real conversion.** Switching between MXN/USD/EUR changes the symbol and number formatting (via `Intl.NumberFormat`) everywhere in the app instantly, but stored amounts are never converted. Real conversion would need a live exchange-rate feed and a decision about *when* a rate applies to a historical transaction — complexity and cost (and a provider dependency) that a single-currency personal-use app doesn't need yet.
 - **No bank aggregation (Plaid, Belvo, etc.).** Transactions are entered manually by design. Bank aggregation is a recurring, per-connection cost and a much larger trust/security surface (storing or proxying bank credentials or tokens) that isn't justified for a personal finance tool where the user is already willing to log their own spending.
 - **Domain logic as pure functions, decoupled from Supabase.** Money math and category rollups (`domain/category.ts`, `domain/budget.ts`, `domain/analytics.ts`) take and return plain values, with no dependency on the Supabase client or React. They're unit-tested directly with plain arrays, and both Budgets and Analytics call the same functions instead of each re-deriving the same math — which is what let ADR-002's bug (headline vs. breakdown disagreeing) be fixed in one place.
 
-## 10. Author
+## 11. Author
 
 **Skarlet Araque** — Product Tech Lead · Senior Frontend Developer
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/skarlet-araque)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/SkarletA)
 
-## 11. License
+## 12. License
 
 **All rights reserved.** This is proprietary, source-available code shared as part of a professional portfolio — not open-source, and not licensed under MIT or any other open license. See [`LICENSE`](../../../LICENSE) for the full terms.
