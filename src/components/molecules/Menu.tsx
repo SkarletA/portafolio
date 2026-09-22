@@ -1,17 +1,36 @@
-import { useState } from "react";
+import { useCallback, useState } from 'react'
+import s from './Menu.module.css'
 
-export function Menu({ links }: { links: { href: string; label: string }[] }) {
-  const [isOpen, setIsOpen] = useState(false);
+interface MenuLink {
+  href: string
+  label: string
+}
+
+interface MenuProps {
+  links: MenuLink[]
+}
+
+export function Menu({ links }: MenuProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handleToggleClick = useCallback(() => {
+    setIsOpen((open) => !open)
+  }, [])
+
+  const handleLinkClick = useCallback(() => {
+    setIsOpen(false)
+  }, [])
 
   return (
     <nav aria-label="Primary">
       {/* Desktop */}
-      <ul className="hidden items-center gap-7 text-sm text-paper-muted md:flex">
+      <ul className={s.desktopList}>
         {links.map((link) => (
           <li key={link.href}>
             <a
               href={link.href}
-              className="transition-colors hover:text-paper"
+              className={s.desktopLink}
+              data-testid={`menu-desktop-${link.href.replace('#', '')}-link`}
             >
               {link.label}
             </a>
@@ -22,29 +41,26 @@ export function Menu({ links }: { links: { href: string; label: string }[] }) {
       {/* Mobile button */}
       <button
         type="button"
-        className="flex h-10 w-10 items-center justify-center text-paper-muted md:hidden"
-        aria-label={isOpen ? "Close menu" : "Open menu"}
+        className={s.toggleButton}
+        aria-label={isOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={isOpen}
         aria-controls="mobile-navigation"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={handleToggleClick}
+        data-testid="menu-toggle-button"
       >
-        <span className="text-2xl">
-          {isOpen ? "×" : "☰"}
-        </span>
+        <span className={s.toggleIcon}>{isOpen ? '×' : '☰'}</span>
       </button>
 
       {/* Mobile menu */}
       {isOpen && (
-        <ul
-          id="mobile-navigation"
-          className="absolute left-0 right-0 top-full flex flex-col gap-4 border-t border-white/10 bg-black/95 px-6 py-5 md:hidden"
-        >
+        <ul id="mobile-navigation" className={s.mobileList}>
           {links.map((link) => (
             <li key={link.href}>
               <a
                 href={link.href}
-                className="block py-2 text-sm text-paper-muted transition-colors hover:text-paper"
-                onClick={() => setIsOpen(false)}
+                className={s.mobileLink}
+                onClick={handleLinkClick}
+                data-testid={`menu-mobile-${link.href.replace('#', '')}-link`}
               >
                 {link.label}
               </a>
@@ -53,6 +69,5 @@ export function Menu({ links }: { links: { href: string; label: string }[] }) {
         </ul>
       )}
     </nav>
-  );
+  )
 }
-

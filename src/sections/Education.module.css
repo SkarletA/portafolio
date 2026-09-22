@@ -1,0 +1,49 @@
+@reference '../index.css';
+
+.section {
+  @apply border-t border-paper/10;
+}
+
+.inner {
+  @apply mx-auto max-w-6xl px-6 py-20;
+}
+
+.title {
+  @apply mb-12 font-display text-3xl text-paper md:text-4xl;
+}
+
+.list {
+  @apply space-y-8;
+}
+
+.item {
+  @apply grid gap-2 md:grid-cols-sidebar md:gap-10;
+}
+
+.date {
+  @apply text-sm text-ember;
+}
+
+.itemTitle {
+  @apply text-lg font-medium text-paper;
+}
+
+.org {
+  @apply text-paper-muted;
+}
+
+.detail {
+  @apply mt-2 text-paper-muted;
+}
+
+.footerLine {
+  @apply mt-10 max-w-3xl text-sm text-paper-muted;
+}
+
+.footerLineTight {
+  @apply mt-3 text-sm text-paper-muted;
+}
+
+.footerLabel {
+  @apply text-paper;
+}

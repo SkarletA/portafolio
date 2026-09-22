@@ -1,0 +1,25 @@
+@reference '../../index.css';
+
+.desktopList {
+  @apply hidden items-center gap-7 text-sm text-paper-muted md:flex;
+}
+
+.desktopLink {
+  @apply transition-colors hover:text-paper;
+}
+
+.toggleButton {
+  @apply flex h-10 w-10 items-center justify-center text-paper-muted md:hidden;
+}
+
+.toggleIcon {
+  @apply text-2xl;
+}
+
+.mobileList {
+  @apply absolute left-0 right-0 top-full flex flex-col gap-4 border-t border-paper/10 bg-ink/95 px-6 py-5 md:hidden;
+}
+
+.mobileLink {
+  @apply block py-2 text-sm text-paper-muted transition-colors hover:text-paper;
+}

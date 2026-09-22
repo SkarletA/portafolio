@@ -1,0 +1,25 @@
+@reference '../index.css';
+
+.section {
+  @apply border-t border-paper/10;
+}
+
+.inner {
+  @apply mx-auto grid max-w-6xl gap-10 px-6 py-20 md:grid-cols-sidebar;
+}
+
+.title {
+  @apply font-display text-3xl text-paper md:text-4xl;
+}
+
+.content {
+  @apply space-y-5 text-lg leading-relaxed text-paper-muted;
+}
+
+.competencies {
+  @apply flex flex-wrap gap-2 pt-2;
+}
+
+.competency {
+  @apply rounded-full border border-paper/15 px-3 py-1 text-sm text-paper-muted;
+}
