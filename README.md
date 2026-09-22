@@ -4,6 +4,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 
 > Product Tech Lead · Senior Frontend Developer
 
@@ -128,6 +129,12 @@ The main goals of this project are to:
 Deployed on Vercel: **[portafolio-skarlet-a.vercel.app](https://portafolio-skarlet-a.vercel.app/)**
 
 The portfolio lives at the root; Finora is client-side routed at `/finora` on the same deployment.
+
+## ✅ CI/CD
+
+Every pull request runs through GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): lint, then test with coverage, then build.
+
+`main` is protected by a repository ruleset: all changes go through a pull request, and direct pushes, force-pushes, and branch deletion are blocked.
 
 ## 📄 License
 
