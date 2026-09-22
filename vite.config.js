@@ -48,7 +48,7 @@ export default defineConfig({
       exclude: [
         ...coverageConfigDefaults.exclude,
         '**/*.stories.tsx',
-        'src/main.jsx',
+        'src/main.tsx',
         'src/assets/html/**',
       ],
     },

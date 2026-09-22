@@ -1,0 +1,17 @@
+@reference '../../index.css';
+
+.header {
+  @apply sticky top-0 z-50 border-b border-paper/10 bg-ink/80 backdrop-blur-md;
+}
+
+.skipLink {
+  @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:rounded-sm focus:bg-ember focus:px-3 focus:py-2 focus:text-ink;
+}
+
+.inner {
+  @apply mx-auto max-w-6xl items-center justify-between px-6 py-4 md:flex;
+}
+
+.brand {
+  @apply font-display text-lg tracking-tight text-paper;
+}
