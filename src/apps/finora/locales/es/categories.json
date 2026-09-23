@@ -12,5 +12,7 @@
   "services": "Servicios",
   "lunch": "Almuerzo",
   "health": "Salud",
-  "insurance": "Seguros de Gastos"
+  "insurance": "Seguros de Gastos",
+  "work": "Trabajo",
+  "salary": "Salario"
 }

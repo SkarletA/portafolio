@@ -62,6 +62,9 @@
     "paymentMethodsAriaLabel": "Métodos de pago",
     "amountPaidWith": "Monto pagado con {{method}}",
     "assignedSummary": "Asignado: {{assigned}} / {{total}} total",
+    "receivedVia": "Recibido vía",
+    "selectReceivedVia": "Selecciona un método",
+    "consolidatePaymentsNotice": "Esta transacción tiene varios métodos de pago registrados. Al guardar se consolidarán en {{method}} por el monto total.",
     "date": "Fecha",
     "notes": "Notas",
     "saveTransaction": "Guardar transacción",
@@ -76,6 +79,7 @@
     "descriptionRequired": "La descripción es obligatoria",
     "selectPaymentMethod": "Selecciona al menos un método de pago",
     "amountGreaterThanZeroEach": "Ingresa un monto mayor a 0 para cada método de pago seleccionado",
-    "assignedMustEqualTotal": "Los montos asignados ({{assigned}}) deben ser iguales al total ({{total}})"
+    "assignedMustEqualTotal": "Los montos asignados ({{assigned}}) deben ser iguales al total ({{total}})",
+    "selectReceivedVia": "Selecciona dónde recibiste este dinero"
   }
 }
