@@ -12,5 +12,7 @@
   "services": "Services",
   "lunch": "Lunch",
   "health": "Health",
-  "insurance": "Insurance"
+  "insurance": "Insurance",
+  "work": "Work",
+  "salary": "Salary"
 }

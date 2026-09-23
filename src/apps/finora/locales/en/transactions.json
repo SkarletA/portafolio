@@ -62,6 +62,9 @@
     "paymentMethodsAriaLabel": "Payment methods",
     "amountPaidWith": "Amount paid with {{method}}",
     "assignedSummary": "Assigned: {{assigned}} / {{total}} total",
+    "receivedVia": "Received via",
+    "selectReceivedVia": "Select a method",
+    "consolidatePaymentsNotice": "This transaction has several payment methods recorded. Saving will consolidate them into {{method}} for the full amount.",
     "date": "Date",
     "notes": "Notes",
     "saveTransaction": "Save transaction",
@@ -76,6 +79,7 @@
     "descriptionRequired": "Description is required",
     "selectPaymentMethod": "Select at least one payment method",
     "amountGreaterThanZeroEach": "Enter an amount greater than 0 for each selected payment method",
-    "assignedMustEqualTotal": "Assigned amounts ({{assigned}}) must equal the total ({{total}})"
+    "assignedMustEqualTotal": "Assigned amounts ({{assigned}}) must equal the total ({{total}})",
+    "selectReceivedVia": "Select where you received this money"
   }
 }

@@ -115,3 +115,7 @@
 .paymentSummaryMismatch {
   @apply text-finora-danger;
 }
+
+.notice {
+  @apply rounded-md border border-finora-warning bg-finora-warning-bg px-3 py-2 text-sm font-normal text-finora-ink;
+}

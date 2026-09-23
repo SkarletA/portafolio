@@ -18,7 +18,7 @@ import { useTransaction } from '@hooks/useTransaction'
 import { createCategory } from '@services/categoriesService'
 import { createTransaction, updateTransaction, type NewTransactionInput } from '@services/transactionsService'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
-import { PAYMENT_METHODS, type TransactionType } from '@domain/transaction'
+import { PAYMENT_METHODS, getPrimaryPaymentMethod, type TransactionType } from '@domain/transaction'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
@@ -60,6 +60,8 @@ function buildInitialPayments(): PaymentEntry[] {
   return PAYMENT_METHODS.map((method) => ({ paymentMethod: method, checked: false, amount: '' }))
 }
 
+const RECEIVED_VIA_OPTIONS = PAYMENT_METHODS.map((method) => ({ value: method, label: method }))
+
 interface AddTransactionProps {
   mode: 'create' | 'edit'
 }
@@ -85,6 +87,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const [date, setDate] = useState(getTodayLocalDate)
   const [notes, setNotes] = useState('')
   const [payments, setPayments] = useState<PaymentEntry[]>(buildInitialPayments)
+  const [receivedMethod, setReceivedMethod] = useState('')
+  const [hadMultiplePayments, setHadMultiplePayments] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -116,6 +120,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   }, [categoryId, categoryGroups])
 
   const selectedParent = selectedGroup?.parent ?? null
+
+  // Money is received in one place, so only expenses can be split across methods.
+  const isSingleMethod = type !== 'expense'
 
   const categoryOptions = useMemo(
     () => [
@@ -161,6 +168,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         return { paymentMethod: method, checked: !!existing, amount: existing ? String(existing.amount) : '' }
       })
     )
+    setReceivedMethod(getPrimaryPaymentMethod(transaction.payments))
+    setHadMultiplePayments(transaction.payments.length > 1)
     setHasPreloaded(true)
   }, [mode, transaction, hasPreloaded])
 
@@ -281,6 +290,11 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setErrors((prev) => (prev.payments ? { ...prev, payments: undefined } : prev))
   }, [])
 
+  const handleReceivedMethodChange = useCallback((value: string) => {
+    setReceivedMethod(value)
+    setErrors((prev) => (prev.payments ? { ...prev, payments: undefined } : prev))
+  }, [])
+
   const handleNewCategoryNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setNewCategoryName(event.target.value)
     setCategoryCreateError(null)
@@ -363,7 +377,11 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
       const checkedPayments = payments.filter((payment) => payment.checked)
 
-      if (checkedPayments.length === 0) {
+      if (isSingleMethod) {
+        if (!receivedMethod) {
+          nextErrors.payments = t('transactions:validation.selectReceivedVia')
+        }
+      } else if (checkedPayments.length === 0) {
         nextErrors.payments = t('transactions:validation.selectPaymentMethod')
       } else {
         const hasInvalidAmount = checkedPayments.some(
@@ -398,10 +416,12 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         category_id: categoryId,
         date,
         notes: notes.trim() || null,
-        payments: checkedPayments.map((payment) => ({
-          payment_method: payment.paymentMethod,
-          amount: Number(payment.amount),
-        })),
+        payments: isSingleMethod
+          ? [{ payment_method: receivedMethod, amount: parsedAmount }]
+          : checkedPayments.map((payment) => ({
+              payment_method: payment.paymentMethod,
+              amount: Number(payment.amount),
+            })),
       }
 
       const { error } = mode === 'edit' && id ? await updateTransaction(id, input) : await createTransaction(input)
@@ -415,7 +435,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
       navigate('/finora/transactions')
     },
-    [amount, description, categoryId, date, notes, type, payments, mode, id, navigate, t, currency, locale]
+    [amount, description, categoryId, date, notes, type, payments, isSingleMethod, receivedMethod, mode, id, navigate, t, currency, locale]
   )
 
   const assignedTotal = payments.reduce(
@@ -676,50 +696,75 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           </div>
         )}
 
-        <div className={s.field}>
-          {t('transactions:form.paymentMethods')}
-          <div className={s.paymentMethodList} role="group" aria-label={t('transactions:form.paymentMethodsAriaLabel')}>
-            {payments.map((payment) => (
-              <div key={payment.paymentMethod} className={s.paymentMethodRow}>
-                <label className={s.paymentMethodCheckboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={payment.checked}
-                    onChange={handlePaymentCheckedChange}
-                    data-method={payment.paymentMethod}
-                    data-testid={`add-transaction-payment-${slugify(payment.paymentMethod)}-checkbox`}
-                  />
-                  {payment.paymentMethod}
-                </label>
-                {payment.checked && (
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.01"
-                    value={payment.amount}
-                    onChange={handlePaymentAmountChange}
-                    data-method={payment.paymentMethod}
-                    className={s.paymentMethodAmountInput}
-                    aria-label={t('transactions:form.amountPaidWith', { method: payment.paymentMethod })}
-                    data-testid={`add-transaction-payment-${slugify(payment.paymentMethod)}-amount-input`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <p className={cn(s.paymentSummary, assignedTotal !== totalAmount && s.paymentSummaryMismatch)}>
-            {t('transactions:form.assignedSummary', {
-              assigned: formatCurrency(assignedTotal, currency, locale),
-              total: formatCurrency(totalAmount, currency, locale),
-            })}
-          </p>
-          {errors.payments && (
-            <p role="alert" className={s.error}>
-              {errors.payments}
+        {isSingleMethod ? (
+          <label className={s.field}>
+            {t('transactions:form.receivedVia')}
+            <Select
+              options={RECEIVED_VIA_OPTIONS}
+              value={receivedMethod}
+              onChange={handleReceivedMethodChange}
+              placeholder={t('transactions:form.selectReceivedVia')}
+              ariaInvalid={!!errors.payments}
+              ariaDescribedBy={errors.payments ? 'add-transaction-received-via-error' : undefined}
+              testId="add-transaction-received-via-select"
+            />
+            {hadMultiplePayments && receivedMethod && (
+              <p role="status" className={s.notice}>
+                {t('transactions:form.consolidatePaymentsNotice', { method: receivedMethod })}
+              </p>
+            )}
+            {errors.payments && (
+              <p id="add-transaction-received-via-error" role="alert" className={s.error}>
+                {errors.payments}
+              </p>
+            )}
+          </label>
+        ) : (
+          <div className={s.field}>
+            {t('transactions:form.paymentMethods')}
+            <div className={s.paymentMethodList} role="group" aria-label={t('transactions:form.paymentMethodsAriaLabel')}>
+              {payments.map((payment) => (
+                <div key={payment.paymentMethod} className={s.paymentMethodRow}>
+                  <label className={s.paymentMethodCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={payment.checked}
+                      onChange={handlePaymentCheckedChange}
+                      data-method={payment.paymentMethod}
+                      data-testid={`add-transaction-payment-${slugify(payment.paymentMethod)}-checkbox`}
+                    />
+                    {payment.paymentMethod}
+                  </label>
+                  {payment.checked && (
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={payment.amount}
+                      onChange={handlePaymentAmountChange}
+                      data-method={payment.paymentMethod}
+                      className={s.paymentMethodAmountInput}
+                      aria-label={t('transactions:form.amountPaidWith', { method: payment.paymentMethod })}
+                      data-testid={`add-transaction-payment-${slugify(payment.paymentMethod)}-amount-input`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className={cn(s.paymentSummary, assignedTotal !== totalAmount && s.paymentSummaryMismatch)}>
+              {t('transactions:form.assignedSummary', {
+                assigned: formatCurrency(assignedTotal, currency, locale),
+                total: formatCurrency(totalAmount, currency, locale),
+              })}
             </p>
-          )}
-        </div>
+            {errors.payments && (
+              <p role="alert" className={s.error}>
+                {errors.payments}
+              </p>
+            )}
+          </div>
+        )}
 
         <label className={s.field}>
           {t('transactions:form.date')}
