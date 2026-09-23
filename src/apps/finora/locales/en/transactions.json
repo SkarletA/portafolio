@@ -30,7 +30,8 @@
     "confirmDeleteFinanced": "Delete \"{{description}}\" and all {{count}} of its monthly payments?",
     "installmentsSummary": "{{count}} monthly payments of {{amount}}",
     "installmentsCount": "{{count}} monthly payments",
-    "coveredBySavings": "Covered by savings"
+    "coveredBySavings": "Covered by savings",
+    "coveredBySavingsFrom": "Covered by savings from {{goal}}"
   },
   "form": {
     "addTitle": "Add transaction",

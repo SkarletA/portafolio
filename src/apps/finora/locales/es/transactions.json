@@ -30,7 +30,8 @@
     "confirmDeleteFinanced": "¿Eliminar \"{{description}}\" y sus {{count}} mensualidades?",
     "installmentsSummary": "{{count}} mensualidades de {{amount}}",
     "installmentsCount": "{{count}} mensualidades",
-    "coveredBySavings": "Cubierto con ahorros"
+    "coveredBySavings": "Cubierto con ahorros",
+    "coveredBySavingsFrom": "Cubierto con ahorros de {{goal}}"
   },
   "form": {
     "addTitle": "Agregar transacción",

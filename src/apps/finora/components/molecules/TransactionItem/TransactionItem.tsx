@@ -68,6 +68,12 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
           amount: formatCurrency(firstInstallmentAmount, currency, locale, { maximumFractionDigits: 0 }),
         })
   const isSavingsFunded = transaction.funding_source === 'savings'
+  const savingsGoalName = transaction.withdrawal?.goal?.name ?? null
+  const savingsLabel = !isSavingsFunded
+    ? null
+    : savingsGoalName
+      ? t('item.coveredBySavingsFrom', { goal: savingsGoalName })
+      : t('item.coveredBySavings')
 
   const handleEditClick = useCallback(() => {
     navigate(`/finora/transactions/${transaction.id}/edit`)
@@ -154,7 +160,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
             {categoryDisplayName ?? t('item.uncategorized')}
             {paymentMethodsLabel ? ` · ${paymentMethodsLabel}` : ''}
             {installmentsLabel ? ` · ${installmentsLabel}` : ''}
-            {isSavingsFunded ? ` · ${t('item.coveredBySavings')}` : ''}
+            {savingsLabel ? ` · ${savingsLabel}` : ''}
           </p>
         </div>
       </div>

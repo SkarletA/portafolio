@@ -119,6 +119,16 @@ describe('TransactionItem', () => {
     expect(screen.getByText(/item\.coveredBySavings/)).toBeInTheDocument()
   })
 
+  it('names the goal an expense covered by savings came from', () => {
+    renderItem({
+      ...baseTransaction,
+      funding_source: 'savings',
+      withdrawal: { goal_id: 'g1', amount: 120, goal: { name: 'Vacation' } },
+    })
+
+    expect(screen.getByText(/item\.coveredBySavingsFrom:\{"goal":"Vacation"\}/)).toBeInTheDocument()
+  })
+
   it('shows neither label for a single payment funded by income', () => {
     renderItem(baseTransaction)
 
