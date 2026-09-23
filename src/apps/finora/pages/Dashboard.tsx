@@ -50,7 +50,8 @@ export function Dashboard() {
 
   const { stats, spendingByCategory, loading: summaryLoading, error: summaryError } = useDashboardSummary()
   const topCategories = spendingByCategory.slice(0, TOP_CATEGORIES_LIMIT)
-  const hasSummaryData = !!stats && (stats.totalSpent > 0 || stats.totalIncome > 0)
+  const hasSummaryData =
+    !!stats && (stats.totalSpent > 0 || stats.totalCoveredBySavings > 0 || stats.totalIncome > 0)
   const balance = stats ? stats.totalIncome - stats.totalSpent : 0
 
   const handleAddTransactionClick = useCallback(() => {
@@ -124,6 +125,13 @@ export function Dashboard() {
               variant={stats.savingsRate >= 0 ? 'success' : 'danger'}
             />
           </div>
+        )}
+        {stats && stats.totalCoveredBySavings > 0 && (
+          <p className={s.savingsNote} data-testid="dashboard-covered-by-savings-note">
+            {t('dashboard:stats.coveredBySavingsNote', {
+              amount: formatCurrency(stats.totalCoveredBySavings, currency, locale, { maximumFractionDigits: 0 }),
+            })}
+          </p>
         )}
       </AsyncState>
 

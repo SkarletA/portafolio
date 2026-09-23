@@ -143,3 +143,8 @@
 .comparisonChangeNew {
   @apply text-finora-ink-muted;
 }
+
+/* Sits right under the stat figures it qualifies. */
+.savingsNote {
+  @apply -mt-2 mb-4 text-sm text-finora-ink-muted;
+}

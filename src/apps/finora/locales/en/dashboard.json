@@ -6,7 +6,8 @@
   "stats": {
     "income": "Income",
     "expenses": "Expenses",
-    "savingsRate": "Savings rate"
+    "savingsRate": "Savings rate",
+    "coveredBySavingsNote": "Expenses exclude {{amount}} covered by savings."
   },
   "overview": {
     "loading": "Loading overview…",

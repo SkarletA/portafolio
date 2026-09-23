@@ -6,7 +6,8 @@
   "stats": {
     "income": "Ingresos",
     "expenses": "Gastos",
-    "savingsRate": "Tasa de ahorro"
+    "savingsRate": "Tasa de ahorro",
+    "coveredBySavingsNote": "Los gastos excluyen {{amount}} cubiertos con ahorros."
   },
   "overview": {
     "loading": "Cargando resumen…",

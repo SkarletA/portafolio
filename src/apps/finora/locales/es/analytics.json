@@ -15,7 +15,8 @@
   "stats": {
     "totalSpent": "Total gastado",
     "avgPerDay": "Promedio diario",
-    "savingsRate": "Tasa de ahorro"
+    "savingsRate": "Tasa de ahorro",
+    "coveredBySavingsNote": "El total gastado y la tasa de ahorro excluyen {{amount}} cubiertos con ahorros."
   },
   "chart": {
     "title": "Gastos a lo largo del tiempo",
