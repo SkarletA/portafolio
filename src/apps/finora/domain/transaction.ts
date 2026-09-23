@@ -2,6 +2,10 @@ import type { TransactionPayment } from './transactionPayment'
 
 export type TransactionType = 'expense' | 'income' | 'reimbursement'
 
+// Where the money for an expense came from - see
+// docs/adr/003-installments-and-savings-funding.md.
+export type FundingSource = 'income' | 'savings'
+
 export interface Transaction {
   id: string
   user_id: string

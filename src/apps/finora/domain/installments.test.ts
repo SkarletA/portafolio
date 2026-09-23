@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { allocateInstallments, getInstallmentDate, toMinorUnits } from './installments'
+import {
+  allocateInstallments,
+  expandLedgerRowsInRange,
+  getInstallmentDate,
+  isIncomeFundedExpense,
+  toMinorUnits,
+} from './installments'
 
 function sumInCents(amounts: number[]) {
   return amounts.reduce((sum, amount) => sum + toMinorUnits(amount), 0)
@@ -129,5 +135,109 @@ describe('getInstallmentDate', () => {
   it('rejects invalid installment indexes', () => {
     expect(() => getInstallmentDate('2026-09-23', -1)).toThrow(RangeError)
     expect(() => getInstallmentDate('2026-09-23', 1.5)).toThrow(RangeError)
+  })
+})
+
+describe('expandLedgerRowsInRange', () => {
+  const september = { start: '2026-09-01', end: '2026-09-30' }
+
+  const travel = {
+    category_id: 'travel',
+    type: 'expense' as const,
+    date: '2026-01-15',
+    amount: 20000,
+    installment_months: 12,
+  }
+
+  it('passes a single-payment row through when its date is in range', () => {
+    const groceries = { category_id: 'food', date: '2026-09-10', amount: 850.5, installment_months: 1 }
+
+    expect(expandLedgerRowsInRange([groceries], september)).toEqual([groceries])
+  })
+
+  it('drops a single-payment row dated outside the range', () => {
+    const rows = [{ date: '2026-08-31', amount: 100, installment_months: 1 }]
+
+    expect(expandLedgerRowsInRange(rows, september)).toEqual([])
+  })
+
+  it('keeps only the installment of a financed purchase that falls in the range', () => {
+    // $20,000 / 12 leaves 8 extra cents, carried by installments 0-7 (Jan-Aug).
+    // August (index 7) is the last one with the extra cent; September
+    // (index 8) is the first without it.
+    const august = { start: '2026-08-01', end: '2026-08-31' }
+
+    expect(expandLedgerRowsInRange([travel], august)).toEqual([{ ...travel, date: '2026-08-15', amount: 1666.67 }])
+    expect(expandLedgerRowsInRange([travel], september)).toEqual([{ ...travel, date: '2026-09-15', amount: 1666.66 }])
+  })
+
+  it('returns nothing before the purchase or after the last installment', () => {
+    expect(expandLedgerRowsInRange([travel], { start: '2025-12-01', end: '2025-12-31' })).toEqual([])
+    expect(expandLedgerRowsInRange([travel], { start: '2027-01-01', end: '2027-01-31' })).toEqual([])
+  })
+
+  it('returns every installment in a range that covers the whole schedule, adding up to the total', () => {
+    const installments = expandLedgerRowsInRange([travel], { start: '2026-01-01', end: '2026-12-31' })
+
+    expect(installments.map((installment) => installment.date)).toEqual([
+      '2026-01-15',
+      '2026-02-15',
+      '2026-03-15',
+      '2026-04-15',
+      '2026-05-15',
+      '2026-06-15',
+      '2026-07-15',
+      '2026-08-15',
+      '2026-09-15',
+      '2026-10-15',
+      '2026-11-15',
+      '2026-12-15',
+    ])
+    expect(sumInCents(installments.map((installment) => installment.amount))).toBe(toMinorUnits(20000))
+  })
+
+  it('splits a schedule that crosses a year boundary between the two years', () => {
+    const laptop = { date: '2026-11-30', amount: 3000, installment_months: 6 }
+
+    const in2026 = expandLedgerRowsInRange([laptop], { start: '2026-01-01', end: '2026-12-31' })
+    const in2027 = expandLedgerRowsInRange([laptop], { start: '2027-01-01', end: '2027-12-31' })
+
+    expect(in2026.map((installment) => installment.date)).toEqual(['2026-11-30', '2026-12-30'])
+    expect(in2027.map((installment) => installment.date)).toEqual([
+      '2027-01-30',
+      '2027-02-28',
+      '2027-03-30',
+      '2027-04-30',
+    ])
+  })
+
+  it('treats both ends of the range as inclusive', () => {
+    const rows = [
+      { date: '2026-09-01', amount: 10, installment_months: 1 },
+      { date: '2026-09-30', amount: 20, installment_months: 1 },
+    ]
+
+    expect(expandLedgerRowsInRange(rows, september)).toEqual(rows)
+  })
+
+  it('expands a mix of rows, keeping each installment tied to its purchase', () => {
+    const coffee = { category_id: 'food', type: 'expense' as const, date: '2026-09-02', amount: 60, installment_months: 1 }
+
+    expect(expandLedgerRowsInRange([travel, coffee], september)).toEqual([
+      { ...travel, date: '2026-09-15', amount: 1666.66 },
+      coffee,
+    ])
+  })
+})
+
+describe('isIncomeFundedExpense', () => {
+  it('counts only expenses funded by income', () => {
+    expect(isIncomeFundedExpense({ type: 'expense', funding_source: 'income' })).toBe(true)
+    expect(isIncomeFundedExpense({ type: 'expense', funding_source: 'savings' })).toBe(false)
+  })
+
+  it('never counts income or reimbursements as spend', () => {
+    expect(isIncomeFundedExpense({ type: 'income', funding_source: 'income' })).toBe(false)
+    expect(isIncomeFundedExpense({ type: 'reimbursement', funding_source: 'income' })).toBe(false)
   })
 })

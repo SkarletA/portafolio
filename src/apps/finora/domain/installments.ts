@@ -2,6 +2,8 @@
 // docs/adr/003-installments-and-savings-funding.md. A purchase is stored as
 // one row; its installments are derived from it with these pure functions.
 
+import type { FundingSource, TransactionType } from './transaction'
+
 const CENTS_PER_UNIT = 100
 const MONEY_PATTERN = /^(-?)(\d+)(?:\.(\d{1,2}))?$/
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
@@ -87,4 +89,36 @@ export function getInstallmentDate(anchorDate: string, index: number): string {
   const targetDay = Math.min(day, getDaysInMonth(targetYear, targetMonth))
 
   return `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`
+}
+
+export interface ScheduledRow {
+  /** Purchase date, which is also the date of the first installment. */
+  date: string
+  /** The purchase total. */
+  amount: number
+  installment_months: number
+}
+
+/**
+ * Turns each row into the installments that fall within `range` (inclusive,
+ * `YYYY-MM-DD`), each a copy of the row with that installment's `date` and
+ * `amount`. A row that isn't financed yields itself when its date is in range,
+ * so callers can expand every row without special-casing.
+ */
+export function expandLedgerRowsInRange<T extends ScheduledRow>(rows: T[], range: { start: string; end: string }): T[] {
+  return rows.flatMap((row) =>
+    allocateInstallments(row.amount, row.installment_months).flatMap((amount, index) => {
+      const date = getInstallmentDate(row.date, index)
+      return date >= range.start && date <= range.end ? [{ ...row, date, amount }] : []
+    })
+  )
+}
+
+/**
+ * Whether an entry counts as spend against the month's income - the only
+ * entries summed into `spent`, `totalSpent` and the trend charts. Expenses
+ * covered by savings are reported separately instead.
+ */
+export function isIncomeFundedExpense(entry: { type: TransactionType; funding_source: FundingSource }): boolean {
+  return entry.type === 'expense' && entry.funding_source === 'income'
 }
