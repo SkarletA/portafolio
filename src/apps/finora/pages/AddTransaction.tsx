@@ -18,7 +18,14 @@ import { useTransaction } from '@hooks/useTransaction'
 import { createCategory } from '@services/categoriesService'
 import { createTransaction, updateTransaction, type NewTransactionInput } from '@services/transactionsService'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
-import { PAYMENT_METHODS, getPrimaryPaymentMethod, type TransactionType } from '@domain/transaction'
+import { PAYMENT_METHODS, getPrimaryPaymentMethod, type FundingSource, type TransactionType } from '@domain/transaction'
+import {
+  MAX_INSTALLMENT_MONTHS,
+  MIN_INSTALLMENT_MONTHS,
+  allocateInstallments,
+  getInstallmentDate,
+  getPaymentPlanErrors,
+} from '@domain/installments'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
@@ -38,6 +45,12 @@ function getTodayLocalDate() {
   return `${year}-${month}-${day}`
 }
 
+function formatInstallmentMonth(isoDate: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${isoDate}T00:00:00Z`)
+  )
+}
+
 function slugify(value: string) {
   return value.toLowerCase().replace(/\s+/g, '-')
 }
@@ -48,6 +61,7 @@ interface FormErrors {
   category_id?: string
   date?: string
   payments?: string
+  installmentMonths?: string
 }
 
 interface PaymentEntry {
@@ -89,6 +103,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>(buildInitialPayments)
   const [receivedMethod, setReceivedMethod] = useState('')
   const [hadMultiplePayments, setHadMultiplePayments] = useState(false)
+  const [isFinanced, setIsFinanced] = useState(false)
+  const [installmentMonths, setInstallmentMonths] = useState('')
+  const [isSavingsFunded, setIsSavingsFunded] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -123,6 +140,11 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
   // Money is received in one place, so only expenses can be split across methods.
   const isSingleMethod = type !== 'expense'
+  // Only expenses can be financed or covered by savings (ADR-003); other types
+  // always save the defaults, whatever the hidden controls last held.
+  const isExpense = type === 'expense'
+  const effectiveInstallmentMonths = isExpense && isFinanced ? Number(installmentMonths) : 1
+  const fundingSource: FundingSource = isExpense && isSavingsFunded ? 'savings' : 'income'
 
   const categoryOptions = useMemo(
     () => [
@@ -170,6 +192,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     )
     setReceivedMethod(getPrimaryPaymentMethod(transaction.payments))
     setHadMultiplePayments(transaction.payments.length > 1)
+    setIsFinanced(transaction.installment_months > 1)
+    setInstallmentMonths(transaction.installment_months > 1 ? String(transaction.installment_months) : '')
+    setIsSavingsFunded(transaction.funding_source === 'savings')
     setHasPreloaded(true)
   }, [mode, transaction, hasPreloaded])
 
@@ -295,6 +320,20 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setErrors((prev) => (prev.payments ? { ...prev, payments: undefined } : prev))
   }, [])
 
+  const handleFinancedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsFinanced(event.target.checked)
+    setErrors((prev) => (prev.installmentMonths ? { ...prev, installmentMonths: undefined } : prev))
+  }, [])
+
+  const handleInstallmentMonthsChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setInstallmentMonths(event.target.value)
+    setErrors((prev) => (prev.installmentMonths ? { ...prev, installmentMonths: undefined } : prev))
+  }, [])
+
+  const handleSavingsFundedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsSavingsFunded(event.target.checked)
+  }, [])
+
   const handleNewCategoryNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setNewCategoryName(event.target.value)
     setCategoryCreateError(null)
@@ -402,6 +441,27 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         }
       }
 
+      const planErrors = getPaymentPlanErrors({
+        type,
+        amount: parsedAmount,
+        installmentMonths: effectiveInstallmentMonths,
+        fundingSource,
+        paymentMethodCount: checkedPayments.length,
+      })
+
+      if (planErrors.includes('invalidMonths')) {
+        nextErrors.installmentMonths = t('transactions:validation.installmentMonthsRange', {
+          min: MIN_INSTALLMENT_MONTHS,
+          max: MAX_INSTALLMENT_MONTHS,
+        })
+      }
+      if (planErrors.includes('tooManyDecimals') && !nextErrors.amount) {
+        nextErrors.amount = t('transactions:validation.financedAmountDecimals')
+      }
+      if (planErrors.includes('multiplePaymentMethods') && !nextErrors.payments) {
+        nextErrors.payments = t('transactions:validation.financedSinglePaymentMethod')
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -416,6 +476,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         category_id: categoryId,
         date,
         notes: notes.trim() || null,
+        installment_months: effectiveInstallmentMonths,
+        funding_source: fundingSource,
         payments: isSingleMethod
           ? [{ payment_method: receivedMethod, amount: parsedAmount }]
           : checkedPayments.map((payment) => ({
@@ -435,7 +497,25 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
       navigate('/finora/transactions')
     },
-    [amount, description, categoryId, date, notes, type, payments, isSingleMethod, receivedMethod, mode, id, navigate, t, currency, locale]
+    [
+      amount,
+      description,
+      categoryId,
+      date,
+      notes,
+      type,
+      payments,
+      isSingleMethod,
+      receivedMethod,
+      effectiveInstallmentMonths,
+      fundingSource,
+      mode,
+      id,
+      navigate,
+      t,
+      currency,
+      locale,
+    ]
   )
 
   const assignedTotal = payments.reduce(
@@ -443,6 +523,48 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     0
   )
   const totalAmount = Number(amount) || 0
+
+  // Computed with the same domain functions the monthly figures use, so the
+  // preview always matches what Budgets and Analytics will count.
+  const installmentPreview = useMemo(() => {
+    if (!isExpense || !isFinanced || !date || !(totalAmount > 0)) return null
+
+    const planErrors = getPaymentPlanErrors({
+      type,
+      amount: totalAmount,
+      installmentMonths: effectiveInstallmentMonths,
+      fundingSource,
+      paymentMethodCount: 1,
+    })
+    if (planErrors.length > 0) return null
+
+    const installments = allocateInstallments(totalAmount, effectiveInstallmentMonths)
+    const firstCount = installments.filter((installment) => installment === installments[0]).length
+    const range = {
+      from: formatInstallmentMonth(date, locale),
+      to: formatInstallmentMonth(getInstallmentDate(date, effectiveInstallmentMonths - 1), locale),
+    }
+
+    if (firstCount === installments.length) {
+      return t('transactions:form.installmentPreviewEven', {
+        count: installments.length,
+        amount: formatCurrency(installments[0], currency, locale),
+        ...range,
+      })
+    }
+
+    return t('transactions:form.installmentPreviewUneven', {
+      count: installments.length,
+      firstCount,
+      firstAmount: formatCurrency(installments[0], currency, locale),
+      restCount: installments.length - firstCount,
+      restAmount: formatCurrency(installments[installments.length - 1], currency, locale),
+      ...range,
+    })
+  }, [isExpense, isFinanced, date, totalAmount, type, effectiveInstallmentMonths, fundingSource, locale, currency, t])
+
+  const startsInPastMonth =
+    mode === 'edit' && isExpense && isFinanced && !!date && date.slice(0, 7) < getTodayLocalDate().slice(0, 7)
 
   if (mode === 'edit' && transactionLoading) {
     return (
@@ -766,8 +888,74 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           </div>
         )}
 
+        {isExpense && (
+          <fieldset className={s.paymentPlan}>
+            <legend className={s.paymentPlanLegend}>{t('transactions:form.paymentPlan')}</legend>
+
+            <label className={s.paymentMethodCheckboxLabel}>
+              <input
+                type="checkbox"
+                checked={isFinanced}
+                onChange={handleFinancedChange}
+                data-testid="add-transaction-financed-checkbox"
+              />
+              {t('transactions:form.financed')}
+            </label>
+
+            {isFinanced && (
+              <>
+                <label className={s.field}>
+                  {t('transactions:form.installmentMonths')}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_INSTALLMENT_MONTHS}
+                    max={MAX_INSTALLMENT_MONTHS}
+                    step="1"
+                    value={installmentMonths}
+                    onChange={handleInstallmentMonthsChange}
+                    className={cn(s.input, s.installmentMonthsInput)}
+                    aria-invalid={!!errors.installmentMonths}
+                    aria-describedby={errors.installmentMonths ? 'add-transaction-installment-months-error' : undefined}
+                    data-testid="add-transaction-installment-months-input"
+                  />
+                  {errors.installmentMonths && (
+                    <p id="add-transaction-installment-months-error" role="alert" className={s.error}>
+                      {errors.installmentMonths}
+                    </p>
+                  )}
+                </label>
+                {installmentPreview && (
+                  <p role="status" className={s.hint}>
+                    {installmentPreview}
+                  </p>
+                )}
+                {startsInPastMonth && (
+                  <p role="status" className={s.notice}>
+                    {t('transactions:form.editFinancedNotice')}
+                  </p>
+                )}
+              </>
+            )}
+
+            <label className={s.paymentMethodCheckboxLabel}>
+              <input
+                type="checkbox"
+                checked={isSavingsFunded}
+                onChange={handleSavingsFundedChange}
+                aria-describedby="add-transaction-savings-funded-hint"
+                data-testid="add-transaction-savings-funded-checkbox"
+              />
+              {t('transactions:form.coveredBySavings')}
+            </label>
+            <p id="add-transaction-savings-funded-hint" className={s.hint}>
+              {t('transactions:form.coveredBySavingsHint')}
+            </p>
+          </fieldset>
+        )}
+
         <label className={s.field}>
-          {t('transactions:form.date')}
+          {isExpense && isFinanced ? t('transactions:form.purchaseDate') : t('transactions:form.date')}
           <input
             type="date"
             required

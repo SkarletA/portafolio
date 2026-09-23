@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import type { Transaction, TransactionType } from '@domain/transaction'
+import type { FundingSource, Transaction, TransactionType } from '@domain/transaction'
 import type { Category } from '@domain/category'
 import {
   getGrossSpendByCategory,
@@ -56,6 +56,8 @@ export interface NewTransactionInput {
   category_id: string | null
   date: string
   notes: string | null
+  installment_months: number
+  funding_source: FundingSource
   payments: TransactionPaymentInput[]
 }
 

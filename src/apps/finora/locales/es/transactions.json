@@ -62,6 +62,15 @@
     "paymentMethodsAriaLabel": "Métodos de pago",
     "amountPaidWith": "Monto pagado con {{method}}",
     "assignedSummary": "Asignado: {{assigned}} / {{total}} total",
+    "paymentPlan": "Plan de pago",
+    "financed": "A meses sin intereses (MSI)",
+    "installmentMonths": "Número de meses",
+    "installmentPreviewEven": "{{count}} mensualidades de {{amount}} · {{from}} – {{to}}",
+    "installmentPreviewUneven": "{{count}} mensualidades: {{firstCount}} × {{firstAmount}} y {{restCount}} × {{restAmount}} · {{from}} – {{to}}",
+    "editFinancedNotice": "Cambiar el monto, los meses, la fecha o la categoría también actualiza los meses anteriores.",
+    "coveredBySavings": "Cubierto con ahorros",
+    "coveredBySavingsHint": "No contará contra los presupuestos ni la tasa de ahorro del mes.",
+    "purchaseDate": "Fecha de compra (primera mensualidad)",
     "receivedVia": "Recibido vía",
     "selectReceivedVia": "Selecciona un método",
     "consolidatePaymentsNotice": "Esta transacción tiene varios métodos de pago registrados. Al guardar se consolidarán en {{method}} por el monto total.",
@@ -80,6 +89,9 @@
     "selectPaymentMethod": "Selecciona al menos un método de pago",
     "amountGreaterThanZeroEach": "Ingresa un monto mayor a 0 para cada método de pago seleccionado",
     "assignedMustEqualTotal": "Los montos asignados ({{assigned}}) deben ser iguales al total ({{total}})",
-    "selectReceivedVia": "Selecciona dónde recibiste este dinero"
+    "selectReceivedVia": "Selecciona dónde recibiste este dinero",
+    "installmentMonthsRange": "Ingresa un número entero de meses entre {{min}} y {{max}}",
+    "financedSinglePaymentMethod": "Una compra a meses debe usar un solo método de pago",
+    "financedAmountDecimals": "Un monto a meses puede tener como máximo 2 decimales"
   }
 }
