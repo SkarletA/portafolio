@@ -72,7 +72,12 @@ export function Analytics() {
   }, [])
 
   const formatChartValue = useCallback(
-    (value: number | string) => formatCurrency(Number(value), currency, locale, { maximumFractionDigits: 0 }),
+    // recharts' Tooltip may pass undefined (or an array for range series), so
+    // only format values that are actually a single number.
+    (value?: unknown) =>
+      typeof value === 'number' || typeof value === 'string'
+        ? formatCurrency(Number(value), currency, locale, { maximumFractionDigits: 0 })
+        : '',
     [currency, locale]
   )
 
