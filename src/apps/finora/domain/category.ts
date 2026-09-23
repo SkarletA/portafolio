@@ -56,6 +56,20 @@ export interface CategoryLedgerEntry {
   amount: number
 }
 
+// Sums each category's own entries that match `predicate`, before any
+// parent/child rollup. Entries without a category are skipped.
+function sumByCategory(
+  entries: CategoryLedgerEntry[],
+  predicate: (entry: CategoryLedgerEntry) => boolean
+): Record<string, number> {
+  return entries.reduce<Record<string, number>>((totals, entry) => {
+    if (!entry.category_id || !predicate(entry)) return totals
+
+    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
+    return totals
+  }, {})
+}
+
 function rollupByCategory(rawByCategory: Record<string, number>, categories: Category[]): Record<string, number> {
   const totalsByCategory: Record<string, number> = {}
 
@@ -75,12 +89,7 @@ function rollupByCategory(rawByCategory: Record<string, number>, categories: Cat
 // their parent (e.g. a budget's subcategory breakdown) don't duplicate this
 // summing logic.
 export function getRawGrossSpendByCategory(entries: CategoryLedgerEntry[]): Record<string, number> {
-  return entries.reduce<Record<string, number>>((totals, entry) => {
-    if (!entry.category_id || entry.type !== 'expense') return totals
-
-    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
-    return totals
-  }, {})
+  return sumByCategory(entries, (entry) => entry.type === 'expense')
 }
 
 // Gross spend per category = sum(expense amounts) across the category and its
@@ -96,12 +105,8 @@ export function getGrossSpendByCategory(entries: CategoryLedgerEntry[], categori
 // budget's effective limit (monthly_limit + reimbursements) can be computed
 // per rollup scope. See docs/adr/002-gross-spend-and-effective-limit.md.
 export function getReimbursementsByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
-  const rawByCategory = entries.reduce<Record<string, number>>((totals, entry) => {
-    if (!entry.category_id || entry.type !== 'reimbursement') return totals
-
-    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
-    return totals
-  }, {})
-
-  return rollupByCategory(rawByCategory, categories)
+  return rollupByCategory(
+    sumByCategory(entries, (entry) => entry.type === 'reimbursement'),
+    categories
+  )
 }
