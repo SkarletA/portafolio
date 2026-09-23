@@ -15,6 +15,7 @@ const baseBudget: BudgetWithProgress = {
   category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b', translationKey: null },
   spent: 120,
   effectiveLimit: 400,
+  coveredBySavings: 0,
   percentage: 30,
   status: 'on-track',
   breakdown: [],
@@ -51,6 +52,7 @@ describe('BudgetCard', () => {
           monthly_limit: 2000,
           spent: 3625,
           effectiveLimit: 4000,
+          coveredBySavings: 0,
           percentage: 90.625,
           status: 'near-limit',
         }}

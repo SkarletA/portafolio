@@ -6,6 +6,7 @@ import {
   getGrossSpendByCategory,
   getRawGrossSpendByCategory,
   getReimbursementsByCategory,
+  getSavingsCoveredByCategory,
   type Category,
 } from './category'
 
@@ -53,10 +54,10 @@ describe('getCategoryIdsForRollup', () => {
 describe('getRawGrossSpendByCategory', () => {
   it('sums expense amounts per category without rolling children into their parent', () => {
     const entries = [
-      { category_id: 'meat', type: 'expense' as const, amount: 200 },
-      { category_id: 'meat', type: 'reimbursement' as const, amount: 50 },
-      { category_id: 'market', type: 'expense' as const, amount: 300 },
-      { category_id: 'food', type: 'expense' as const, amount: 20 },
+      { category_id: 'meat', type: 'expense' as const, amount: 200, funding_source: 'income' as const },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 50, funding_source: 'income' as const },
+      { category_id: 'market', type: 'expense' as const, amount: 300, funding_source: 'income' as const },
+      { category_id: 'food', type: 'expense' as const, amount: 20, funding_source: 'income' as const },
     ]
 
     expect(getRawGrossSpendByCategory(entries)).toEqual({
@@ -68,10 +69,10 @@ describe('getRawGrossSpendByCategory', () => {
 
   it('ignores entries with no category, income entries, and reimbursement entries', () => {
     const entries = [
-      { category_id: null, type: 'expense' as const, amount: 999 },
-      { category_id: 'transport', type: 'income' as const, amount: 500 },
-      { category_id: 'transport', type: 'reimbursement' as const, amount: 300 },
-      { category_id: 'transport', type: 'expense' as const, amount: 40 },
+      { category_id: null, type: 'expense' as const, amount: 999, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'income' as const, amount: 500, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'reimbursement' as const, amount: 300, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'expense' as const, amount: 40, funding_source: 'income' as const },
     ]
 
     expect(getRawGrossSpendByCategory(entries)).toEqual({ transport: 40 })
@@ -81,10 +82,10 @@ describe('getRawGrossSpendByCategory', () => {
 describe('getGrossSpendByCategory', () => {
   it('rolls up subcategory expenses into the parent without double counting', () => {
     const entries = [
-      { category_id: 'meat', type: 'expense' as const, amount: 200 },
-      { category_id: 'meat', type: 'reimbursement' as const, amount: 50 },
-      { category_id: 'market', type: 'expense' as const, amount: 300 },
-      { category_id: 'transport', type: 'expense' as const, amount: 100 },
+      { category_id: 'meat', type: 'expense' as const, amount: 200, funding_source: 'income' as const },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 50, funding_source: 'income' as const },
+      { category_id: 'market', type: 'expense' as const, amount: 300, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'expense' as const, amount: 100, funding_source: 'income' as const },
     ]
 
     expect(getGrossSpendByCategory(entries, categories)).toEqual({
@@ -97,9 +98,9 @@ describe('getGrossSpendByCategory', () => {
 
   it('never needs a floor, since a sum of expense amounts is always non-negative', () => {
     const entries = [
-      { category_id: 'meat', type: 'expense' as const, amount: 100 },
-      { category_id: 'meat', type: 'reimbursement' as const, amount: 300 },
-      { category_id: 'market', type: 'expense' as const, amount: 50 },
+      { category_id: 'meat', type: 'expense' as const, amount: 100, funding_source: 'income' as const },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 300, funding_source: 'income' as const },
+      { category_id: 'market', type: 'expense' as const, amount: 50, funding_source: 'income' as const },
     ]
 
     expect(getGrossSpendByCategory(entries, categories)).toEqual({
@@ -112,9 +113,9 @@ describe('getGrossSpendByCategory', () => {
 
   it('ignores entries with no category and entries of type income', () => {
     const entries = [
-      { category_id: null, type: 'expense' as const, amount: 999 },
-      { category_id: 'transport', type: 'income' as const, amount: 500 },
-      { category_id: 'transport', type: 'expense' as const, amount: 40 },
+      { category_id: null, type: 'expense' as const, amount: 999, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'income' as const, amount: 500, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'expense' as const, amount: 40, funding_source: 'income' as const },
     ]
 
     expect(getGrossSpendByCategory(entries, categories).transport).toBe(40)
@@ -122,8 +123,8 @@ describe('getGrossSpendByCategory', () => {
 
   it('does not roll a budget on a specific subcategory up to its sibling', () => {
     const entries = [
-      { category_id: 'meat', type: 'expense' as const, amount: 200 },
-      { category_id: 'market', type: 'expense' as const, amount: 9000 },
+      { category_id: 'meat', type: 'expense' as const, amount: 200, funding_source: 'income' as const },
+      { category_id: 'market', type: 'expense' as const, amount: 9000, funding_source: 'income' as const },
     ]
 
     expect(getGrossSpendByCategory(entries, categories).meat).toBe(200)
@@ -133,9 +134,9 @@ describe('getGrossSpendByCategory', () => {
 describe('getReimbursementsByCategory', () => {
   it('rolls up subcategory reimbursements into the parent', () => {
     const entries = [
-      { category_id: 'meat', type: 'reimbursement' as const, amount: 200 },
-      { category_id: 'market', type: 'reimbursement' as const, amount: 300 },
-      { category_id: 'meat', type: 'expense' as const, amount: 999 },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 200, funding_source: 'income' as const },
+      { category_id: 'market', type: 'reimbursement' as const, amount: 300, funding_source: 'income' as const },
+      { category_id: 'meat', type: 'expense' as const, amount: 999, funding_source: 'income' as const },
     ]
 
     expect(getReimbursementsByCategory(entries, categories)).toEqual({
@@ -148,11 +149,47 @@ describe('getReimbursementsByCategory', () => {
 
   it('ignores expense and income entries', () => {
     const entries = [
-      { category_id: 'transport', type: 'expense' as const, amount: 40 },
-      { category_id: 'transport', type: 'income' as const, amount: 500 },
+      { category_id: 'transport', type: 'expense' as const, amount: 40, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'income' as const, amount: 500, funding_source: 'income' as const },
     ]
 
     expect(getReimbursementsByCategory(entries, categories).transport).toBe(0)
+  })
+})
+
+describe('savings-funded expenses', () => {
+  const entries = [
+    { category_id: 'meat', type: 'expense' as const, amount: 200, funding_source: 'income' as const },
+    { category_id: 'meat', type: 'expense' as const, amount: 1000, funding_source: 'savings' as const },
+    { category_id: 'market', type: 'expense' as const, amount: 300, funding_source: 'savings' as const },
+    { category_id: 'meat', type: 'reimbursement' as const, amount: 50, funding_source: 'income' as const },
+  ]
+
+  it('are left out of gross spend, per category and rolled up', () => {
+    expect(getRawGrossSpendByCategory(entries)).toEqual({ meat: 200 })
+    expect(getGrossSpendByCategory(entries, categories)).toEqual({ food: 200, meat: 200, market: 0, transport: 0 })
+  })
+
+  it('are summed separately, rolled up the same way as gross spend', () => {
+    expect(getSavingsCoveredByCategory(entries, categories)).toEqual({
+      food: 1300,
+      meat: 1000,
+      market: 300,
+      transport: 0,
+    })
+  })
+
+  it('do not change how reimbursements widen the limit', () => {
+    expect(getReimbursementsByCategory(entries, categories)).toEqual({ food: 50, meat: 50, market: 0, transport: 0 })
+  })
+
+  it('never include income or reimbursements in the savings-covered sum', () => {
+    const others = [
+      { category_id: 'transport', type: 'income' as const, amount: 500, funding_source: 'savings' as const },
+      { category_id: 'transport', type: 'reimbursement' as const, amount: 80, funding_source: 'savings' as const },
+    ]
+
+    expect(getSavingsCoveredByCategory(others, categories).transport).toBe(0)
   })
 })
 

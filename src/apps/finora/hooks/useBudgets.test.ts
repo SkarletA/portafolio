@@ -137,6 +137,7 @@ describe('useBudgets', () => {
         monthly_limit: 200,
         spent: 180,
         effectiveLimit: 200,
+        coveredBySavings: 0,
         percentage: 90,
         status: 'near-limit',
         breakdown: [],
@@ -167,6 +168,33 @@ describe('useBudgets', () => {
     expect(budget.effectiveLimit).toBe(4000)
     expect(budget.percentage).toBeCloseTo(90.625)
     expect(budget.status).toBe('near-limit')
+  })
+
+  it('reports spending covered by savings without counting it against the limit (ADR-003)', async () => {
+    vi.mocked(getBudgets).mockResolvedValue({
+      data: [{ id: '1', category_id: 'travel', monthly_limit: 2000 }],
+      error: null,
+    } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: {
+        totals: { travel: 500 },
+        raw: { travel: 500 },
+        reimbursements: {},
+        savingsCovered: { travel: 1666.67 },
+      },
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useBudgets())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const budget = result.current.budgets[0]
+    expect(budget.spent).toBe(500)
+    expect(budget.coveredBySavings).toBe(1666.67)
+    expect(budget.effectiveLimit).toBe(2000)
+    expect(budget.percentage).toBe(25)
+    expect(budget.status).toBe('on-track')
   })
 
   it('returns no breakdown for a category with no subcategories', async () => {

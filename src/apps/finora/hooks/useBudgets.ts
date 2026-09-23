@@ -17,6 +17,8 @@ export interface BudgetBreakdownItem {
 export type BudgetWithProgress = BudgetWithCategory & {
   spent: number
   effectiveLimit: number
+  /** Spent in this budget's categories but covered by savings, so not in `spent`. */
+  coveredBySavings: number
   percentage: number
   status: BudgetStatus
   breakdown: BudgetBreakdownItem[]
@@ -87,6 +89,7 @@ export function useBudgets() {
       const totalsByCategory = expensesData?.totals ?? {}
       const rawByCategory = expensesData?.raw ?? {}
       const reimbursementsByCategory = expensesData?.reimbursements ?? {}
+      const savingsCoveredByCategory = expensesData?.savingsCovered ?? {}
       const categories = (categoriesData ?? []) as Category[]
 
       const budgetsWithProgress = ((budgetsData ?? []) as BudgetWithCategory[]).map((budget) => {
@@ -97,8 +100,11 @@ export function useBudgets() {
         const effectiveLimit = budget.monthly_limit + (reimbursementsByCategory[budget.category_id] ?? 0)
         const { percentage, status } = getBudgetProgress(effectiveLimit, spent)
         const breakdown = buildBreakdown(budget.category_id, categories, rawByCategory)
+        // Excluded from `spent` but reported, so it doesn't silently vanish.
+        // See docs/adr/003-installments-and-savings-funding.md.
+        const coveredBySavings = savingsCoveredByCategory[budget.category_id] ?? 0
 
-        return { ...budget, spent, effectiveLimit, percentage, status, breakdown }
+        return { ...budget, spent, effectiveLimit, coveredBySavings, percentage, status, breakdown }
       })
 
       setBudgets(budgetsWithProgress)
