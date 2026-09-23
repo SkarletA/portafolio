@@ -4,6 +4,9 @@
 
 import type { FundingSource, TransactionType } from './transaction'
 
+export const MIN_INSTALLMENT_MONTHS = 2
+export const MAX_INSTALLMENT_MONTHS = 48
+
 const CENTS_PER_UNIT = 100
 const MONEY_PATTERN = /^(-?)(\d+)(?:\.(\d{1,2}))?$/
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
@@ -121,4 +124,60 @@ export function expandLedgerRowsInRange<T extends ScheduledRow>(rows: T[], range
  */
 export function isIncomeFundedExpense(entry: { type: TransactionType; funding_source: FundingSource }): boolean {
   return entry.type === 'expense' && entry.funding_source === 'income'
+}
+
+export type PaymentPlanError = 'notAnExpense' | 'invalidMonths' | 'multiplePaymentMethods' | 'tooManyDecimals'
+
+export interface PaymentPlan {
+  type: TransactionType
+  amount: number
+  /** 1 when the purchase is paid at once. */
+  installmentMonths: number
+  fundingSource: FundingSource
+  /** How many payment methods the purchase is split across. */
+  paymentMethodCount: number
+}
+
+/**
+ * Checks the financing and funding choices of a transaction against ADR-003,
+ * returning every rule it breaks (empty when valid). Only expenses can be
+ * financed or covered by savings; a financed purchase needs a whole number of
+ * months in range, a single payment method, and an amount it can split
+ * exactly. Required-field checks (amount > 0, at least one method) stay with
+ * the form, which already reports them.
+ */
+export function getPaymentPlanErrors(plan: PaymentPlan): PaymentPlanError[] {
+  const isFinanced = plan.installmentMonths !== 1
+
+  if (plan.type !== 'expense') {
+    return isFinanced || plan.fundingSource !== 'income' ? ['notAnExpense'] : []
+  }
+  if (!isFinanced) return []
+
+  const errors: PaymentPlanError[] = []
+
+  if (
+    !Number.isInteger(plan.installmentMonths) ||
+    plan.installmentMonths < MIN_INSTALLMENT_MONTHS ||
+    plan.installmentMonths > MAX_INSTALLMENT_MONTHS
+  ) {
+    errors.push('invalidMonths')
+  }
+  if (plan.paymentMethodCount > 1) {
+    errors.push('multiplePaymentMethods')
+  }
+  if (Number.isFinite(plan.amount) && plan.amount > 0 && !isRepresentableInCents(plan.amount)) {
+    errors.push('tooManyDecimals')
+  }
+
+  return errors
+}
+
+function isRepresentableInCents(amount: number): boolean {
+  try {
+    toMinorUnits(amount)
+    return true
+  } catch {
+    return false
+  }
 }

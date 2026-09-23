@@ -3,8 +3,10 @@ import {
   allocateInstallments,
   expandLedgerRowsInRange,
   getInstallmentDate,
+  getPaymentPlanErrors,
   isIncomeFundedExpense,
   toMinorUnits,
+  type PaymentPlan,
 } from './installments'
 
 function sumInCents(amounts: number[]) {
@@ -239,5 +241,75 @@ describe('isIncomeFundedExpense', () => {
   it('never counts income or reimbursements as spend', () => {
     expect(isIncomeFundedExpense({ type: 'income', funding_source: 'income' })).toBe(false)
     expect(isIncomeFundedExpense({ type: 'reimbursement', funding_source: 'income' })).toBe(false)
+  })
+})
+
+describe('getPaymentPlanErrors', () => {
+  const financedTravel: PaymentPlan = {
+    type: 'expense',
+    amount: 20000,
+    installmentMonths: 12,
+    fundingSource: 'income',
+    paymentMethodCount: 1,
+  }
+
+  it('accepts a financed expense with one payment method', () => {
+    expect(getPaymentPlanErrors(financedTravel)).toEqual([])
+    expect(getPaymentPlanErrors({ ...financedTravel, fundingSource: 'savings' })).toEqual([])
+  })
+
+  it('accepts a single-payment expense, split across methods or covered by savings', () => {
+    const groceries: PaymentPlan = { ...financedTravel, amount: 850.5, installmentMonths: 1, paymentMethodCount: 2 }
+
+    expect(getPaymentPlanErrors(groceries)).toEqual([])
+    expect(getPaymentPlanErrors({ ...groceries, fundingSource: 'savings' })).toEqual([])
+  })
+
+  it('does not check decimals on single-payment expenses, leaving existing behavior unchanged', () => {
+    expect(getPaymentPlanErrors({ ...financedTravel, amount: 10.005, installmentMonths: 1 })).toEqual([])
+  })
+
+  it('accepts income and reimbursements with the defaults', () => {
+    const salary: PaymentPlan = { ...financedTravel, type: 'income', installmentMonths: 1 }
+
+    expect(getPaymentPlanErrors(salary)).toEqual([])
+    expect(getPaymentPlanErrors({ ...salary, type: 'reimbursement' })).toEqual([])
+  })
+
+  it('rejects financing or savings funding on income and reimbursements', () => {
+    expect(getPaymentPlanErrors({ ...financedTravel, type: 'income' })).toEqual(['notAnExpense'])
+    expect(
+      getPaymentPlanErrors({ ...financedTravel, type: 'reimbursement', installmentMonths: 1, fundingSource: 'savings' })
+    ).toEqual(['notAnExpense'])
+  })
+
+  it('accepts the minimum and maximum number of months', () => {
+    expect(getPaymentPlanErrors({ ...financedTravel, installmentMonths: 2 })).toEqual([])
+    expect(getPaymentPlanErrors({ ...financedTravel, installmentMonths: 48 })).toEqual([])
+  })
+
+  it('rejects months out of range or not whole', () => {
+    for (const installmentMonths of [0, -3, 49, 2.5, Number.NaN]) {
+      expect(getPaymentPlanErrors({ ...financedTravel, installmentMonths })).toEqual(['invalidMonths'])
+    }
+  })
+
+  it('rejects a financed purchase split across payment methods', () => {
+    expect(getPaymentPlanErrors({ ...financedTravel, paymentMethodCount: 2 })).toEqual(['multiplePaymentMethods'])
+  })
+
+  it('rejects a financed amount with more than 2 decimals', () => {
+    expect(getPaymentPlanErrors({ ...financedTravel, amount: 20000.005 })).toEqual(['tooManyDecimals'])
+  })
+
+  it('leaves a missing or non-positive amount to the form\'s own check', () => {
+    expect(getPaymentPlanErrors({ ...financedTravel, amount: Number.NaN })).toEqual([])
+    expect(getPaymentPlanErrors({ ...financedTravel, amount: 0 })).toEqual([])
+  })
+
+  it('reports every broken rule at once', () => {
+    expect(
+      getPaymentPlanErrors({ ...financedTravel, installmentMonths: 60, paymentMethodCount: 3, amount: 1.234 })
+    ).toEqual(['invalidMonths', 'multiplePaymentMethods', 'tooManyDecimals'])
   })
 })
