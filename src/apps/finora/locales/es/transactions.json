@@ -73,7 +73,7 @@
     "installmentPreviewUneven": "{{count}} mensualidades: {{firstCount}} × {{firstAmount}} y {{restCount}} × {{restAmount}} · {{from}} – {{to}}",
     "editFinancedNotice": "Cambiar el monto, los meses, la fecha o la categoría también actualiza los meses anteriores.",
     "coveredBySavings": "Cubierto con ahorros",
-    "coveredBySavingsHint": "No contará contra los presupuestos ni la tasa de ahorro del mes.",
+    "coveredBySavingsHint": "El monto completo se toma de la meta ahora. No contará contra los presupuestos ni la tasa de ahorro del mes.",
     "purchaseDate": "Fecha de compra (primera mensualidad)",
     "receivedVia": "Recibido vía",
     "selectReceivedVia": "Selecciona un método",
@@ -84,7 +84,14 @@
     "loadingTransaction": "Cargando transacción…",
     "loadError": "No pudimos cargar esta transacción. Inténtalo de nuevo más tarde.",
     "couldNotCreateSubcategory": "No se pudo crear la subcategoría",
-    "couldNotCreateCategory": "No se pudo crear la categoría"
+    "couldNotCreateCategory": "No se pudo crear la categoría",
+    "savingsGoal": "Se toma de la meta",
+    "selectSavingsGoal": "Selecciona una meta",
+    "loadingGoals": "Cargando metas…",
+    "savingsGoalOption": "{{name}} · {{available}} disponibles",
+    "noGoalsYet": "Todavía no tienes metas.",
+    "createGoal": "Crea una meta primero",
+    "fullWithdrawalNotice": "Los {{amount}} completos se toman de {{goal}} en la fecha de compra."
   },
   "validation": {
     "selectCategory": "Selecciona una categoría",
@@ -96,6 +103,8 @@
     "selectReceivedVia": "Selecciona dónde recibiste este dinero",
     "installmentMonthsRange": "Ingresa un número entero de meses entre {{min}} y {{max}}",
     "financedSinglePaymentMethod": "Una compra a meses debe usar un solo método de pago",
-    "financedAmountDecimals": "Un monto a meses puede tener como máximo 2 decimales"
+    "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales",
+    "selectSavingsGoal": "Selecciona la meta de la que sale este dinero",
+    "insufficientGoalFunds": "{{name}} solo tiene {{available}} disponibles"
   }
 }

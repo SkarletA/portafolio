@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import type { FundingSource, Transaction, TransactionType } from '@domain/transaction'
+import type { Transaction, TransactionType } from '@domain/transaction'
 import type { Category } from '@domain/category'
 import {
   getGrossSpendByCategory,
@@ -15,7 +15,7 @@ export type TransactionWithCategory = Transaction & {
 }
 
 const TRANSACTION_SELECT =
-  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount)'
+  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), withdrawal:goal_transfers(goal_id, amount, goal:goals(name))'
 
 export async function getTransactions() {
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -57,73 +57,28 @@ export interface NewTransactionInput {
   date: string
   notes: string | null
   installment_months: number
-  funding_source: FundingSource
+  /** The Goal a savings-funded expense withdraws from; null when funded by income. */
+  savings_goal_id: string | null
   payments: TransactionPaymentInput[]
 }
 
-export async function createTransaction(data: NewTransactionInput) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
-  const { payments, ...transactionFields } = data
-
-  const { data: transaction, error: transactionError } = await supabase
-    .from('transactions')
-    .insert({ ...transactionFields, user_id: userData.user.id })
-    .select()
-    .single()
-
-  if (transactionError) return { data: null, error: transactionError }
-
-  const { error: paymentsError } = await supabase.from('transaction_payments').insert(
-    payments.map((payment) => ({
-      ...payment,
-      transaction_id: transaction.id,
-      user_id: userData.user.id,
-    }))
-  )
-
-  if (paymentsError) return { data: null, error: paymentsError }
-
-  return { data: transaction, error: null }
-}
-
-export type UpdateTransactionInput = NewTransactionInput
-
-export async function updateTransaction(id: string, data: UpdateTransactionInput) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
-  const { payments, ...transactionFields } = data
-
-  const { data: transaction, error: transactionError } = await supabase
-    .from('transactions')
-    .update(transactionFields)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (transactionError) return { data: null, error: transactionError }
-
-  const { error: deleteError } = await supabase.from('transaction_payments').delete().eq('transaction_id', id)
-
-  if (deleteError) return { data: null, error: deleteError }
-
-  const { error: insertError } = await supabase.from('transaction_payments').insert(
-    payments.map((payment) => ({
-      ...payment,
-      transaction_id: id,
-      user_id: userData.user.id,
-    }))
-  )
-
-  if (insertError) return { data: null, error: insertError }
-
-  return { data: transaction, error: null }
+// Creates (id null) or updates a transaction with its payments and, for a
+// savings-funded expense, its Goal withdrawal - all in one database
+// transaction, so none of them can be saved without the others. Errors carry
+// stable codes (see parseMoneyMovementError). See docs/adr/004-goal-transfers.md.
+export function saveTransaction(id: string | null, data: NewTransactionInput) {
+  return supabase.rpc('save_transaction', {
+    p_id: id,
+    p_description: data.description,
+    p_amount: data.amount,
+    p_type: data.type,
+    p_category_id: data.category_id,
+    p_date: data.date,
+    p_notes: data.notes,
+    p_installment_months: data.installment_months,
+    p_savings_goal_id: data.savings_goal_id,
+    p_payments: data.payments,
+  })
 }
 
 export function deleteTransaction(id: string) {

@@ -126,7 +126,12 @@ export function isIncomeFundedExpense(entry: { type: TransactionType; funding_so
   return entry.type === 'expense' && entry.funding_source === 'income'
 }
 
-export type PaymentPlanError = 'notAnExpense' | 'invalidMonths' | 'multiplePaymentMethods' | 'tooManyDecimals'
+export type PaymentPlanError =
+  | 'notAnExpense'
+  | 'invalidMonths'
+  | 'multiplePaymentMethods'
+  | 'tooManyDecimals'
+  | 'missingSavingsGoal'
 
 export interface PaymentPlan {
   type: TransactionType
@@ -134,27 +139,34 @@ export interface PaymentPlan {
   /** 1 when the purchase is paid at once. */
   installmentMonths: number
   fundingSource: FundingSource
+  /** The Goal a savings-funded expense withdraws from (ADR-004); null otherwise. */
+  savingsGoalId: string | null
   /** How many payment methods the purchase is split across. */
   paymentMethodCount: number
 }
 
 /**
- * Checks the financing and funding choices of a transaction against ADR-003,
- * returning every rule it breaks (empty when valid). Only expenses can be
- * financed or covered by savings; a financed purchase needs a whole number of
- * months in range, a single payment method, and an amount it can split
- * exactly. Required-field checks (amount > 0, at least one method) stay with
- * the form, which already reports them.
+ * Checks the financing and funding choices of a transaction against ADR-003
+ * and ADR-004, returning every rule it breaks (empty when valid). Only
+ * expenses can be financed or covered by savings; savings always come from a
+ * specific Goal; a financed purchase needs a whole number of months in range,
+ * a single payment method, and an amount it can split exactly. Required-field
+ * checks (amount > 0, at least one method) and the Goal's balance stay with the
+ * form and the database, which already report them.
  */
 export function getPaymentPlanErrors(plan: PaymentPlan): PaymentPlanError[] {
   const isFinanced = plan.installmentMonths !== 1
 
   if (plan.type !== 'expense') {
-    return isFinanced || plan.fundingSource !== 'income' ? ['notAnExpense'] : []
+    return isFinanced || plan.fundingSource !== 'income' || plan.savingsGoalId ? ['notAnExpense'] : []
   }
-  if (!isFinanced) return []
 
   const errors: PaymentPlanError[] = []
+
+  if (plan.fundingSource === 'savings' && !plan.savingsGoalId) {
+    errors.push('missingSavingsGoal')
+  }
+  if (!isFinanced) return errors
 
   if (
     !Number.isInteger(plan.installmentMonths) ||

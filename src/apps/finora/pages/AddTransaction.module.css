@@ -131,3 +131,7 @@
 .installmentMonthsInput {
   @apply w-28;
 }
+
+.link {
+  @apply font-medium text-finora-primary underline;
+}

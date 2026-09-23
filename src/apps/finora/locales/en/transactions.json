@@ -73,7 +73,7 @@
     "installmentPreviewUneven": "{{count}} monthly payments: {{firstCount}} × {{firstAmount}} and {{restCount}} × {{restAmount}} · {{from}} – {{to}}",
     "editFinancedNotice": "Changing the amount, months, date or category also updates past months.",
     "coveredBySavings": "Covered by savings",
-    "coveredBySavingsHint": "Won't count against this month's budgets or savings rate.",
+    "coveredBySavingsHint": "The full amount is taken from the goal now. It won't count against this month's budgets or savings rate.",
     "purchaseDate": "Purchase date (first installment)",
     "receivedVia": "Received via",
     "selectReceivedVia": "Select a method",
@@ -84,7 +84,14 @@
     "loadingTransaction": "Loading transaction…",
     "loadError": "We couldn't load this transaction. Please try again later.",
     "couldNotCreateSubcategory": "Could not create the subcategory",
-    "couldNotCreateCategory": "Could not create the category"
+    "couldNotCreateCategory": "Could not create the category",
+    "savingsGoal": "Taken from goal",
+    "selectSavingsGoal": "Select a goal",
+    "loadingGoals": "Loading goals…",
+    "savingsGoalOption": "{{name}} · {{available}} available",
+    "noGoalsYet": "You don't have any goals yet.",
+    "createGoal": "Create a goal first",
+    "fullWithdrawalNotice": "The full {{amount}} is taken from {{goal}} on the purchase date."
   },
   "validation": {
     "selectCategory": "Select a category",
@@ -96,6 +103,8 @@
     "selectReceivedVia": "Select where you received this money",
     "installmentMonthsRange": "Enter a whole number of months from {{min}} to {{max}}",
     "financedSinglePaymentMethod": "A financed purchase must use a single payment method",
-    "financedAmountDecimals": "A financed amount can have at most 2 decimals"
+    "amountMaxDecimals": "Amounts can have at most 2 decimals",
+    "selectSavingsGoal": "Select the goal this money comes from",
+    "insufficientGoalFunds": "{{name}} only has {{available}} available"
   }
 }

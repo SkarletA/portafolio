@@ -28,6 +28,7 @@ const baseTransaction: TransactionWithCategory = {
   installment_months: 1,
   funding_source: 'income',
   last_installment_date: '2026-09-08',
+  withdrawal: null,
   category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null },
   payments: [{ id: 'p1', transaction_id: '1', payment_method: 'Credit Card', amount: 120 }],
 }

@@ -250,19 +250,20 @@ describe('getPaymentPlanErrors', () => {
     amount: 20000,
     installmentMonths: 12,
     fundingSource: 'income',
+    savingsGoalId: null,
     paymentMethodCount: 1,
   }
 
   it('accepts a financed expense with one payment method', () => {
     expect(getPaymentPlanErrors(financedTravel)).toEqual([])
-    expect(getPaymentPlanErrors({ ...financedTravel, fundingSource: 'savings' })).toEqual([])
+    expect(getPaymentPlanErrors({ ...financedTravel, fundingSource: 'savings', savingsGoalId: 'vacation' })).toEqual([])
   })
 
   it('accepts a single-payment expense, split across methods or covered by savings', () => {
     const groceries: PaymentPlan = { ...financedTravel, amount: 850.5, installmentMonths: 1, paymentMethodCount: 2 }
 
     expect(getPaymentPlanErrors(groceries)).toEqual([])
-    expect(getPaymentPlanErrors({ ...groceries, fundingSource: 'savings' })).toEqual([])
+    expect(getPaymentPlanErrors({ ...groceries, fundingSource: 'savings', savingsGoalId: 'vacation' })).toEqual([])
   })
 
   it('does not check decimals on single-payment expenses, leaving existing behavior unchanged', () => {
@@ -280,6 +281,19 @@ describe('getPaymentPlanErrors', () => {
     expect(getPaymentPlanErrors({ ...financedTravel, type: 'income' })).toEqual(['notAnExpense'])
     expect(
       getPaymentPlanErrors({ ...financedTravel, type: 'reimbursement', installmentMonths: 1, fundingSource: 'savings' })
+    ).toEqual(['notAnExpense'])
+  })
+
+  it('requires a Goal for an expense covered by savings, financed or not (ADR-004)', () => {
+    expect(getPaymentPlanErrors({ ...financedTravel, fundingSource: 'savings' })).toEqual(['missingSavingsGoal'])
+    expect(getPaymentPlanErrors({ ...financedTravel, installmentMonths: 1, fundingSource: 'savings' })).toEqual([
+      'missingSavingsGoal',
+    ])
+  })
+
+  it('rejects a Goal on income and reimbursements', () => {
+    expect(
+      getPaymentPlanErrors({ ...financedTravel, type: 'income', installmentMonths: 1, savingsGoalId: 'vacation' })
     ).toEqual(['notAnExpense'])
   })
 
