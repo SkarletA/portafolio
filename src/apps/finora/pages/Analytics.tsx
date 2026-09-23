@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
 import cn from 'clsx'
 import { useAnalytics } from '@hooks/useAnalytics'
 import { getPeriodRange, type DateRange, type PeriodType } from '@domain/analytics'
@@ -9,13 +8,12 @@ import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
-import type { PeriodComparison, PeriodComparisonCategory } from '@services/analyticsService'
 import { StatCard } from '@molecules/StatCard/StatCard'
 import { AsyncState } from '@molecules/AsyncState/AsyncState'
+import { buildInsights } from './analyticsInsights'
 import s from './Analytics.module.css'
 
 const TOP_CATEGORIES_LIMIT = 3
-const TOP_CHANGES_LIMIT = 2
 // CSS custom properties, not literal colors, so the chart follows the
 // active theme (light/dark) - both recharts' SVG attributes and inline
 // style backgroundColor resolve var(...) against the cascade at paint time.
@@ -58,37 +56,6 @@ function formatTrendLabel(date: string, periodType: PeriodType): string {
   if (periodType === 'day') return dayLabelFormatter.format(parsed)
   if (periodType === 'year') return yearLabelFormatter.format(parsed)
   return monthLabelFormatter.format(parsed)
-}
-
-function formatPercentMagnitude(value: number) {
-  return `${Math.round(Math.abs(value))}%`
-}
-
-function buildCategoryInsight(t: TFunction, category: PeriodComparisonCategory & { percentChange: number }): string {
-  const categoryName = getCategoryDisplayName(category, t)
-  if (category.percentChange === 0) {
-    return t('comparison.insights.categorySame', { category: categoryName })
-  }
-  const key = category.percentChange > 0 ? 'comparison.insights.categoryMore' : 'comparison.insights.categoryLess'
-  return t(key, { percent: formatPercentMagnitude(category.percentChange), category: categoryName })
-}
-
-function buildTotalInsight(t: TFunction, comparison: PeriodComparison): string | null {
-  if (comparison.totalPercentChange === null) return null
-  if (comparison.totalPercentChange === 0) return t('comparison.insights.totalSame')
-  const key = comparison.totalPercentChange > 0 ? 'comparison.insights.totalMore' : 'comparison.insights.totalLess'
-  return t(key, { percent: formatPercentMagnitude(comparison.totalPercentChange) })
-}
-
-function buildInsights(t: TFunction, comparison: PeriodComparison): string[] {
-  const topChanges = comparison.categories
-    .filter((category): category is PeriodComparisonCategory & { percentChange: number } => category.percentChange !== null)
-    .sort((a, b) => Math.abs(b.percentChange) - Math.abs(a.percentChange))
-    .slice(0, TOP_CHANGES_LIMIT)
-
-  const totalInsight = buildTotalInsight(t, comparison)
-
-  return [...topChanges.map((category) => buildCategoryInsight(t, category)), ...(totalInsight ? [totalInsight] : [])]
 }
 
 export function Analytics() {
