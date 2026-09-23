@@ -4,6 +4,11 @@
 
 Accepted
 
+Amended by [ADR-004](./004-goal-transfers.md): savings-funded expenses now
+withdraw from a specific Goal (superseding the consequence that "Covered by
+savings" is not linked to Goals), and the Dashboard balance also subtracts
+deposits to Goals.
+
 Amends [ADR-002](./002-gross-spend-and-effective-limit.md): the definition of
 gross `spent` / `totalSpent` (and the trend buckets that move in lockstep with it)
 changes from "sum of expense amounts dated in the period" to "sum of the
