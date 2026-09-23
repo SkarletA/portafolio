@@ -32,6 +32,7 @@ import {
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getAvailableForExpense } from '@domain/goal'
 import { roundMoneyInput } from '@domain/money'
+import { getTodayLocalDate } from '@domain/date'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
 import s from './AddTransaction.module.css'
@@ -41,14 +42,6 @@ const CATEGORY_COLORS = ['#2563eb', '#7c3aed', '#0ea5e9', '#f59e0b', '#ec4899', 
 const CREATE_NEW_CATEGORY_VALUE = '__create_new_category__'
 const NONE_SUBCATEGORY_VALUE = '__none_subcategory__'
 const OTHERS_SUBCATEGORY_VALUE = '__others_subcategory__'
-
-function getTodayLocalDate() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 function formatInstallmentMonth(isoDate: string, locale: string) {
   return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(

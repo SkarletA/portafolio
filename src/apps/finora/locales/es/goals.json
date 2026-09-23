@@ -13,17 +13,35 @@
     "progressAriaLabel": "Progreso de {{name}}",
     "addFunds": "Agregar fondos",
     "amountPlaceholder": "Monto",
-    "amountAriaLabel": "Monto para agregar a {{name}}"
+    "amountAriaLabel": "Monto para agregar a {{name}}",
+    "showActivity": "Ver movimientos",
+    "hideActivity": "Ocultar movimientos"
+  },
+  "activity": {
+    "loading": "Cargando movimientos…",
+    "error": "No pudimos cargar los movimientos de esta meta. Inténtalo de nuevo más tarde.",
+    "empty": "Todavía no ha entrado ni salido dinero de esta meta.",
+    "listAriaLabel": "Movimientos de {{name}}",
+    "kind": {
+      "opening_balance": "Ya ahorrado",
+      "deposit": "Depósito",
+      "withdrawal": "Cubrió un gasto"
+    },
+    "withdrawal": "Cubrió: {{description}}",
+    "deleteDepositAriaLabel": "Eliminar depósito de {{amount}} del {{date}}",
+    "depositAlreadyUsed": "Este depósito ya se usó en gastos cubiertos con ahorros, así que no se puede eliminar."
   },
   "form": {
     "title": "Nueva meta",
     "name": "Nombre",
     "targetAmount": "Monto objetivo",
-    "startingAmount": "Monto inicial",
+    "startingAmount": "Ya ahorrado",
     "targetDate": "Fecha límite",
     "saveGoal": "Guardar meta"
   },
   "validation": {
-    "targetAmountGreaterThanZero": "Ingresa un monto objetivo mayor a 0"
+    "targetAmountGreaterThanZero": "Ingresa un monto objetivo mayor a 0",
+    "alreadySavedNotNegative": "Ingresa 0 o más",
+    "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales"
   }
 }

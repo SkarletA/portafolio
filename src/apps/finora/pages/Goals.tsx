@@ -42,7 +42,7 @@ export function Goals() {
       >
         <div className={s.grid}>
           {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} onFundsAdded={refetch} />
+            <GoalCard key={goal.id} goal={goal} onBalanceChanged={refetch} />
           ))}
         </div>
       </AsyncState>

@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
 import { createGoal, type NewGoalInput } from '@services/goalsService'
+import { parseMoneyMovementError } from '@services/moneyMovementErrors'
+import { getTodayLocalDate } from '@domain/date'
+import { roundMoneyInput } from '@domain/money'
 import s from './AddGoal.module.css'
 
 interface FormErrors {
   name?: string
   target_amount?: string
+  opening_balance?: string
 }
 
 export function AddGoal() {
@@ -34,6 +38,16 @@ export function AddGoal() {
 
   const handleCurrentAmountChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setCurrentAmount(event.target.value)
+    setErrors((prev) => (prev.opening_balance ? { ...prev, opening_balance: undefined } : prev))
+  }, [])
+
+  // Visible rounding to 2 decimals, so the user sees what will be saved (ADR-004).
+  const handleTargetAmountBlur = useCallback(() => {
+    setTargetAmount((prev) => roundMoneyInput(prev))
+  }, [])
+
+  const handleCurrentAmountBlur = useCallback(() => {
+    setCurrentAmount((prev) => roundMoneyInput(prev))
   }, [])
 
   const handleTargetDateChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +68,14 @@ export function AddGoal() {
       }
       if (!targetAmount || Number.isNaN(parsedTargetAmount) || parsedTargetAmount <= 0) {
         nextErrors.target_amount = t('goals:validation.targetAmountGreaterThanZero')
+      } else if (roundMoneyInput(targetAmount) !== targetAmount) {
+        nextErrors.target_amount = t('goals:validation.amountMaxDecimals')
+      }
+      // Already saved becomes the Goal's opening balance, which can't be negative.
+      if (Number.isNaN(parsedCurrentAmount) || parsedCurrentAmount < 0) {
+        nextErrors.opening_balance = t('goals:validation.alreadySavedNotNegative')
+      } else if (roundMoneyInput(currentAmount) !== currentAmount) {
+        nextErrors.opening_balance = t('goals:validation.amountMaxDecimals')
       }
 
       setErrors(nextErrors)
@@ -66,15 +88,19 @@ export function AddGoal() {
       const input: NewGoalInput = {
         name: trimmedName,
         target_amount: parsedTargetAmount,
-        current_amount: Number.isNaN(parsedCurrentAmount) ? 0 : parsedCurrentAmount,
+        opening_balance: parsedCurrentAmount,
         target_date: targetDate || null,
       }
 
-      const { error } = await createGoal(input)
+      const { error } = await createGoal(input, getTodayLocalDate())
 
       setSubmitting(false)
 
       if (error) {
+        if (parseMoneyMovementError(error)?.code === 'invalid_amount') {
+          setErrors({ opening_balance: t('goals:validation.amountMaxDecimals') })
+          return
+        }
         setSubmitError(error.message)
         return
       }
@@ -118,6 +144,7 @@ export function AddGoal() {
             required
             value={targetAmount}
             onChange={handleTargetAmountChange}
+            onBlur={handleTargetAmountBlur}
             className={s.input}
             aria-invalid={!!errors.target_amount}
             aria-describedby={errors.target_amount ? 'add-goal-target-amount-error' : undefined}
@@ -139,9 +166,17 @@ export function AddGoal() {
             step="0.01"
             value={currentAmount}
             onChange={handleCurrentAmountChange}
+            onBlur={handleCurrentAmountBlur}
             className={s.input}
+            aria-invalid={!!errors.opening_balance}
+            aria-describedby={errors.opening_balance ? 'add-goal-current-amount-error' : undefined}
             data-testid="add-goal-current-amount-input"
           />
+          {errors.opening_balance && (
+            <p id="add-goal-current-amount-error" role="alert" className={s.error}>
+              {errors.opening_balance}
+            </p>
+          )}
         </label>
 
         <label className={s.field}>
