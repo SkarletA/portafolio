@@ -26,7 +26,7 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
   const { currency } = useCurrency()
   const { language } = useLanguage()
   const locale = getLocaleForLanguage(language)
-  const { category, monthly_limit: monthlyLimit, effectiveLimit, spent, percentage, status } = budget
+  const { category, monthly_limit: monthlyLimit, effectiveLimit, coveredBySavings, spent, percentage, status } = budget
   const categoryName = category ? getCategoryDisplayName(category, t) : t('card.uncategorized')
   const fallbackIcon = categoryName[0] || '•'
   const cappedPercentage = Math.min(Math.max(percentage, 0), 100)
@@ -53,6 +53,13 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
             <p className={s.reimbursedHint}>
               {t('card.reimbursedHint', {
                 amount: formatCurrency(reimbursedAmount, currency, locale, { maximumFractionDigits: 0 }),
+              })}
+            </p>
+          )}
+          {coveredBySavings > 0 && (
+            <p className={s.savingsHint}>
+              {t('card.coveredBySavingsHint', {
+                amount: formatCurrency(coveredBySavings, currency, locale, { maximumFractionDigits: 0 }),
               })}
             </p>
           )}

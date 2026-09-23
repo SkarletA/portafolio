@@ -84,4 +84,17 @@ describe('BudgetCard', () => {
 
     expect(screen.getByText('F')).toBeInTheDocument()
   })
+
+  it('notes spending covered by savings, which is left out of spent', () => {
+    render(<BudgetCard budget={{ ...baseBudget, coveredBySavings: 1666.67 }} />)
+
+    expect(screen.getByText('$120 / $400')).toBeInTheDocument()
+    expect(screen.getByText('card.coveredBySavingsHint:{"amount":"$1,667"}')).toBeInTheDocument()
+  })
+
+  it('does not show the savings note when nothing was covered by savings', () => {
+    render(<BudgetCard budget={baseBudget} />)
+
+    expect(screen.queryByText(/card\.coveredBySavingsHint/)).not.toBeInTheDocument()
+  })
 })

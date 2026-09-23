@@ -99,6 +99,40 @@ describe('TransactionItem', () => {
     expect(deleteTransaction).toHaveBeenCalledWith('1')
   })
 
+  it('shows the monthly payments of a financed purchase next to its full amount', () => {
+    renderItem({ ...baseTransaction, amount: 20000, installment_months: 12, last_installment_date: '2027-08-08' })
+
+    expect(screen.getByText('-$20,000')).toBeInTheDocument()
+    expect(screen.getByText(/item\.installmentsSummary:\{"count":12,"amount":"\$1,667"\}/)).toBeInTheDocument()
+  })
+
+  it('shows the count without an amount when a financed purchase cannot be split exactly', () => {
+    renderItem({ ...baseTransaction, amount: 100.005, installment_months: 3 })
+
+    expect(screen.getByText(/item\.installmentsCount:\{"count":3\}/)).toBeInTheDocument()
+  })
+
+  it('labels an expense covered by savings in text, not only color', () => {
+    renderItem({ ...baseTransaction, funding_source: 'savings' })
+
+    expect(screen.getByText(/item\.coveredBySavings/)).toBeInTheDocument()
+  })
+
+  it('shows neither label for a single payment funded by income', () => {
+    renderItem(baseTransaction)
+
+    expect(screen.queryByText(/item\.installments/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/item\.coveredBySavings/)).not.toBeInTheDocument()
+  })
+
+  it('warns that deleting a financed purchase removes all its monthly payments', () => {
+    renderItem({ ...baseTransaction, amount: 20000, installment_months: 12 })
+
+    fireEvent.click(screen.getByTestId('transaction-item-1-delete-icon'))
+
+    expect(screen.getByText('item.confirmDeleteFinanced:{"description":"Starbucks","count":12}')).toBeInTheDocument()
+  })
+
   it('cancels the delete confirmation without deleting', () => {
     renderItem(baseTransaction)
 

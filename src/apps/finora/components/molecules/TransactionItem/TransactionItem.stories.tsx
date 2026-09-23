@@ -115,3 +115,25 @@ export const SplitPayment = {
     onDeleted: () => {},
   },
 }
+
+export const FinancedCoveredBySavings = {
+  args: {
+    transaction: {
+      id: '5',
+      user_id: 'u1',
+      description: 'Flights to Madrid',
+      amount: 20000,
+      type: 'expense',
+      category_id: 'c5',
+      date: '2026-09-08',
+      notes: null,
+      created_at: null,
+      installment_months: 12,
+      funding_source: 'savings',
+      last_installment_date: '2027-08-08',
+      category: { id: 'c5', name: 'Travel', icon: 'plane', color: '#0ea5e9' },
+      payments: [{ id: 'p5', transaction_id: '5', payment_method: 'Credit Card', amount: 20000 }],
+    },
+    onDeleted: () => {},
+  },
+}

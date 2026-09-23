@@ -26,7 +26,11 @@
     "uncategorized": "Uncategorized",
     "confirmDelete": "Delete \"{{description}}\"?",
     "editAriaLabel": "Edit {{description}}",
-    "deleteAriaLabel": "Delete {{description}}"
+    "deleteAriaLabel": "Delete {{description}}",
+    "confirmDeleteFinanced": "Delete \"{{description}}\" and all {{count}} of its monthly payments?",
+    "installmentsSummary": "{{count}} monthly payments of {{amount}}",
+    "installmentsCount": "{{count}} monthly payments",
+    "coveredBySavings": "Covered by savings"
   },
   "form": {
     "addTitle": "Add transaction",

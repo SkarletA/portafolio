@@ -26,7 +26,11 @@
     "uncategorized": "Sin categoría",
     "confirmDelete": "¿Eliminar \"{{description}}\"?",
     "editAriaLabel": "Editar {{description}}",
-    "deleteAriaLabel": "Eliminar {{description}}"
+    "deleteAriaLabel": "Eliminar {{description}}",
+    "confirmDeleteFinanced": "¿Eliminar \"{{description}}\" y sus {{count}} mensualidades?",
+    "installmentsSummary": "{{count}} mensualidades de {{amount}}",
+    "installmentsCount": "{{count}} mensualidades",
+    "coveredBySavings": "Cubierto con ahorros"
   },
   "form": {
     "addTitle": "Agregar transacción",

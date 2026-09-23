@@ -100,3 +100,22 @@ export const WithReimbursement = {
     },
   },
 }
+
+export const WithSpendingCoveredBySavings = {
+  args: {
+    budget: {
+      id: '5',
+      user_id: 'u1',
+      category_id: 'c5',
+      monthly_limit: 3000,
+      created_at: null,
+      category: { id: 'c5', name: 'Travel', icon: 'plane', color: '#0ea5e9' },
+      spent: 800,
+      effectiveLimit: 3000,
+      coveredBySavings: 1666.67,
+      percentage: 26.67,
+      status: 'on-track',
+      breakdown: [],
+    },
+  },
+}
