@@ -16,6 +16,7 @@
     "totalSpent": "Total gastado",
     "avgPerDay": "Promedio diario",
     "savingsRate": "Tasa de ahorro",
+    "savedToGoals": "Guardado en metas",
     "coveredBySavingsNote": "El total gastado y la tasa de ahorro excluyen {{amount}} cubiertos con ahorros."
   },
   "chart": {

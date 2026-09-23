@@ -3,6 +3,7 @@
   "subtitle": "Here's your financial overview",
   "viewAll": "View all",
   "balanceThisMonth": "Balance this month",
+  "balanceMovedToGoals": "Includes {{amount}} moved to goals",
   "stats": {
     "income": "Income",
     "expenses": "Expenses",

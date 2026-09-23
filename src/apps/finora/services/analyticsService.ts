@@ -11,13 +11,15 @@ import {
   type PeriodType,
 } from '@domain/analytics'
 import type { Category } from '@domain/category'
-import { expandLedgerRowsInRange, isIncomeFundedExpense } from '@domain/installments'
+import { expandLedgerRowsInRange, isIncomeFundedExpense, toMinorUnits } from '@domain/installments'
 import type { FundingSource } from '@domain/transaction'
 
 export interface MonthlyStats {
   totalSpent: number
   /** Expenses covered by savings: left out of totalSpent and savingsRate, reported on their own. */
   totalCoveredBySavings: number
+  /** Money moved into Goals as deposits in the period (not opening balances or withdrawals). */
+  totalDepositedToGoals: number
   totalIncome: number
   avgPerDay: number
   savingsRate: number
@@ -46,14 +48,26 @@ export async function getMonthlyStats(range: DateRange) {
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('type, amount, date, installment_months, funding_source')
-    .eq('user_id', userData.user.id)
-    .lte('date', range.end)
-    .gte('last_installment_date', range.start)
+  const [{ data, error }, { data: deposits, error: depositsError }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('type, amount, date, installment_months, funding_source')
+      .eq('user_id', userData.user.id)
+      .lte('date', range.end)
+      .gte('last_installment_date', range.start),
+    // Deposits are money kept, not spent: they lower the spendable balance
+    // but never the savings rate. See docs/adr/004-goal-transfers.md.
+    supabase
+      .from('goal_transfers')
+      .select('amount')
+      .eq('user_id', userData.user.id)
+      .eq('kind', 'deposit')
+      .gte('date', range.start)
+      .lte('date', range.end),
+  ])
 
   if (error) return { data: null, error }
+  if (depositsError) return { data: null, error: depositsError }
 
   // totalSpent is gross (expenses only, never floored - see
   // docs/adr/002-gross-spend-and-effective-limit.md). totalReimbursed is kept
@@ -84,6 +98,8 @@ export async function getMonthlyStats(range: DateRange) {
   const stats: MonthlyStats = {
     totalSpent: totals.totalSpent,
     totalCoveredBySavings: totals.totalCoveredBySavings,
+    // Transfers always have at most 2 decimals, so they sum exactly in cents.
+    totalDepositedToGoals: (deposits ?? []).reduce((cents, deposit) => cents + toMinorUnits(deposit.amount), 0) / 100,
     totalIncome: totals.totalIncome,
     avgPerDay: getAveragePerDay(totals.totalSpent, daysElapsedInRange(range)),
     savingsRate: getSavingsRate(totals.totalIncome, netSpentForSavings),

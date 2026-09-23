@@ -3,6 +3,7 @@
   "subtitle": "Aquí tienes tu resumen financiero",
   "viewAll": "Ver todo",
   "balanceThisMonth": "Balance de este mes",
+  "balanceMovedToGoals": "Incluye {{amount}} movidos a metas",
   "stats": {
     "income": "Ingresos",
     "expenses": "Gastos",
