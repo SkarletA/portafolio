@@ -1,3 +1,5 @@
+import { sumToMinorUnits } from './money'
+
 export type PeriodType = 'day' | 'month' | 'year'
 
 export interface DateRange {
@@ -55,9 +57,18 @@ export function getPeriodRange(
 // null signals "no baseline to compare against" (previous period had zero
 // activity), which callers use to render an empty comparison state instead
 // of a fabricated percentage. Never returns NaN or Infinity.
+//
+// Both values are sums computed in JavaScript, so they are compared in cents:
+// two periods with the same total must give exactly 0, not the 1e-14 that float
+// noise leaves (0.1 + 0.2 against 0.3). Callers test the result with === 0, > 0
+// and < 0. See docs/adr/005-money-arithmetic-in-the-client.md.
 export function getPercentChange(current: number, previous: number): number | null {
-  if (previous === 0) return current === 0 ? 0 : null
-  return ((current - previous) / previous) * 100
+  const currentCents = sumToMinorUnits(current)
+  const previousCents = sumToMinorUnits(previous)
+
+  if (previousCents === 0) return currentCents === 0 ? 0 : null
+  if (currentCents === previousCents) return 0
+  return ((currentCents - previousCents) / previousCents) * 100
 }
 
 export function getSavingsRate(totalIncome: number, totalSpent: number): number {
