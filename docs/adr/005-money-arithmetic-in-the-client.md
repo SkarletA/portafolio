@@ -145,19 +145,35 @@ Phase 1 (decided, one branch, one commit per item):
 Phase 1 also verified the column types and stored data (see Context). No
 pre-flight is needed for it.
 
-Phase 2 (deferred, mechanical):
+Phase 2 (implemented afterwards, one branch):
 
-- Add `sumMoney`/`addMoney`/`subtractMoney` (strict `toMinorUnits` on each
-  addend, one division at the end) and use them wherever amounts are summed:
-  `domain/category.ts` (`sumByCategory`, `rollupByCategory`),
-  `services/analyticsService.ts` (`getMonthlyStats` totals,
-  `getSpendingByCategory` total, `grossSpendByBucketKey`;
-  `totalDepositedToGoals` moves onto `sumMoney`), `hooks/useBudgets.ts`
+- `sumMoney`/`addMoney`/`subtractMoney` in `domain/money.ts` (strict
+  `toMinorUnits` on each addend, one division at the end) are used wherever
+  amounts are summed or subtracted: `domain/category.ts` (`sumByCategory`,
+  `rollupByCategory`), `services/analyticsService.ts` (the totals in
+  `sumLedgerTotals`, the net spend for the savings rate, goal deposits, the
+  spending-by-category total, `grossSpendByBucketKey`), `hooks/useBudgets.ts`
   (`effectiveLimit`), `pages/Dashboard.tsx` (balance),
   `components/molecules/BudgetCard/BudgetCard.tsx` (`reimbursedAmount`),
-  `domain/goal.ts` and `domain/analytics.ts` (`getSavingsRate`).
-- Once the sums are exact, `sumToMinorUnits` is only needed for the checks
-  above and can be reviewed.
+  `domain/goal.ts` (`remaining`, `getAvailableForExpense`) and
+  `domain/analytics.ts` (`getSavingsRate` numerator).
+- **Left as floating point on purpose:** ratios and averages
+  (`getAveragePerDay`, `getCategoryPercentage`, the percentages), and
+  `AddTransaction`'s assigned-payments total. The latter adds text the user is
+  typing, so the strict helper would throw during render on half-typed input
+  such as `10.005`; it is only displayed, through `formatCurrency` with 2
+  decimals, which absorbs the noise.
+- **A throw becomes an error state, not a stuck screen.** The strict helpers
+  throw `RangeError` for an amount with more than 2 decimals. The services that
+  sum (`getMonthlyStats`, `getSpendingByCategory`, `getDailySpending`,
+  `getTrendData`, `getExpensesByCategory`) go through `catchServiceErrors`, which
+  returns `{ data: null, error }` like any failed load, and `useBudgets` and
+  `useGoals`, which sum inside the hook, catch it and set their `error`. Before
+  this, a throw would have escaped as an unhandled rejection and left the page
+  loading, since no hook has a `finally`.
+- `sumToMinorUnits` stays: `getBudgetProgress` and `getPercentChange` use it as
+  a non-throwing normalisation at the threshold, so a display decision never
+  depends on a throw.
 
 ## Consequences
 
