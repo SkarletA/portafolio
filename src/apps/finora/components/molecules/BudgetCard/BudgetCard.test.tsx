@@ -26,7 +26,7 @@ describe('BudgetCard', () => {
     render(<BudgetCard budget={baseBudget} />)
 
     expect(screen.getByText('Food')).toBeInTheDocument()
-    expect(screen.getByText('$120 / $400')).toBeInTheDocument()
+    expect(screen.getByText('$120.00 / $400.00')).toBeInTheDocument()
     expect(screen.getByText('card.status.onTrack')).toBeInTheDocument()
   })
 
@@ -59,8 +59,8 @@ describe('BudgetCard', () => {
       />
     )
 
-    expect(screen.getByText('$3,625 / $4,000')).toBeInTheDocument()
-    expect(screen.getByText('card.reimbursedHint:{"amount":"$2,000"}')).toBeInTheDocument()
+    expect(screen.getByText('$3,625.00 / $4,000.00')).toBeInTheDocument()
+    expect(screen.getByText('card.reimbursedHint:{"amount":"$2,000.00"}')).toBeInTheDocument()
   })
 
   it('does not show a reimbursement hint when the effective limit equals the monthly limit', () => {
@@ -88,8 +88,8 @@ describe('BudgetCard', () => {
   it('notes spending covered by savings, which is left out of spent', () => {
     render(<BudgetCard budget={{ ...baseBudget, coveredBySavings: 1666.67 }} />)
 
-    expect(screen.getByText('$120 / $400')).toBeInTheDocument()
-    expect(screen.getByText('card.coveredBySavingsHint:{"amount":"$1,667"}')).toBeInTheDocument()
+    expect(screen.getByText('$120.00 / $400.00')).toBeInTheDocument()
+    expect(screen.getByText('card.coveredBySavingsHint:{"amount":"$1,666.67"}')).toBeInTheDocument()
   })
 
   it('does not show the savings note when nothing was covered by savings', () => {

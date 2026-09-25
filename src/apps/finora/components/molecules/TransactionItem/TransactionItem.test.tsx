@@ -50,20 +50,26 @@ describe('TransactionItem', () => {
     renderItem(baseTransaction)
 
     expect(screen.getByText('Starbucks')).toBeInTheDocument()
-    expect(screen.getByText('-$120')).toBeInTheDocument()
+    expect(screen.getByText('-$120.00')).toBeInTheDocument()
     expect(screen.getByText(/Food/)).toBeInTheDocument()
+  })
+
+  it('shows the cents of an amount instead of rounding it to whole units', () => {
+    renderItem({ ...baseTransaction, amount: 550.45 })
+
+    expect(screen.getByText('-$550.45')).toBeInTheDocument()
   })
 
   it('renders an income with a positive amount', () => {
     renderItem({ ...baseTransaction, type: 'income', amount: 35000, description: 'Salary' })
 
-    expect(screen.getByText('+$35,000')).toBeInTheDocument()
+    expect(screen.getByText('+$35,000.00')).toBeInTheDocument()
   })
 
   it('renders a reimbursement with a positive, primary-colored amount', () => {
     renderItem({ ...baseTransaction, type: 'reimbursement', amount: 50, description: 'Refund' })
 
-    const amount = screen.getByText('+$50')
+    const amount = screen.getByText('+$50.00')
     expect(amount.className).toContain('reimbursement')
   })
 
@@ -103,8 +109,8 @@ describe('TransactionItem', () => {
   it('shows the monthly payments of a financed purchase next to its full amount', () => {
     renderItem({ ...baseTransaction, amount: 20000, installment_months: 12, last_installment_date: '2027-08-08' })
 
-    expect(screen.getByText('-$20,000')).toBeInTheDocument()
-    expect(screen.getByText(/item\.installmentsSummary:\{"count":12,"amount":"\$1,667"\}/)).toBeInTheDocument()
+    expect(screen.getByText('-$20,000.00')).toBeInTheDocument()
+    expect(screen.getByText(/item\.installmentsSummary:\{"count":12,"amount":"\$1,666.67"\}/)).toBeInTheDocument()
   })
 
   it('shows the count without an amount when a financed purchase cannot be split exactly', () => {

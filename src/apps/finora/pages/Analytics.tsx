@@ -76,7 +76,7 @@ export function Analytics() {
     // only format values that are actually a single number.
     (value?: unknown) =>
       typeof value === 'number' || typeof value === 'string'
-        ? formatCurrency(Number(value), currency, locale, { maximumFractionDigits: 0 })
+        ? formatCurrency(Number(value), currency, locale)
         : '',
     [currency, locale]
   )
@@ -139,12 +139,12 @@ export function Analytics() {
               <StatCard
                 testId="analytics-total-spent-stat"
                 label={t('stats.totalSpent')}
-                value={formatCurrency(stats.totalSpent, currency, locale, { maximumFractionDigits: 0 })}
+                value={formatCurrency(stats.totalSpent, currency, locale)}
               />
               <StatCard
                 testId="analytics-avg-per-day-stat"
                 label={t('stats.avgPerDay')}
-                value={formatCurrency(stats.avgPerDay, currency, locale, { maximumFractionDigits: 0 })}
+                value={formatCurrency(stats.avgPerDay, currency, locale)}
               />
               <StatCard
                 testId="analytics-savings-rate-stat"
@@ -155,13 +155,13 @@ export function Analytics() {
               <StatCard
                 testId="analytics-saved-to-goals-stat"
                 label={t('stats.savedToGoals')}
-                value={formatCurrency(stats.totalDepositedToGoals, currency, locale, { maximumFractionDigits: 0 })}
+                value={formatCurrency(stats.totalDepositedToGoals, currency, locale)}
               />
             </div>
             {stats.totalCoveredBySavings > 0 && (
               <p className={s.savingsNote} data-testid="analytics-covered-by-savings-note">
                 {t('stats.coveredBySavingsNote', {
-                  amount: formatCurrency(stats.totalCoveredBySavings, currency, locale, { maximumFractionDigits: 0 }),
+                  amount: formatCurrency(stats.totalCoveredBySavings, currency, locale),
                 })}
               </p>
             )}
@@ -207,7 +207,7 @@ export function Analytics() {
                         <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>
                         <span className={s.categoryAmount}>
-                          {formatCurrency(category.amount, currency, locale, { maximumFractionDigits: 0 })}
+                          {formatCurrency(category.amount, currency, locale)}
                         </span>
                       </li>
                     ))}
@@ -231,7 +231,7 @@ export function Analytics() {
                       />
                       <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                       <span className={s.categoryAmount}>
-                        {formatCurrency(category.amount, currency, locale, { maximumFractionDigits: 0 })}
+                        {formatCurrency(category.amount, currency, locale)}
                       </span>
                     </li>
                   ))}
@@ -264,8 +264,8 @@ export function Analytics() {
                         />
                         <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                         <span className={s.comparisonAmounts}>
-                          {formatCurrency(category.previousAmount, currency, locale, { maximumFractionDigits: 0 })} →{' '}
-                          {formatCurrency(category.currentAmount, currency, locale, { maximumFractionDigits: 0 })}
+                          {formatCurrency(category.previousAmount, currency, locale)} →{' '}
+                          {formatCurrency(category.currentAmount, currency, locale)}
                         </span>
                         <span
                           className={cn(

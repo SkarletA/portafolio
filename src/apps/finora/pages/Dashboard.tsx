@@ -108,12 +108,12 @@ export function Dashboard() {
             <div className={s.balanceCard}>
               <p className={s.balanceLabel}>{t('dashboard:balanceThisMonth')}</p>
               <p className={s.balanceValue}>
-                {formatCurrency(balance, currency, locale, { maximumFractionDigits: 0 })}
+                {formatCurrency(balance, currency, locale)}
               </p>
               {stats.totalDepositedToGoals > 0 && (
                 <p className={s.balanceNote} data-testid="dashboard-moved-to-goals-note">
                   {t('dashboard:balanceMovedToGoals', {
-                    amount: formatCurrency(stats.totalDepositedToGoals, currency, locale, { maximumFractionDigits: 0 }),
+                    amount: formatCurrency(stats.totalDepositedToGoals, currency, locale),
                   })}
                 </p>
               )}
@@ -121,12 +121,12 @@ export function Dashboard() {
             <StatCard
               testId="dashboard-income-stat"
               label={t('dashboard:stats.income')}
-              value={formatCurrency(stats.totalIncome, currency, locale, { maximumFractionDigits: 0 })}
+              value={formatCurrency(stats.totalIncome, currency, locale)}
             />
             <StatCard
               testId="dashboard-expenses-stat"
               label={t('dashboard:stats.expenses')}
-              value={formatCurrency(stats.totalSpent, currency, locale, { maximumFractionDigits: 0 })}
+              value={formatCurrency(stats.totalSpent, currency, locale)}
             />
             <StatCard
               testId="dashboard-savings-rate-stat"
@@ -139,7 +139,7 @@ export function Dashboard() {
         {stats && stats.totalCoveredBySavings > 0 && (
           <p className={s.savingsNote} data-testid="dashboard-covered-by-savings-note">
             {t('dashboard:stats.coveredBySavingsNote', {
-              amount: formatCurrency(stats.totalCoveredBySavings, currency, locale, { maximumFractionDigits: 0 }),
+              amount: formatCurrency(stats.totalCoveredBySavings, currency, locale),
             })}
           </p>
         )}
@@ -202,7 +202,7 @@ export function Dashboard() {
                     />
                     <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
                     <span className={s.categoryAmount}>
-                      {formatCurrency(category.amount, currency, locale, { maximumFractionDigits: 0 })}
+                      {formatCurrency(category.amount, currency, locale)}
                     </span>
                   </li>
                 ))}

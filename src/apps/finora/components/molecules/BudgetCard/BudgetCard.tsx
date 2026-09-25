@@ -46,20 +46,20 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
         <div className={s.info}>
           <p className={s.categoryName}>{categoryName}</p>
           <p className={s.amounts}>
-            {formatCurrency(spent, currency, locale, { maximumFractionDigits: 0 })} /{' '}
-            {formatCurrency(effectiveLimit, currency, locale, { maximumFractionDigits: 0 })}
+            {formatCurrency(spent, currency, locale)} /{' '}
+            {formatCurrency(effectiveLimit, currency, locale)}
           </p>
           {hasReimbursement && (
             <p className={s.reimbursedHint}>
               {t('card.reimbursedHint', {
-                amount: formatCurrency(reimbursedAmount, currency, locale, { maximumFractionDigits: 0 }),
+                amount: formatCurrency(reimbursedAmount, currency, locale),
               })}
             </p>
           )}
           {coveredBySavings > 0 && (
             <p className={s.savingsHint}>
               {t('card.coveredBySavingsHint', {
-                amount: formatCurrency(coveredBySavings, currency, locale, { maximumFractionDigits: 0 }),
+                amount: formatCurrency(coveredBySavings, currency, locale),
               })}
             </p>
           )}

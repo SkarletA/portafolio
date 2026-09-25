@@ -164,10 +164,10 @@ export function GoalCard({ goal, onBalanceChanged }: GoalCardProps) {
 
       <div className={s.amounts}>
         <span className={s.current}>
-          {formatCurrency(goal.current_amount, currency, locale, { maximumFractionDigits: 0 })}
+          {formatCurrency(goal.current_amount, currency, locale)}
         </span>
         <span className={s.of}>
-          / {formatCurrency(goal.target_amount, currency, locale, { maximumFractionDigits: 0 })}
+          / {formatCurrency(goal.target_amount, currency, locale)}
         </span>
       </div>
 
@@ -185,7 +185,7 @@ export function GoalCard({ goal, onBalanceChanged }: GoalCardProps) {
       <div className={s.footer}>
         <span className={s.remaining}>
           {t('goals:card.remaining', {
-            amount: formatCurrency(goal.remaining, currency, locale, { maximumFractionDigits: 0 }),
+            amount: formatCurrency(goal.remaining, currency, locale),
           })}
         </span>
         <span className={s.percentageBadge}>{Math.round(goal.percentage)}%</span>
