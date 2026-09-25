@@ -83,3 +83,22 @@ export function paymentsMatchAmount(payments: number[], amount: number): boolean
 
   return assignedCents === toMinorUnits(amount)
 }
+
+/**
+ * Exact sum of amounts: each one is converted to cents (strict, so a value with
+ * more than 2 decimals throws `RangeError`), added as integers, and divided by
+ * 100 once. `sumMoney([0.1, 0.2])` is exactly `0.3`, where `0.1 + 0.2` is not.
+ */
+export function sumMoney(amounts: readonly number[]): number {
+  return fromMinorUnits(amounts.reduce((cents, amount) => cents + toMinorUnits(amount), 0))
+}
+
+/** Exact `a + b`; see `sumMoney`. */
+export function addMoney(a: number, b: number): number {
+  return sumMoney([a, b])
+}
+
+/** Exact `a - b`; see `sumMoney`. */
+export function subtractMoney(a: number, b: number): number {
+  return fromMinorUnits(toMinorUnits(a) - toMinorUnits(b))
+}

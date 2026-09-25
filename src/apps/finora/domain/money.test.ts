@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { paymentsMatchAmount, roundMoneyInput, sumToMinorUnits, toMinorUnits } from './money'
+import {
+  addMoney,
+  paymentsMatchAmount,
+  roundMoneyInput,
+  subtractMoney,
+  sumMoney,
+  sumToMinorUnits,
+  toMinorUnits,
+} from './money'
 
 describe('roundMoneyInput', () => {
   it('rounds more than 2 decimals half up', () => {
@@ -103,5 +111,36 @@ describe('paymentsMatchAmount', () => {
     expect(paymentsMatchAmount([10.005], 10.01)).toBe(false)
     expect(paymentsMatchAmount([10.01], 10.005)).toBe(false)
     expect(paymentsMatchAmount([Number.NaN], 1)).toBe(false)
+  })
+})
+
+describe('sumMoney, addMoney and subtractMoney', () => {
+  it('give exactly the decimal result where floating-point arithmetic does not', () => {
+    expect(0.1 + 0.2).not.toBe(0.3)
+    expect(addMoney(0.1, 0.2)).toBe(0.3)
+    expect(addMoney(0.7, 0.1)).toBe(0.8)
+    expect(subtractMoney(0.3, 0.1)).toBe(0.2)
+    expect(sumMoney([4.06, 9.54])).toBe(13.6)
+    expect(sumMoney([1.1, 2.2, 3.3])).toBe(6.6)
+  })
+
+  it('sums an empty list to 0', () => {
+    expect(sumMoney([])).toBe(0)
+  })
+
+  it('handles negative results and differences', () => {
+    expect(subtractMoney(0.1, 0.3)).toBe(-0.2)
+    expect(sumMoney([10.5, -10.5])).toBe(0)
+  })
+
+  it('makes two sums of the same total strictly equal', () => {
+    expect(sumMoney([0.1, 0.2])).toBe(sumMoney([0.3]))
+    expect(subtractMoney(addMoney(10.1, 20.2), 30.3)).toBe(0)
+  })
+
+  it('throws instead of rounding when an amount has more than 2 decimals', () => {
+    expect(() => addMoney(10.005, 1)).toThrow(RangeError)
+    expect(() => sumMoney([1, Number.NaN])).toThrow(RangeError)
+    expect(() => subtractMoney(1, 0.001)).toThrow(RangeError)
   })
 })
