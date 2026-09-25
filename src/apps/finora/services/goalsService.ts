@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import type { GoalTransfer } from '@domain/goal'
 
 export async function getGoals() {
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -16,36 +17,50 @@ export async function getGoals() {
 export interface NewGoalInput {
   name: string
   target_amount: number
-  current_amount: number
+  /** Money already saved before tracking it in Finora; recorded as the Goal's opening balance. */
+  opening_balance: number
   target_date: string | null
 }
 
-export async function createGoal(data: NewGoalInput) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
+// Creates the Goal and its opening balance together, in one database
+// transaction. See docs/adr/004-goal-transfers.md.
+export function createGoal(data: NewGoalInput, today: string) {
+  return supabase.rpc('create_goal', {
+    p_name: data.name,
+    p_target_amount: data.target_amount,
+    p_target_date: data.target_date,
+    p_opening_balance: data.opening_balance,
+    p_today: today,
+  })
+}
 
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
+// A deposit is one ledger row; the database updates the Goal's current_amount
+// in the same statement. current_amount may exceed target_amount: the real
+// saved total is never clamped, only the progress bar is (getGoalProgress).
+export function addGoalDeposit(goalId: string, amount: number, date: string) {
   return supabase
-    .from('goals')
-    .insert({ ...data, user_id: userData.user.id })
+    .from('goal_transfers')
+    .insert({ goal_id: goalId, kind: 'deposit', amount, date })
     .select()
     .single()
 }
 
-// current_amount is intentionally allowed to exceed target_amount here: the real
-// contributed total is never silently clamped. Progress is only capped visually
-// (percentage/progress bar) by domain/goal.ts's getGoalProgress, same approach
-// as budget overspend in domain/budget.ts.
-export async function addFundsToGoal(id: string, amount: number) {
-  const { data: goal, error: fetchError } = await supabase.from('goals').select('current_amount').eq('id', id).single()
+export type GoalTransferWithTransaction = GoalTransfer & {
+  /** The expense a withdrawal covers. */
+  transaction: { id: string; description: string } | null
+}
 
-  if (fetchError) return { data: null, error: fetchError }
-
+export function getGoalTransfers(goalId: string) {
   return supabase
-    .from('goals')
-    .update({ current_amount: goal.current_amount + amount })
-    .eq('id', id)
-    .select()
-    .single()
+    .from('goal_transfers')
+    .select('*, transaction:transactions(id, description)')
+    .eq('goal_id', goalId)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+}
+
+// Only deposits can be deleted (RLS). The database rejects it with
+// goal_balance_negative when that money was already used by a withdrawal.
+export function deleteGoalDeposit(transferId: string) {
+  return supabase.from('goal_transfers').delete().eq('id', transferId).eq('kind', 'deposit')
 }

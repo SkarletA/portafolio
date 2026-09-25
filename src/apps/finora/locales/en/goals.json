@@ -13,17 +13,35 @@
     "progressAriaLabel": "{{name}} progress",
     "addFunds": "Add funds",
     "amountPlaceholder": "Amount",
-    "amountAriaLabel": "Amount to add to {{name}}"
+    "amountAriaLabel": "Amount to add to {{name}}",
+    "showActivity": "Show activity",
+    "hideActivity": "Hide activity"
+  },
+  "activity": {
+    "loading": "Loading activity…",
+    "error": "We couldn't load this goal's activity. Please try again later.",
+    "empty": "No money has moved in or out of this goal yet.",
+    "listAriaLabel": "{{name}} activity",
+    "kind": {
+      "opening_balance": "Already saved",
+      "deposit": "Deposit",
+      "withdrawal": "Covered an expense"
+    },
+    "withdrawal": "Covered: {{description}}",
+    "deleteDepositAriaLabel": "Delete deposit of {{amount}} on {{date}}",
+    "depositAlreadyUsed": "This deposit was already used by expenses covered by savings, so it can't be deleted."
   },
   "form": {
     "title": "New goal",
     "name": "Name",
     "targetAmount": "Target amount",
-    "startingAmount": "Starting amount",
+    "startingAmount": "Already saved",
     "targetDate": "Target date",
     "saveGoal": "Save goal"
   },
   "validation": {
-    "targetAmountGreaterThanZero": "Enter a target amount greater than 0"
+    "targetAmountGreaterThanZero": "Enter a target amount greater than 0",
+    "alreadySavedNotNegative": "Enter 0 or more",
+    "amountMaxDecimals": "Amounts can have at most 2 decimals"
   }
 }

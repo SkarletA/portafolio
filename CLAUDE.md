@@ -722,10 +722,11 @@ For simple sequential tasks, work directly.
 
 ### UI Language
 
-* Finora's UI copy must be in a single consistent language. Today that language is **English** — all visible text (labels, buttons, empty states, error messages, headings) must be in English.
-* If a task's instructions quote a specific string in another language for a label or message, treat that as the *intent*, not literal copy to paste in verbatim — translate it to match the app's current UI language before using it, and flag the translation in your summary so it can be corrected if the literal wording mattered.
+* Finora's UI is bilingual: **English and Spanish**, via `react-i18next` (`src/apps/finora/i18n.ts`, translations in `src/apps/finora/locales/{en,es}/*.json`).
+* **DO NOT** hard-code visible text (labels, buttons, empty states, error messages, headings) in JSX. Every string rendered in the UI goes through `t()` from `useTranslation`, with a key added to **both** `en` and `es` in the matching namespace file.
+* If a task's instructions quote a string in one language, use it as the copy for that language and write the equivalent for the other; flag any translation you had to write in your summary so it can be corrected if the wording mattered.
 * This does not apply to code identifiers, `data-testid`s, comments, or conversation with the user — only to strings rendered in the UI.
-* Proper internationalization (a language switcher, locale-aware currency formatting, etc.) is a separate, explicit future task — do not build it speculatively while fixing a language-consistency issue.
+* Component tests run against the global `react-i18next` mock in `vitest.setup.js` (`t()` returns the key), so assert on keys there. When the rendered text itself matters (interpolation, punctuation, symbols like `%`), test with a real `i18next` instance loaded with the real locale files.
 
 ## Agent and Token Usage
 

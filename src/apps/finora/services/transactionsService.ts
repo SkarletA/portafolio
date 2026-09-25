@@ -1,7 +1,13 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '@domain/transaction'
 import type { Category } from '@domain/category'
-import { getGrossSpendByCategory, getRawGrossSpendByCategory, getReimbursementsByCategory } from '@domain/category'
+import {
+  getGrossSpendByCategory,
+  getRawGrossSpendByCategory,
+  getReimbursementsByCategory,
+  getSavingsCoveredByCategory,
+} from '@domain/category'
+import { expandLedgerRowsInRange } from '@domain/installments'
 import { getCategories } from './categoriesService'
 
 export type TransactionWithCategory = Transaction & {
@@ -9,7 +15,7 @@ export type TransactionWithCategory = Transaction & {
 }
 
 const TRANSACTION_SELECT =
-  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount)'
+  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), withdrawal:goal_transfers(goal_id, amount, goal:goals(name))'
 
 export async function getTransactions() {
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -50,72 +56,29 @@ export interface NewTransactionInput {
   category_id: string | null
   date: string
   notes: string | null
+  installment_months: number
+  /** The Goal a savings-funded expense withdraws from; null when funded by income. */
+  savings_goal_id: string | null
   payments: TransactionPaymentInput[]
 }
 
-export async function createTransaction(data: NewTransactionInput) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
-  const { payments, ...transactionFields } = data
-
-  const { data: transaction, error: transactionError } = await supabase
-    .from('transactions')
-    .insert({ ...transactionFields, user_id: userData.user.id })
-    .select()
-    .single()
-
-  if (transactionError) return { data: null, error: transactionError }
-
-  const { error: paymentsError } = await supabase.from('transaction_payments').insert(
-    payments.map((payment) => ({
-      ...payment,
-      transaction_id: transaction.id,
-      user_id: userData.user.id,
-    }))
-  )
-
-  if (paymentsError) return { data: null, error: paymentsError }
-
-  return { data: transaction, error: null }
-}
-
-export type UpdateTransactionInput = NewTransactionInput
-
-export async function updateTransaction(id: string, data: UpdateTransactionInput) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
-  const { payments, ...transactionFields } = data
-
-  const { data: transaction, error: transactionError } = await supabase
-    .from('transactions')
-    .update(transactionFields)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (transactionError) return { data: null, error: transactionError }
-
-  const { error: deleteError } = await supabase.from('transaction_payments').delete().eq('transaction_id', id)
-
-  if (deleteError) return { data: null, error: deleteError }
-
-  const { error: insertError } = await supabase.from('transaction_payments').insert(
-    payments.map((payment) => ({
-      ...payment,
-      transaction_id: id,
-      user_id: userData.user.id,
-    }))
-  )
-
-  if (insertError) return { data: null, error: insertError }
-
-  return { data: transaction, error: null }
+// Creates (id null) or updates a transaction with its payments and, for a
+// savings-funded expense, its Goal withdrawal - all in one database
+// transaction, so none of them can be saved without the others. Errors carry
+// stable codes (see parseMoneyMovementError). See docs/adr/004-goal-transfers.md.
+export function saveTransaction(id: string | null, data: NewTransactionInput) {
+  return supabase.rpc('save_transaction', {
+    p_id: id,
+    p_description: data.description,
+    p_amount: data.amount,
+    p_type: data.type,
+    p_category_id: data.category_id,
+    p_date: data.date,
+    p_notes: data.notes,
+    p_installment_months: data.installment_months,
+    p_savings_goal_id: data.savings_goal_id,
+    p_payments: data.payments,
+  })
 }
 
 export function deleteTransaction(id: string) {
@@ -147,11 +110,15 @@ export async function getExpensesByCategory({ start, end }: { start: string; end
   const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
     supabase
       .from('transactions')
-      .select('category_id, amount, type')
+      .select('category_id, amount, type, date, installment_months, funding_source')
       .eq('user_id', userData.user.id)
       .in('type', ['expense', 'reimbursement'])
-      .gte('date', start)
-      .lte('date', end),
+      // A financed purchase dated before the range can still have an
+      // installment inside it; for single payments last_installment_date is
+      // the date itself, so this is the plain date filter. See
+      // docs/adr/003-installments-and-savings-funding.md.
+      .lte('date', end)
+      .gte('last_installment_date', start),
     getCategories(),
   ])
 
@@ -159,17 +126,22 @@ export async function getExpensesByCategory({ start, end }: { start: string; end
   if (categoriesError) return { data: null, error: categoriesError }
 
   const categories = (categoriesData ?? []) as Category[]
+  const entries = expandLedgerRowsInRange(rows ?? [], { start, end })
 
   // `totals` rolls each category's subcategories into it (for showing a
   // budget's or a chart's overall total); `raw` keeps each category's own
   // gross spend separate, e.g. for a per-subcategory breakdown; `reimbursements`
   // is the same rollup applied to reimbursement amounts, used to widen a
-  // budget's effective limit. Same source rows, computed once, no duplicated
-  // summing. See docs/adr/002-gross-spend-and-effective-limit.md.
+  // budget's effective limit; `savingsCovered` is the same rollup applied to
+  // expenses covered by savings, which `totals` and `raw` leave out. Same
+  // source rows, computed once, no duplicated summing. See
+  // docs/adr/002-gross-spend-and-effective-limit.md and
+  // docs/adr/003-installments-and-savings-funding.md.
   const data = {
-    totals: getGrossSpendByCategory(rows ?? [], categories),
-    raw: getRawGrossSpendByCategory(rows ?? []),
-    reimbursements: getReimbursementsByCategory(rows ?? [], categories),
+    totals: getGrossSpendByCategory(entries, categories),
+    raw: getRawGrossSpendByCategory(entries),
+    reimbursements: getReimbursementsByCategory(entries, categories),
+    savingsCovered: getSavingsCoveredByCategory(entries, categories),
   }
 
   return { data, error: null }

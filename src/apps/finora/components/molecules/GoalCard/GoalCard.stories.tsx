@@ -6,7 +6,7 @@ export default {
   parameters: {
     docs: {
       description: {
-        component: "A savings goal's progress toward its target amount, with an inline form to add funds.",
+        component: "A savings goal's progress toward its target amount, with an inline form to add funds and a collapsible activity list.",
       },
     },
   },
@@ -16,9 +16,9 @@ export default {
       control: false,
       table: { type: { summary: 'GoalWithProgress' } },
     },
-    onFundsAdded: {
-      description: 'Called after funds are successfully added, so the caller can refresh the goal’s data.',
-      action: 'funds added',
+    onBalanceChanged: {
+      description: 'Called after a deposit is added or deleted, so the caller can refresh the goal’s balance.',
+      action: 'balance changed',
       table: { type: { summary: 'function' } },
     },
   },
@@ -37,7 +37,7 @@ export const OnTrack = {
       percentage: 70,
       remaining: 15000,
     },
-    onFundsAdded: () => {},
+    onBalanceChanged: () => {},
   },
 }
 
@@ -54,6 +54,6 @@ export const Completed = {
       percentage: 110,
       remaining: 0,
     },
-    onFundsAdded: () => {},
+    onBalanceChanged: () => {},
   },
 }

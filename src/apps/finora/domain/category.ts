@@ -1,4 +1,5 @@
-import type { TransactionType } from './transaction'
+import { isIncomeFundedExpense } from './installments'
+import type { FundingSource, TransactionType } from './transaction'
 
 export interface Category {
   id: string
@@ -54,6 +55,21 @@ export interface CategoryLedgerEntry {
   category_id: string | null
   type: TransactionType
   amount: number
+  funding_source: FundingSource
+}
+
+// Sums each category's own entries that match `predicate`, before any
+// parent/child rollup. Entries without a category are skipped.
+function sumByCategory(
+  entries: CategoryLedgerEntry[],
+  predicate: (entry: CategoryLedgerEntry) => boolean
+): Record<string, number> {
+  return entries.reduce<Record<string, number>>((totals, entry) => {
+    if (!entry.category_id || !predicate(entry)) return totals
+
+    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
+    return totals
+  }, {})
 }
 
 function rollupByCategory(rawByCategory: Record<string, number>, categories: Category[]): Record<string, number> {
@@ -67,23 +83,21 @@ function rollupByCategory(rawByCategory: Record<string, number>, categories: Cat
   return totalsByCategory
 }
 
-// Gross spend per category on its own (sum of expense amounts only), before
-// any parent/child rollup. Reimbursements do not net against spend - see
-// docs/adr/002-gross-spend-and-effective-limit.md - they widen a budget's
-// effective limit instead (getReimbursementsByCategory). Exposed on its own
+// Gross spend per category on its own (sum of income-funded expense amounts
+// only), before any parent/child rollup. Reimbursements do not net against
+// spend - see docs/adr/002-gross-spend-and-effective-limit.md - they widen a
+// budget's effective limit instead (getReimbursementsByCategory). Expenses
+// covered by savings are left out and summed by getSavingsCoveredByCategory
+// instead - see docs/adr/003-installments-and-savings-funding.md. Callers pass
+// entries already expanded into installments. Exposed on its own
 // so callers that need per-category figures without rolling children into
 // their parent (e.g. a budget's subcategory breakdown) don't duplicate this
 // summing logic.
 export function getRawGrossSpendByCategory(entries: CategoryLedgerEntry[]): Record<string, number> {
-  return entries.reduce<Record<string, number>>((totals, entry) => {
-    if (!entry.category_id || entry.type !== 'expense') return totals
-
-    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
-    return totals
-  }, {})
+  return sumByCategory(entries, isIncomeFundedExpense)
 }
 
-// Gross spend per category = sum(expense amounts) across the category and its
+// Gross spend per category = sum(income-funded expense amounts) across the category and its
 // subcategories (if it has any). A sum of non-negative expense amounts is
 // always non-negative, so unlike the net calculation this ADR-002 replaced,
 // no floor is needed regardless of rollup order.
@@ -96,12 +110,19 @@ export function getGrossSpendByCategory(entries: CategoryLedgerEntry[], categori
 // budget's effective limit (monthly_limit + reimbursements) can be computed
 // per rollup scope. See docs/adr/002-gross-spend-and-effective-limit.md.
 export function getReimbursementsByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
-  const rawByCategory = entries.reduce<Record<string, number>>((totals, entry) => {
-    if (!entry.category_id || entry.type !== 'reimbursement') return totals
+  return rollupByCategory(
+    sumByCategory(entries, (entry) => entry.type === 'reimbursement'),
+    categories
+  )
+}
 
-    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
-    return totals
-  }, {})
-
-  return rollupByCategory(rawByCategory, categories)
+// Expenses covered by savings per category, rolled up the same way as gross
+// spend. They don't count against a budget or the savings rate, so this is
+// reported next to them instead of disappearing.
+// See docs/adr/003-installments-and-savings-funding.md.
+export function getSavingsCoveredByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
+  return rollupByCategory(
+    sumByCategory(entries, (entry) => entry.type === 'expense' && entry.funding_source === 'savings'),
+    categories
+  )
 }

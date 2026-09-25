@@ -50,8 +50,12 @@ export function Dashboard() {
 
   const { stats, spendingByCategory, loading: summaryLoading, error: summaryError } = useDashboardSummary()
   const topCategories = spendingByCategory.slice(0, TOP_CATEGORIES_LIMIT)
-  const hasSummaryData = !!stats && (stats.totalSpent > 0 || stats.totalIncome > 0)
-  const balance = stats ? stats.totalIncome - stats.totalSpent : 0
+  const hasSummaryData =
+    !!stats &&
+    (stats.totalSpent > 0 || stats.totalCoveredBySavings > 0 || stats.totalDepositedToGoals > 0 || stats.totalIncome > 0)
+  // Money still spendable this month: deposits to Goals leave it, too.
+  // See docs/adr/004-goal-transfers.md.
+  const balance = stats ? stats.totalIncome - stats.totalSpent - stats.totalDepositedToGoals : 0
 
   const handleAddTransactionClick = useCallback(() => {
     navigate('/finora/add-transaction')
@@ -106,6 +110,13 @@ export function Dashboard() {
               <p className={s.balanceValue}>
                 {formatCurrency(balance, currency, locale, { maximumFractionDigits: 0 })}
               </p>
+              {stats.totalDepositedToGoals > 0 && (
+                <p className={s.balanceNote} data-testid="dashboard-moved-to-goals-note">
+                  {t('dashboard:balanceMovedToGoals', {
+                    amount: formatCurrency(stats.totalDepositedToGoals, currency, locale, { maximumFractionDigits: 0 }),
+                  })}
+                </p>
+              )}
             </div>
             <StatCard
               testId="dashboard-income-stat"
@@ -124,6 +135,13 @@ export function Dashboard() {
               variant={stats.savingsRate >= 0 ? 'success' : 'danger'}
             />
           </div>
+        )}
+        {stats && stats.totalCoveredBySavings > 0 && (
+          <p className={s.savingsNote} data-testid="dashboard-covered-by-savings-note">
+            {t('dashboard:stats.coveredBySavingsNote', {
+              amount: formatCurrency(stats.totalCoveredBySavings, currency, locale, { maximumFractionDigits: 0 }),
+            })}
+          </p>
         )}
       </AsyncState>
 

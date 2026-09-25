@@ -11,9 +11,15 @@ import {
   type PeriodType,
 } from '@domain/analytics'
 import type { Category } from '@domain/category'
+import { expandLedgerRowsInRange, isIncomeFundedExpense, toMinorUnits } from '@domain/installments'
+import type { FundingSource } from '@domain/transaction'
 
 export interface MonthlyStats {
   totalSpent: number
+  /** Expenses covered by savings: left out of totalSpent and savingsRate, reported on their own. */
+  totalCoveredBySavings: number
+  /** Money moved into Goals as deposits in the period (not opening balances or withdrawals). */
+  totalDepositedToGoals: number
   totalIncome: number
   avgPerDay: number
   savingsRate: number
@@ -42,24 +48,41 @@ export async function getMonthlyStats(range: DateRange) {
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('type, amount')
-    .eq('user_id', userData.user.id)
-    .gte('date', range.start)
-    .lte('date', range.end)
+  const [{ data, error }, { data: deposits, error: depositsError }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('type, amount, date, installment_months, funding_source')
+      .eq('user_id', userData.user.id)
+      .lte('date', range.end)
+      .gte('last_installment_date', range.start),
+    // Deposits are money kept, not spent: they lower the spendable balance
+    // but never the savings rate. See docs/adr/004-goal-transfers.md.
+    supabase
+      .from('goal_transfers')
+      .select('amount')
+      .eq('user_id', userData.user.id)
+      .eq('kind', 'deposit')
+      .gte('date', range.start)
+      .lte('date', range.end),
+  ])
 
   if (error) return { data: null, error }
+  if (depositsError) return { data: null, error: depositsError }
 
   // totalSpent is gross (expenses only, never floored - see
   // docs/adr/002-gross-spend-and-effective-limit.md). totalReimbursed is kept
   // separate and never shown; it exists only to net against totalSpent for
   // savingsRate, which answers "how much did I actually keep" rather than
-  // "how much did I charge as expenses."
-  const totals = (data ?? []).reduce(
+  // "how much did I charge as expenses." Financed purchases count one
+  // installment per month, and expenses covered by savings go to
+  // totalCoveredBySavings instead of totalSpent - see
+  // docs/adr/003-installments-and-savings-funding.md.
+  const totals = expandLedgerRowsInRange(data ?? [], range).reduce(
     (acc, row) => {
-      if (row.type === 'expense') {
+      if (isIncomeFundedExpense(row)) {
         acc.totalSpent += row.amount
+      } else if (row.type === 'expense') {
+        acc.totalCoveredBySavings += row.amount
       } else if (row.type === 'reimbursement') {
         acc.totalReimbursed += row.amount
       } else {
@@ -67,13 +90,16 @@ export async function getMonthlyStats(range: DateRange) {
       }
       return acc
     },
-    { totalSpent: 0, totalIncome: 0, totalReimbursed: 0 }
+    { totalSpent: 0, totalCoveredBySavings: 0, totalIncome: 0, totalReimbursed: 0 }
   )
 
   const netSpentForSavings = totals.totalSpent - totals.totalReimbursed
 
   const stats: MonthlyStats = {
     totalSpent: totals.totalSpent,
+    totalCoveredBySavings: totals.totalCoveredBySavings,
+    // Transfers always have at most 2 decimals, so they sum exactly in cents.
+    totalDepositedToGoals: (deposits ?? []).reduce((cents, deposit) => cents + toMinorUnits(deposit.amount), 0) / 100,
     totalIncome: totals.totalIncome,
     avgPerDay: getAveragePerDay(totals.totalSpent, daysElapsedInRange(range)),
     savingsRate: getSavingsRate(totals.totalIncome, netSpentForSavings),
@@ -131,31 +157,45 @@ export interface DailySpending {
   amount: number
 }
 
-type LedgerRow = { date: string; amount: number; type: string }
+type LedgerRow = {
+  date: string
+  amount: number
+  type: 'expense' | 'reimbursement'
+  installment_months: number
+  funding_source: FundingSource
+}
 
+// Rows already expanded into the installments that fall in the range, so a
+// financed purchase lands one installment per bucket on its own date.
 async function fetchExpenseAndReimbursementRows(range: DateRange) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
-  return supabase
+  const { data, error } = await supabase
     .from('transactions')
-    .select('date, amount, type')
+    .select('date, amount, type, installment_months, funding_source')
     .eq('user_id', userData.user.id)
     .in('type', ['expense', 'reimbursement'])
-    .gte('date', range.start)
     .lte('date', range.end)
+    .gte('last_installment_date', range.start)
+
+  if (error) return { data: null, error }
+
+  return { data: expandLedgerRowsInRange((data ?? []) as LedgerRow[], range), error: null }
 }
 
 // Gross spend per bucket (expense amounts only, never floored - a sum of
 // non-negative amounts can't go negative), grouped by whatever key the
 // caller derives from each row's date (exact day, month, or year). Moves in
 // lockstep with getMonthlyStats' totalSpent so the trend chart always agrees
-// with "Total spent". See docs/adr/002-gross-spend-and-effective-limit.md.
+// with "Total spent", including leaving out expenses covered by savings.
+// See docs/adr/002-gross-spend-and-effective-limit.md and
+// docs/adr/003-installments-and-savings-funding.md.
 function grossSpendByBucketKey(rows: LedgerRow[], keyFn: (date: string) => string): Record<string, number> {
   return rows.reduce<Record<string, number>>((totals, row) => {
-    if (row.type !== 'expense') return totals
+    if (!isIncomeFundedExpense(row)) return totals
 
     const key = keyFn(row.date)
     totals[key] = (totals[key] ?? 0) + row.amount
@@ -168,7 +208,7 @@ export async function getDailySpending(range: DateRange) {
 
   if (error) return { data: null, error }
 
-  const grossByDate = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date)
+  const grossByDate = grossSpendByBucketKey(data ?? [], (date) => date)
 
   const dailySpending: DailySpending[] = Object.entries(grossByDate)
     .map(([date, amount]) => ({ date, amount }))
@@ -201,7 +241,7 @@ export async function getTrendData(periodType: PeriodType) {
     const { data, error } = await fetchExpenseAndReimbursementRows({ start: toIsoDate(start), end: toIsoDate(todayUtc) })
     if (error) return { data: null, error }
 
-    const grossByDate = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date)
+    const grossByDate = grossSpendByBucketKey(data ?? [], (date) => date)
 
     const trend: TrendPoint[] = Array.from({ length: TREND_DAYS }, (_, i) => {
       const date = new Date(start)
@@ -223,7 +263,7 @@ export async function getTrendData(periodType: PeriodType) {
     const { data, error } = await fetchExpenseAndReimbursementRows(range)
     if (error) return { data: null, error }
 
-    const grossByYear = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date.slice(0, 4))
+    const grossByYear = grossSpendByBucketKey(data ?? [], (date) => date.slice(0, 4))
 
     const trend: TrendPoint[] = Array.from({ length: TREND_YEARS }, (_, i) => {
       const year = startYear + i
@@ -242,7 +282,7 @@ export async function getTrendData(periodType: PeriodType) {
   const { data, error } = await fetchExpenseAndReimbursementRows(range)
   if (error) return { data: null, error }
 
-  const grossByMonth = grossSpendByBucketKey((data ?? []) as LedgerRow[], (date) => date.slice(0, 7))
+  const grossByMonth = grossSpendByBucketKey(data ?? [], (date) => date.slice(0, 7))
 
   const trend: TrendPoint[] = Array.from({ length: TREND_MONTHS }, (_, i) => {
     const date = new Date(Date.UTC(startMonth.getUTCFullYear(), startMonth.getUTCMonth() + i, 1))

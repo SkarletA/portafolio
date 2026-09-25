@@ -15,7 +15,9 @@
   "stats": {
     "totalSpent": "Total spent",
     "avgPerDay": "Average per day",
-    "savingsRate": "Savings rate"
+    "savingsRate": "Savings rate",
+    "savedToGoals": "Saved to goals",
+    "coveredBySavingsNote": "Total spent and savings rate exclude {{amount}} covered by savings."
   },
   "chart": {
     "title": "Spending over time",

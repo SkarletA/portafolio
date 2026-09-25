@@ -15,6 +15,7 @@ const baseBudget: BudgetWithProgress = {
   category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b', translationKey: null },
   spent: 120,
   effectiveLimit: 400,
+  coveredBySavings: 0,
   percentage: 30,
   status: 'on-track',
   breakdown: [],
@@ -51,6 +52,7 @@ describe('BudgetCard', () => {
           monthly_limit: 2000,
           spent: 3625,
           effectiveLimit: 4000,
+          coveredBySavings: 0,
           percentage: 90.625,
           status: 'near-limit',
         }}
@@ -81,5 +83,18 @@ describe('BudgetCard', () => {
     )
 
     expect(screen.getByText('F')).toBeInTheDocument()
+  })
+
+  it('notes spending covered by savings, which is left out of spent', () => {
+    render(<BudgetCard budget={{ ...baseBudget, coveredBySavings: 1666.67 }} />)
+
+    expect(screen.getByText('$120 / $400')).toBeInTheDocument()
+    expect(screen.getByText('card.coveredBySavingsHint:{"amount":"$1,667"}')).toBeInTheDocument()
+  })
+
+  it('does not show the savings note when nothing was covered by savings', () => {
+    render(<BudgetCard budget={baseBudget} />)
+
+    expect(screen.queryByText(/card\.coveredBySavingsHint/)).not.toBeInTheDocument()
   })
 })

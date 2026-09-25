@@ -119,3 +119,19 @@
 .notice {
   @apply rounded-md border border-finora-warning bg-finora-warning-bg px-3 py-2 text-sm font-normal text-finora-ink;
 }
+
+.paymentPlan {
+  @apply flex flex-col gap-3 rounded-lg border border-finora-border p-4;
+}
+
+.paymentPlanLegend {
+  @apply px-1 text-sm font-medium text-finora-ink;
+}
+
+.installmentMonthsInput {
+  @apply w-28;
+}
+
+.link {
+  @apply font-medium text-finora-primary underline;
+}

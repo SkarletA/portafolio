@@ -1,0 +1,57 @@
+@reference '../../../styles/theme.css';
+
+.activity {
+  @apply flex flex-col gap-2;
+}
+
+.list {
+  @apply flex flex-col divide-y divide-finora-border;
+}
+
+.item {
+  @apply flex items-center gap-3 py-2;
+}
+
+.info {
+  @apply flex min-w-0 flex-1 flex-col;
+}
+
+.label {
+  @apply truncate text-sm text-finora-ink;
+}
+
+.link {
+  @apply truncate text-sm font-medium text-finora-primary underline;
+}
+
+.date {
+  @apply text-xs text-finora-ink-muted;
+}
+
+.amount {
+  @apply shrink-0 text-sm font-semibold;
+}
+
+.amountIn {
+  @apply text-finora-success;
+}
+
+.amountOut {
+  @apply text-finora-ink;
+}
+
+.deleteIcon {
+  @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-finora-ink-muted transition-colors hover:bg-finora-surface-muted hover:text-finora-ink disabled:opacity-50;
+}
+
+.deleteIconGlyph {
+  @apply h-4 w-4;
+}
+
+.state {
+  @apply text-sm text-finora-ink-muted;
+}
+
+.error {
+  @apply text-sm text-finora-danger;
+}

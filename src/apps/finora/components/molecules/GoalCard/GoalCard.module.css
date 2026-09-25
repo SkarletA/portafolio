@@ -79,3 +79,11 @@
 .error {
   @apply text-sm text-finora-danger;
 }
+
+.activityToggle {
+  @apply mt-3 self-start text-xs font-medium text-finora-primary underline;
+}
+
+.activity {
+  @apply mt-2 border-t border-finora-border pt-2;
+}

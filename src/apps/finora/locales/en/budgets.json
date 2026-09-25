@@ -15,6 +15,7 @@
       "exceeded": "Exceeded"
     },
     "reimbursedHint": "Includes {{amount}} in reimbursements",
+    "coveredBySavingsHint": "Excludes {{amount}} covered by savings",
     "percentageLabel": "{{percent}}% of available limit",
     "progressAriaLabel": "{{category}} budget: {{status}}"
   },

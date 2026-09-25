@@ -52,6 +52,10 @@
   @apply mt-2 text-xl font-bold tracking-tight sm:text-2xl;
 }
 
+.balanceNote {
+  @apply mt-1 text-xs text-white/85;
+}
+
 .overviewSkeletonWrap {
   @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4;
 }
@@ -126,4 +130,9 @@
 
 .skeletonCard {
   @apply h-32 animate-pulse rounded-xl bg-finora-surface-muted;
+}
+
+/* Sits right under the stat figures it qualifies. */
+.savingsNote {
+  @apply -mt-2 mb-4 text-sm text-finora-ink-muted;
 }

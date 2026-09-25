@@ -4,10 +4,11 @@ import {
   useMemo,
   useState,
   type ChangeEvent,
+  type FocusEvent,
   type FormEvent,
   type MouseEvent,
 } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import { Button } from '@atoms/Button/Button'
@@ -15,11 +16,23 @@ import { Select } from '@atoms/Select/Select'
 import { CategoryIcon, CATEGORY_ICON_NAMES, DEFAULT_CATEGORY_ICON } from '@atoms/CategoryIcon/CategoryIcon'
 import { useCategories } from '@hooks/useCategories'
 import { useTransaction } from '@hooks/useTransaction'
+import { useGoals } from '@hooks/useGoals'
 import { createCategory } from '@services/categoriesService'
-import { createTransaction, updateTransaction, type NewTransactionInput } from '@services/transactionsService'
+import { saveTransaction, type NewTransactionInput } from '@services/transactionsService'
+import { parseMoneyMovementError } from '@services/moneyMovementErrors'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
-import { PAYMENT_METHODS, getPrimaryPaymentMethod, type TransactionType } from '@domain/transaction'
+import { PAYMENT_METHODS, getPrimaryPaymentMethod, type FundingSource, type TransactionType } from '@domain/transaction'
+import {
+  MAX_INSTALLMENT_MONTHS,
+  MIN_INSTALLMENT_MONTHS,
+  allocateInstallments,
+  getInstallmentDate,
+  getPaymentPlanErrors,
+} from '@domain/installments'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { getAvailableForExpense } from '@domain/goal'
+import { roundMoneyInput } from '@domain/money'
+import { getTodayLocalDate } from '@domain/date'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
 import s from './AddTransaction.module.css'
@@ -30,12 +43,10 @@ const CREATE_NEW_CATEGORY_VALUE = '__create_new_category__'
 const NONE_SUBCATEGORY_VALUE = '__none_subcategory__'
 const OTHERS_SUBCATEGORY_VALUE = '__others_subcategory__'
 
-function getTodayLocalDate() {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = String(today.getMonth() + 1).padStart(2, '0')
-  const day = String(today.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+function formatInstallmentMonth(isoDate: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${isoDate}T00:00:00Z`)
+  )
 }
 
 function slugify(value: string) {
@@ -48,6 +59,8 @@ interface FormErrors {
   category_id?: string
   date?: string
   payments?: string
+  installmentMonths?: string
+  savingsGoal?: string
 }
 
 interface PaymentEntry {
@@ -79,6 +92,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     loading: transactionLoading,
     error: transactionError,
   } = useTransaction(mode === 'edit' ? id : undefined)
+  const { goals, loading: goalsLoading } = useGoals()
 
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
@@ -89,6 +103,10 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>(buildInitialPayments)
   const [receivedMethod, setReceivedMethod] = useState('')
   const [hadMultiplePayments, setHadMultiplePayments] = useState(false)
+  const [isFinanced, setIsFinanced] = useState(false)
+  const [installmentMonths, setInstallmentMonths] = useState('')
+  const [isSavingsFunded, setIsSavingsFunded] = useState(false)
+  const [savingsGoalId, setSavingsGoalId] = useState('')
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -123,6 +141,28 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
   // Money is received in one place, so only expenses can be split across methods.
   const isSingleMethod = type !== 'expense'
+  // Only expenses can be financed or covered by savings (ADR-003); other types
+  // always save the defaults, whatever the hidden controls last held.
+  const isExpense = type === 'expense'
+  const effectiveInstallmentMonths = isExpense && isFinanced ? Number(installmentMonths) : 1
+  const fundingSource: FundingSource = isExpense && isSavingsFunded ? 'savings' : 'income'
+  const effectiveSavingsGoalId = fundingSource === 'savings' && savingsGoalId ? savingsGoalId : null
+  // Editing returns this expense's current withdrawal to its Goal before taking
+  // the new one, so it counts as available (ADR-004).
+  const existingWithdrawal = mode === 'edit' ? (transaction?.withdrawal ?? null) : null
+
+  const savingsGoalOptions = useMemo(
+    () =>
+      goals.map((goal) => ({
+        value: goal.id,
+        label: t('transactions:form.savingsGoalOption', {
+          name: goal.name,
+          available: formatCurrency(getAvailableForExpense(goal, existingWithdrawal), currency, locale),
+        }),
+      })),
+    [goals, existingWithdrawal, currency, locale, t]
+  )
+  const selectedSavingsGoal = goals.find((goal) => goal.id === effectiveSavingsGoalId) ?? null
 
   const categoryOptions = useMemo(
     () => [
@@ -170,6 +210,10 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     )
     setReceivedMethod(getPrimaryPaymentMethod(transaction.payments))
     setHadMultiplePayments(transaction.payments.length > 1)
+    setIsFinanced(transaction.installment_months > 1)
+    setInstallmentMonths(transaction.installment_months > 1 ? String(transaction.installment_months) : '')
+    setIsSavingsFunded(transaction.funding_source === 'savings')
+    setSavingsGoalId(transaction.withdrawal?.goal_id ?? '')
     setHasPreloaded(true)
   }, [mode, transaction, hasPreloaded])
 
@@ -295,6 +339,43 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setErrors((prev) => (prev.payments ? { ...prev, payments: undefined } : prev))
   }, [])
 
+  const handleFinancedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsFinanced(event.target.checked)
+    setErrors((prev) => (prev.installmentMonths ? { ...prev, installmentMonths: undefined } : prev))
+  }, [])
+
+  const handleInstallmentMonthsChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setInstallmentMonths(event.target.value)
+    setErrors((prev) => (prev.installmentMonths ? { ...prev, installmentMonths: undefined } : prev))
+  }, [])
+
+  const handleSavingsFundedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsSavingsFunded(event.target.checked)
+    setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
+  }, [])
+
+  const handleSavingsGoalChange = useCallback((value: string) => {
+    setSavingsGoalId(value)
+    setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
+  }, [])
+
+  // Visible rounding to 2 decimals when a money input loses focus, so the
+  // user sees the amount that will be saved (ADR-004).
+  const handleAmountBlur = useCallback(() => {
+    setAmount((prev) => roundMoneyInput(prev))
+  }, [])
+
+  const handlePaymentAmountBlur = useCallback((event: FocusEvent<HTMLInputElement>) => {
+    const method = event.target.dataset.method
+    if (!method) return
+
+    setPayments((prev) =>
+      prev.map((payment) =>
+        payment.paymentMethod === method ? { ...payment, amount: roundMoneyInput(payment.amount) } : payment
+      )
+    )
+  }, [])
+
   const handleNewCategoryNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setNewCategoryName(event.target.value)
     setCategoryCreateError(null)
@@ -402,6 +483,46 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         }
       }
 
+      const planErrors = getPaymentPlanErrors({
+        type,
+        amount: parsedAmount,
+        installmentMonths: effectiveInstallmentMonths,
+        fundingSource,
+        savingsGoalId: effectiveSavingsGoalId,
+        paymentMethodCount: checkedPayments.length,
+      })
+
+      // Amounts are rounded on blur; this catches one submitted before leaving
+      // the field (e.g. with Enter). The database would reject it anyway.
+      const hasTooManyDecimals =
+        roundMoneyInput(amount) !== amount ||
+        (!isSingleMethod && checkedPayments.some((payment) => roundMoneyInput(payment.amount) !== payment.amount))
+
+      if (planErrors.includes('invalidMonths')) {
+        nextErrors.installmentMonths = t('transactions:validation.installmentMonthsRange', {
+          min: MIN_INSTALLMENT_MONTHS,
+          max: MAX_INSTALLMENT_MONTHS,
+        })
+      }
+      if ((hasTooManyDecimals || planErrors.includes('tooManyDecimals')) && !nextErrors.amount) {
+        nextErrors.amount = t('transactions:validation.amountMaxDecimals')
+      }
+      if (planErrors.includes('multiplePaymentMethods') && !nextErrors.payments) {
+        nextErrors.payments = t('transactions:validation.financedSinglePaymentMethod')
+      }
+      if (planErrors.includes('missingSavingsGoal')) {
+        nextErrors.savingsGoal = t('transactions:validation.selectSavingsGoal')
+      } else if (selectedSavingsGoal) {
+        // A friendly early check; the database is the one that enforces it.
+        const available = getAvailableForExpense(selectedSavingsGoal, existingWithdrawal)
+        if (parsedAmount > available) {
+          nextErrors.savingsGoal = t('transactions:validation.insufficientGoalFunds', {
+            name: selectedSavingsGoal.name,
+            available: formatCurrency(available, currency, locale),
+          })
+        }
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -416,6 +537,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         category_id: categoryId,
         date,
         notes: notes.trim() || null,
+        installment_months: effectiveInstallmentMonths,
+        savings_goal_id: effectiveSavingsGoalId,
         payments: isSingleMethod
           ? [{ payment_method: receivedMethod, amount: parsedAmount }]
           : checkedPayments.map((payment) => ({
@@ -424,18 +547,59 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             })),
       }
 
-      const { error } = mode === 'edit' && id ? await updateTransaction(id, input) : await createTransaction(input)
+      const { error } = await saveTransaction(mode === 'edit' && id ? id : null, input)
 
       setSubmitting(false)
 
       if (error) {
+        const moneyError = parseMoneyMovementError(error)
+
+        if (moneyError?.code === 'insufficient_goal_funds') {
+          setErrors({
+            savingsGoal: t('transactions:validation.insufficientGoalFunds', {
+              name: selectedSavingsGoal?.name ?? '',
+              available: formatCurrency(moneyError.available ?? 0, currency, locale),
+            }),
+          })
+          return
+        }
+        if (moneyError?.code === 'goal_not_found') {
+          setErrors({ savingsGoal: t('transactions:validation.selectSavingsGoal') })
+          return
+        }
+        if (moneyError?.code === 'invalid_amount') {
+          setErrors({ amount: t('transactions:validation.amountMaxDecimals') })
+          return
+        }
+
         setSubmitError(error.message)
         return
       }
 
       navigate('/finora/transactions')
     },
-    [amount, description, categoryId, date, notes, type, payments, isSingleMethod, receivedMethod, mode, id, navigate, t, currency, locale]
+    [
+      amount,
+      description,
+      categoryId,
+      date,
+      notes,
+      type,
+      payments,
+      isSingleMethod,
+      receivedMethod,
+      effectiveInstallmentMonths,
+      fundingSource,
+      effectiveSavingsGoalId,
+      selectedSavingsGoal,
+      existingWithdrawal,
+      mode,
+      id,
+      navigate,
+      t,
+      currency,
+      locale,
+    ]
   )
 
   const assignedTotal = payments.reduce(
@@ -443,6 +607,49 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     0
   )
   const totalAmount = Number(amount) || 0
+
+  // Computed with the same domain functions the monthly figures use, so the
+  // preview always matches what Budgets and Analytics will count.
+  const installmentPreview = useMemo(() => {
+    if (!isExpense || !isFinanced || !date || !(totalAmount > 0)) return null
+
+    const planErrors = getPaymentPlanErrors({
+      type,
+      amount: totalAmount,
+      installmentMonths: effectiveInstallmentMonths,
+      fundingSource: 'income',
+      savingsGoalId: null,
+      paymentMethodCount: 1,
+    })
+    if (planErrors.length > 0) return null
+
+    const installments = allocateInstallments(totalAmount, effectiveInstallmentMonths)
+    const firstCount = installments.filter((installment) => installment === installments[0]).length
+    const range = {
+      from: formatInstallmentMonth(date, locale),
+      to: formatInstallmentMonth(getInstallmentDate(date, effectiveInstallmentMonths - 1), locale),
+    }
+
+    if (firstCount === installments.length) {
+      return t('transactions:form.installmentPreviewEven', {
+        count: installments.length,
+        amount: formatCurrency(installments[0], currency, locale),
+        ...range,
+      })
+    }
+
+    return t('transactions:form.installmentPreviewUneven', {
+      count: installments.length,
+      firstCount,
+      firstAmount: formatCurrency(installments[0], currency, locale),
+      restCount: installments.length - firstCount,
+      restAmount: formatCurrency(installments[installments.length - 1], currency, locale),
+      ...range,
+    })
+  }, [isExpense, isFinanced, date, totalAmount, type, effectiveInstallmentMonths, locale, currency, t])
+
+  const startsInPastMonth =
+    mode === 'edit' && isExpense && isFinanced && !!date && date.slice(0, 7) < getTodayLocalDate().slice(0, 7)
 
   if (mode === 'edit' && transactionLoading) {
     return (
@@ -508,6 +715,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             required
             value={amount}
             onChange={handleAmountChange}
+            onBlur={handleAmountBlur}
             className={s.input}
             aria-invalid={!!errors.amount}
             aria-describedby={errors.amount ? 'add-transaction-amount-error' : undefined}
@@ -743,6 +951,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                       step="0.01"
                       value={payment.amount}
                       onChange={handlePaymentAmountChange}
+                    onBlur={handlePaymentAmountBlur}
                       data-method={payment.paymentMethod}
                       className={s.paymentMethodAmountInput}
                       aria-label={t('transactions:form.amountPaidWith', { method: payment.paymentMethod })}
@@ -766,8 +975,111 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           </div>
         )}
 
+        {isExpense && (
+          <fieldset className={s.paymentPlan}>
+            <legend className={s.paymentPlanLegend}>{t('transactions:form.paymentPlan')}</legend>
+
+            <label className={s.paymentMethodCheckboxLabel}>
+              <input
+                type="checkbox"
+                checked={isFinanced}
+                onChange={handleFinancedChange}
+                data-testid="add-transaction-financed-checkbox"
+              />
+              {t('transactions:form.financed')}
+            </label>
+
+            {isFinanced && (
+              <>
+                <label className={s.field}>
+                  {t('transactions:form.installmentMonths')}
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_INSTALLMENT_MONTHS}
+                    max={MAX_INSTALLMENT_MONTHS}
+                    step="1"
+                    value={installmentMonths}
+                    onChange={handleInstallmentMonthsChange}
+                    className={cn(s.input, s.installmentMonthsInput)}
+                    aria-invalid={!!errors.installmentMonths}
+                    aria-describedby={errors.installmentMonths ? 'add-transaction-installment-months-error' : undefined}
+                    data-testid="add-transaction-installment-months-input"
+                  />
+                  {errors.installmentMonths && (
+                    <p id="add-transaction-installment-months-error" role="alert" className={s.error}>
+                      {errors.installmentMonths}
+                    </p>
+                  )}
+                </label>
+                {installmentPreview && (
+                  <p role="status" className={s.hint}>
+                    {installmentPreview}
+                  </p>
+                )}
+                {startsInPastMonth && (
+                  <p role="status" className={s.notice}>
+                    {t('transactions:form.editFinancedNotice')}
+                  </p>
+                )}
+              </>
+            )}
+
+            <label className={s.paymentMethodCheckboxLabel}>
+              <input
+                type="checkbox"
+                checked={isSavingsFunded}
+                onChange={handleSavingsFundedChange}
+                aria-describedby="add-transaction-savings-funded-hint"
+                data-testid="add-transaction-savings-funded-checkbox"
+              />
+              {t('transactions:form.coveredBySavings')}
+            </label>
+            <p id="add-transaction-savings-funded-hint" className={s.hint}>
+              {t('transactions:form.coveredBySavingsHint')}
+            </p>
+
+            {isSavingsFunded && (
+              <label className={s.field}>
+                {t('transactions:form.savingsGoal')}
+                <Select
+                  options={savingsGoalOptions}
+                  value={savingsGoalId}
+                  onChange={handleSavingsGoalChange}
+                  placeholder={goalsLoading ? t('transactions:form.loadingGoals') : t('transactions:form.selectSavingsGoal')}
+                  disabled={goalsLoading || goals.length === 0}
+                  ariaInvalid={!!errors.savingsGoal}
+                  ariaDescribedBy={errors.savingsGoal ? 'add-transaction-savings-goal-error' : undefined}
+                  testId="add-transaction-savings-goal-select"
+                />
+                {!goalsLoading && goals.length === 0 && (
+                  <p className={s.hint}>
+                    {t('transactions:form.noGoalsYet')}{' '}
+                    <Link to="/finora/add-goal" className={s.link} data-testid="add-transaction-create-goal-link">
+                      {t('transactions:form.createGoal')}
+                    </Link>
+                  </p>
+                )}
+                {isFinanced && selectedSavingsGoal && installmentPreview && (
+                  <p role="status" className={s.hint}>
+                    {t('transactions:form.fullWithdrawalNotice', {
+                      amount: formatCurrency(totalAmount, currency, locale),
+                      goal: selectedSavingsGoal.name,
+                    })}
+                  </p>
+                )}
+                {errors.savingsGoal && (
+                  <p id="add-transaction-savings-goal-error" role="alert" className={s.error}>
+                    {errors.savingsGoal}
+                  </p>
+                )}
+              </label>
+            )}
+          </fieldset>
+        )}
+
         <label className={s.field}>
-          {t('transactions:form.date')}
+          {isExpense && isFinanced ? t('transactions:form.purchaseDate') : t('transactions:form.date')}
           <input
             type="date"
             required

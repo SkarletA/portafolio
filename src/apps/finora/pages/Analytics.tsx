@@ -81,7 +81,9 @@ export function Analytics() {
     [currency, locale]
   )
 
-  const hasData = !!stats && (stats.totalSpent > 0 || stats.totalIncome > 0)
+  const hasData =
+    !!stats &&
+    (stats.totalSpent > 0 || stats.totalCoveredBySavings > 0 || stats.totalDepositedToGoals > 0 || stats.totalIncome > 0)
   const topCategories = spendingByCategory.slice(0, TOP_CATEGORIES_LIMIT)
   const chartData = trendData.map((point) => ({
     ...point,
@@ -126,7 +128,7 @@ export function Analytics() {
         loadingLabel={t('state.loading')}
         errorMessage={t('state.error')}
         emptyMessage={t('state.empty')}
-        skeletonCount={3}
+        skeletonCount={4}
         skeletonWrapClassName={s.skeletonWrap}
         skeletonItemClassName={s.skeletonCard}
         boxed
@@ -150,7 +152,19 @@ export function Analytics() {
                 value={formatPercentage(stats.savingsRate)}
                 variant={stats.savingsRate >= 0 ? 'success' : 'danger'}
               />
+              <StatCard
+                testId="analytics-saved-to-goals-stat"
+                label={t('stats.savedToGoals')}
+                value={formatCurrency(stats.totalDepositedToGoals, currency, locale, { maximumFractionDigits: 0 })}
+              />
             </div>
+            {stats.totalCoveredBySavings > 0 && (
+              <p className={s.savingsNote} data-testid="analytics-covered-by-savings-note">
+                {t('stats.coveredBySavingsNote', {
+                  amount: formatCurrency(stats.totalCoveredBySavings, currency, locale, { maximumFractionDigits: 0 }),
+                })}
+              </p>
+            )}
 
             <div className={s.analyticsRow}>
               <div className={cn(s.card, s.chartCard)}>
