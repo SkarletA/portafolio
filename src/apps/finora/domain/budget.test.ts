@@ -42,4 +42,29 @@ describe('getBudgetProgress', () => {
     expect(result.percentage).toBeCloseTo(90.625)
     expect(result.status).toBe('near-limit')
   })
+
+  // 0.7 + 0.1 is 0.7999999999999999 in floating point: exactly the limit.
+  it('flags exceeded when a float sum lands exactly on the limit', () => {
+    const spent = 0.7 + 0.1
+
+    expect(spent).not.toBe(0.8)
+    expect(getBudgetProgress(0.8, spent)).toEqual({ percentage: 100, status: 'exceeded' })
+  })
+
+  it('flags near-limit when a float sum lands exactly on 80% of the limit', () => {
+    const spent = 4.06 + 9.54 // 13.6, which is 80% of 17
+
+    expect(spent / 17 * 100).toBeLessThan(80)
+    expect(getBudgetProgress(17, spent)).toEqual({ percentage: 80, status: 'near-limit' })
+  })
+
+  it('stays on-track one cent below a threshold', () => {
+    expect(getBudgetProgress(100, 79.99).status).toBe('on-track')
+    expect(getBudgetProgress(100, 99.99).status).toBe('near-limit')
+  })
+
+  it('treats a limit that is float noise around zero as no limit', () => {
+    expect(getBudgetProgress(0.1 + 0.2 - 0.3, 0)).toEqual({ percentage: 0, status: 'on-track' })
+    expect(getBudgetProgress(0.1 + 0.2 - 0.3, 5)).toEqual({ percentage: 100, status: 'exceeded' })
+  })
 })
