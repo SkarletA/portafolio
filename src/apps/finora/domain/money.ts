@@ -1,8 +1,11 @@
-// Visible rounding for money inputs - see docs/adr/004-goal-transfers.md.
-// Works on the decimal text, never with floating-point multiplication: in
+// Money helpers: visible rounding for inputs (docs/adr/004-goal-transfers.md)
+// and integer-cents arithmetic (docs/adr/005-money-arithmetic-in-the-client.md).
+// Text is handled as text, never with floating-point multiplication: in
 // JavaScript 1.005 * 100 is 100.49999999999999, so Math.round would give 1.00.
 
 const DECIMAL_PATTERN = /^(-?)(\d*)\.(\d+)$/
+const CENTS_PER_UNIT = 100
+const MONEY_PATTERN = /^(-?)(\d+)(?:\.(\d{1,2}))?$/
 
 /**
  * Rounds a money input's text to 2 decimals, half away from zero
@@ -26,4 +29,31 @@ export function roundMoneyInput(text: string): string {
   const isZero = cents === 0n
 
   return `${sign && !isZero ? '-' : ''}${whole}.${fraction}`
+}
+
+/**
+ * Converts an amount to integer cents without floating-point multiplication:
+ * it reads the number's shortest decimal representation (the one JS prints,
+ * e.g. `1666.67`), so `0.29` becomes exactly `29` rather than
+ * `28.999999999999996`. Throws a `RangeError` for
+ * anything that isn't a finite amount with at most 2 decimals - it never
+ * rounds.
+ */
+export function toMinorUnits(amount: number): number {
+  const match = MONEY_PATTERN.exec(String(amount))
+  if (!match) {
+    throw new RangeError(`Amount ${amount} is not a finite value with at most 2 decimals`)
+  }
+
+  const [, sign, units, decimals = ''] = match
+  const cents = Number(units) * CENTS_PER_UNIT + Number(decimals.padEnd(2, '0'))
+  if (!Number.isSafeInteger(cents)) {
+    throw new RangeError(`Amount ${amount} is too large to represent exactly in cents`)
+  }
+
+  return sign ? -cents : cents
+}
+
+export function fromMinorUnits(cents: number): number {
+  return cents / CENTS_PER_UNIT
 }
