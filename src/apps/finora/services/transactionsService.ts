@@ -9,6 +9,7 @@ import {
 } from '@domain/category'
 import { expandLedgerRowsInRange } from '@domain/installments'
 import { getCategories } from './categoriesService'
+import { catchServiceErrors } from './catchServiceErrors'
 
 export type TransactionWithCategory = Transaction & {
   category: Pick<Category, 'id' | 'name' | 'icon' | 'color' | 'translationKey'> | null
@@ -101,7 +102,11 @@ export function getCurrentMonthRange() {
   }
 }
 
-export async function getExpensesByCategory({ start, end }: { start: string; end: string }) {
+export function getExpensesByCategory(range: { start: string; end: string }) {
+  return catchServiceErrors(() => loadExpensesByCategory(range))
+}
+
+async function loadExpensesByCategory({ start, end }: { start: string; end: string }) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }

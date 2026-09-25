@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import { getExpensesByCategory } from './transactionsService'
 import { getCategories } from './categoriesService'
+import { catchServiceErrors } from './catchServiceErrors'
 import {
   getAveragePerDay,
   getCategoryPercentage,
@@ -12,8 +13,8 @@ import {
 } from '@domain/analytics'
 import type { Category } from '@domain/category'
 import { expandLedgerRowsInRange, isIncomeFundedExpense } from '@domain/installments'
-import { toMinorUnits } from '@domain/money'
-import type { FundingSource } from '@domain/transaction'
+import { addMoney, sumMoney, subtractMoney } from '@domain/money'
+import type { FundingSource, TransactionType } from '@domain/transaction'
 
 export interface MonthlyStats {
   totalSpent: number
@@ -43,7 +44,39 @@ function daysElapsedInRange({ start, end }: DateRange): number {
   return Math.max(Math.round((effectiveEnd.getTime() - startDate.getTime()) / 86400000) + 1, 0)
 }
 
-export async function getMonthlyStats(range: DateRange) {
+export interface LedgerTotals {
+  totalSpent: number
+  totalCoveredBySavings: number
+  totalIncome: number
+  totalReimbursed: number
+}
+
+// Adds each row's amount to the total for its kind, exactly (ADR-005).
+export function sumLedgerTotals(
+  rows: { type: TransactionType; funding_source: FundingSource; amount: number }[]
+): LedgerTotals {
+  return rows.reduce<LedgerTotals>(
+    (acc, row) => {
+      if (isIncomeFundedExpense(row)) {
+        acc.totalSpent = addMoney(acc.totalSpent, row.amount)
+      } else if (row.type === 'expense') {
+        acc.totalCoveredBySavings = addMoney(acc.totalCoveredBySavings, row.amount)
+      } else if (row.type === 'reimbursement') {
+        acc.totalReimbursed = addMoney(acc.totalReimbursed, row.amount)
+      } else {
+        acc.totalIncome = addMoney(acc.totalIncome, row.amount)
+      }
+      return acc
+    },
+    { totalSpent: 0, totalCoveredBySavings: 0, totalIncome: 0, totalReimbursed: 0 }
+  )
+}
+
+export function getMonthlyStats(range: DateRange) {
+  return catchServiceErrors(() => loadMonthlyStats(range))
+}
+
+async function loadMonthlyStats(range: DateRange) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
@@ -78,29 +111,14 @@ export async function getMonthlyStats(range: DateRange) {
   // installment per month, and expenses covered by savings go to
   // totalCoveredBySavings instead of totalSpent - see
   // docs/adr/003-installments-and-savings-funding.md.
-  const totals = expandLedgerRowsInRange(data ?? [], range).reduce(
-    (acc, row) => {
-      if (isIncomeFundedExpense(row)) {
-        acc.totalSpent += row.amount
-      } else if (row.type === 'expense') {
-        acc.totalCoveredBySavings += row.amount
-      } else if (row.type === 'reimbursement') {
-        acc.totalReimbursed += row.amount
-      } else {
-        acc.totalIncome += row.amount
-      }
-      return acc
-    },
-    { totalSpent: 0, totalCoveredBySavings: 0, totalIncome: 0, totalReimbursed: 0 }
-  )
+  const totals = sumLedgerTotals(expandLedgerRowsInRange(data ?? [], range))
 
-  const netSpentForSavings = totals.totalSpent - totals.totalReimbursed
+  const netSpentForSavings = subtractMoney(totals.totalSpent, totals.totalReimbursed)
 
   const stats: MonthlyStats = {
     totalSpent: totals.totalSpent,
     totalCoveredBySavings: totals.totalCoveredBySavings,
-    // Transfers always have at most 2 decimals, so they sum exactly in cents.
-    totalDepositedToGoals: (deposits ?? []).reduce((cents, deposit) => cents + toMinorUnits(deposit.amount), 0) / 100,
+    totalDepositedToGoals: sumMoney((deposits ?? []).map((deposit) => deposit.amount)),
     totalIncome: totals.totalIncome,
     avgPerDay: getAveragePerDay(totals.totalSpent, daysElapsedInRange(range)),
     savingsRate: getSavingsRate(totals.totalIncome, netSpentForSavings),
@@ -119,7 +137,11 @@ export interface CategorySpending {
   percentage: number
 }
 
-export async function getSpendingByCategory(range: DateRange) {
+export function getSpendingByCategory(range: DateRange) {
+  return catchServiceErrors(() => loadSpendingByCategory(range))
+}
+
+async function loadSpendingByCategory(range: DateRange) {
   const [{ data: expensesByCategory, error: expensesError }, { data: categoriesData, error: categoriesError }] =
     await Promise.all([getExpensesByCategory(range), getCategories()])
 
@@ -132,7 +154,7 @@ export async function getSpendingByCategory(range: DateRange) {
   // as separate rows too would double-count spend and push percentages past 100%.
   const topLevelCategories = categories.filter((category) => !category.parent_id)
   const expensesMap = expensesByCategory?.totals ?? {}
-  const totalSpent = topLevelCategories.reduce((sum, category) => sum + (expensesMap[category.id] ?? 0), 0)
+  const totalSpent = sumMoney(topLevelCategories.map((category) => expensesMap[category.id] ?? 0))
 
   const spending: CategorySpending[] = topLevelCategories
     .map((category) => {
@@ -158,7 +180,7 @@ export interface DailySpending {
   amount: number
 }
 
-type LedgerRow = {
+export type LedgerRow = {
   date: string
   amount: number
   type: 'expense' | 'reimbursement'
@@ -194,17 +216,21 @@ async function fetchExpenseAndReimbursementRows(range: DateRange) {
 // with "Total spent", including leaving out expenses covered by savings.
 // See docs/adr/002-gross-spend-and-effective-limit.md and
 // docs/adr/003-installments-and-savings-funding.md.
-function grossSpendByBucketKey(rows: LedgerRow[], keyFn: (date: string) => string): Record<string, number> {
+export function grossSpendByBucketKey(rows: LedgerRow[], keyFn: (date: string) => string): Record<string, number> {
   return rows.reduce<Record<string, number>>((totals, row) => {
     if (!isIncomeFundedExpense(row)) return totals
 
     const key = keyFn(row.date)
-    totals[key] = (totals[key] ?? 0) + row.amount
+    totals[key] = addMoney(totals[key] ?? 0, row.amount)
     return totals
   }, {})
 }
 
-export async function getDailySpending(range: DateRange) {
+export function getDailySpending(range: DateRange) {
+  return catchServiceErrors(() => loadDailySpending(range))
+}
+
+async function loadDailySpending(range: DateRange) {
   const { data, error } = await fetchExpenseAndReimbursementRows(range)
 
   if (error) return { data: null, error }
@@ -231,7 +257,11 @@ const TREND_YEARS = 5
 // from getPeriodRange's current-vs-previous single period. Every bucket in
 // the window is included even when it has no activity, so the chart shows a
 // true, evenly-spaced trend line instead of skipping quiet periods.
-export async function getTrendData(periodType: PeriodType) {
+export function getTrendData(periodType: PeriodType) {
+  return catchServiceErrors(() => loadTrendData(periodType))
+}
+
+async function loadTrendData(periodType: PeriodType) {
   const today = new Date()
   const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
 
