@@ -5,6 +5,7 @@ import { Button } from '@atoms/Button/Button'
 import { GroupedSelect } from '@atoms/Select/GroupedSelect'
 import { useCategories } from '@hooks/useCategories'
 import { useBudgets } from '@hooks/useBudgets'
+import { BackLink } from '@molecules/BackLink/BackLink'
 import { createBudget, type NewBudgetInput } from '@services/budgetsService'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
 import s from './AddBudget.module.css'
@@ -103,6 +104,9 @@ export function AddBudget() {
 
   return (
     <section className={s.section}>
+      <BackLink to="/finora/budgets" data-testid="add-budget-back-link">
+        {t('budgets:form.backToBudgets')}
+      </BackLink>
       <h1 className={s.title}>{t('budgets:form.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form} noValidate>

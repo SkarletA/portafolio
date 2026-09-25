@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import { Button } from '@atoms/Button/Button'
 import { Select } from '@atoms/Select/Select'
+import { BackLink } from '@molecules/BackLink/BackLink'
 import { CategoryIcon, CATEGORY_ICON_NAMES, DEFAULT_CATEGORY_ICON } from '@atoms/CategoryIcon/CategoryIcon'
 import { useCategories } from '@hooks/useCategories'
 import { useTransaction } from '@hooks/useTransaction'
@@ -662,6 +663,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   if (mode === 'edit' && transactionError) {
     return (
       <section className={s.section}>
+        <BackLink to="/finora/transactions" data-testid="add-transaction-back-link">
+          {t('transactions:form.backToTransactions')}
+        </BackLink>
         <p className={s.error}>{t('transactions:form.loadError')}</p>
       </section>
     )
@@ -669,6 +673,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
   return (
     <section className={s.section}>
+      <BackLink to="/finora/transactions" data-testid="add-transaction-back-link">
+        {t('transactions:form.backToTransactions')}
+      </BackLink>
       <h1 className={s.title}>{mode === 'edit' ? t('transactions:form.editTitle') : t('transactions:form.addTitle')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form} noValidate>

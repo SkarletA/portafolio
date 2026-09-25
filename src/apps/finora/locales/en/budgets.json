@@ -33,7 +33,8 @@
     "couldntLoadCategories": "Couldn't load categories: {{message}}",
     "allCategoriesBudgeted": "All your categories already have a budget.",
     "monthlyLimit": "Monthly limit",
-    "saveBudget": "Save budget"
+    "saveBudget": "Save budget",
+    "backToBudgets": "Back to budgets"
   },
   "validation": {
     "selectCategory": "Select a category",

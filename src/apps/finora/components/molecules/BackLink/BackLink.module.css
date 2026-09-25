@@ -1,0 +1,9 @@
+@reference '../../../styles/theme.css';
+
+.link {
+  @apply mb-6 inline-flex items-center gap-2 text-sm font-medium text-finora-ink-muted transition-colors hover:text-finora-ink focus-visible:text-finora-ink focus-visible:underline;
+}
+
+.icon {
+  @apply h-4 w-4;
+}
