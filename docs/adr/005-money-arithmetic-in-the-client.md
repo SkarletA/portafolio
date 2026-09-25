@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 Fulfils the note in [ADR-003](./003-installments-and-savings-funding.md)
 ("Money representation"): an end-to-end integer-minor-units representation was
