@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom'
 import { GoalCard } from './GoalCard'
 
 export default {
@@ -22,6 +23,13 @@ export default {
       table: { type: { summary: 'function' } },
     },
   },
+  decorators: [
+    (Story: () => React.ReactElement) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
 }
 
 export const OnTrack = {

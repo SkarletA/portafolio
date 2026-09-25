@@ -27,3 +27,7 @@
 .hint {
   @apply text-sm text-finora-ink-muted;
 }
+
+.warning {
+  @apply rounded-lg border border-finora-warning bg-finora-warning-bg px-3 py-2 text-sm text-finora-ink;
+}

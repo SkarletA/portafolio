@@ -1,4 +1,5 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '@atoms/Icon/Icon'
 import { Button } from '@atoms/Button/Button'
@@ -143,7 +144,7 @@ export function GoalCard({ goal, onBalanceChanged }: GoalCardProps) {
         <div className={s.icon}>
           <Icon name="goals" className={s.goalIcon} />
         </div>
-        <div>
+        <div className={s.heading}>
           <p className={s.name}>{goal.name}</p>
           {goal.target_date && (
             <p className={s.targetDate}>
@@ -151,6 +152,14 @@ export function GoalCard({ goal, onBalanceChanged }: GoalCardProps) {
             </p>
           )}
         </div>
+        <Link
+          to={`/finora/goals/${goal.id}/edit`}
+          className={s.editLink}
+          aria-label={t('goals:card.editAriaLabel', { name: goal.name })}
+          data-testid={`goal-card-${goal.id}-edit-icon`}
+        >
+          <Icon name="edit" className={s.editIcon} />
+        </Link>
       </div>
 
       <div className={s.amounts}>

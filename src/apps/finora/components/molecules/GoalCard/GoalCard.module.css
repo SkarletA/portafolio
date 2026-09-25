@@ -16,6 +16,18 @@
   @apply h-5 w-5;
 }
 
+.heading {
+  @apply min-w-0 flex-1;
+}
+
+.editLink {
+  @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-finora-ink-muted transition-colors hover:bg-finora-surface-muted hover:text-finora-ink focus-visible:bg-finora-surface-muted focus-visible:text-finora-ink;
+}
+
+.editIcon {
+  @apply h-4 w-4;
+}
+
 .name {
   @apply text-sm font-semibold text-finora-ink;
 }
