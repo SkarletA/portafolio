@@ -93,20 +93,22 @@ involved and does not follow it for aggregates and comparisons.
     a single value that must already be a valid amount (a stored row, a
     validated input).
   - `sumToMinorUnits(sum)` is for a value that JavaScript computed by adding
-    or subtracting 2-decimal amounts. Float noise on such a value is around
-    1e-11, so `Math.round(sum * 100)` recovers the exact cents; it never throws.
-    It is not for typed text (`1.005 * 100` is `100.49999999999999`), and it
-    exists because aggregates are still summed with `+` until Phase 2, and
-    because a check that runs on every keystroke must not throw on half-typed
-    input.
+    or subtracting 2-decimal amounts (a total, a limit widened by
+    reimbursements). Float noise on such a value is around 1e-11, so
+    `Math.round(sum * 100)` recovers the exact cents; it never throws. It is
+    not for typed text (`1.005 * 100` is `100.49999999999999`), and it exists
+    because aggregates are still summed with `+` until Phase 2.
 - **Comparisons are made on integer cents; ratios stay floating point for
   display.** The ratio a threshold is decided on is computed from the same
   cents, so `spent = limit` gives exactly 100.
-- **The payments-match check has a single rule.** `paymentsMatchAmount(assigned,
-  amount)` compares both in cents through `sumToMinorUnits`, and both the
-  submit validation and the warning colour in `AddTransaction` use it,
-  replacing the `!==` and the `0.001` tolerance. The database check stays the
-  authority.
+- **The payments-match check has a single rule.** `paymentsMatchAmount(payments,
+  amount)` compares in integer cents with the strict conversion. A value with
+  more than 2 decimals, or that is not finite, is reported as a mismatch
+  instead of throwing or being rounded, because the check also runs on every
+  keystroke over half-typed text. Both the submit validation and the warning
+  colour in `AddTransaction` use it, replacing the `!==` and the `0.001`
+  tolerance; at submit, a too-many-decimals value is reported on the amount
+  field, not as a mismatch. The database check stays the authority.
 - **`getBudgetProgress` decides `near-limit` and `exceeded` in cents**
   (`spentCents * 100 >= limitCents * threshold`), so a spend that lands exactly
   on 80% or 100% is classified correctly.
@@ -133,9 +135,12 @@ Phase 1 (decided, one branch, one commit per item):
 4. `pages/AddBudget.tsx`: visible rounding on blur (`roundMoneyInput`) and a
    decimals check on submit (`amountMaxDecimals`, `en` and `es`, `budgets`
    namespace), like `AddGoal`.
-5. A migration that adds `p_amount < 10000000000` to `save_transaction`,
-   raising `invalid_amount` like the other checks, so an oversized amount gets
-   a clear error instead of a numeric overflow.
+5. `supabase/migrations/20260926000000_save_transaction_amount_cap.sql` adds
+   `p_amount < 10000000000` to `save_transaction`, raising `invalid_amount` like
+   the other checks, so an oversized amount gets a clear error instead of a
+   numeric overflow. The client maps `invalid_amount` to its existing
+   "at most 2 decimals" message, which is not accurate for this case; an
+   amount that large is not a realistic input, so it is left as is.
 
 Phase 1 also verified the column types and stored data (see Context). No
 pre-flight is needed for it.
