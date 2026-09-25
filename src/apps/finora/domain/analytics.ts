@@ -1,4 +1,4 @@
-import { sumToMinorUnits } from './money'
+import { subtractMoney, sumToMinorUnits } from './money'
 
 export type PeriodType = 'day' | 'month' | 'year'
 
@@ -73,7 +73,7 @@ export function getPercentChange(current: number, previous: number): number | nu
 
 export function getSavingsRate(totalIncome: number, totalSpent: number): number {
   if (totalIncome <= 0) return 0
-  return ((totalIncome - totalSpent) / totalIncome) * 100
+  return (subtractMoney(totalIncome, totalSpent) / totalIncome) * 100
 }
 
 export function getAveragePerDay(totalSpent: number, daysElapsed: number): number {

@@ -22,11 +22,19 @@ export function useGoals() {
       setError(fetchError.message)
       setGoals([])
     } else {
-      const goalsWithProgress = ((data ?? []) as Goal[]).map((goal) => ({
-        ...goal,
-        ...getGoalProgress(goal.current_amount, goal.target_amount),
-      }))
-      setGoals(goalsWithProgress)
+      // getGoalProgress does exact money arithmetic, which throws for an amount
+      // with more than 2 decimals (ADR-005); that is shown as an error instead
+      // of leaving the page loading.
+      try {
+        const goalsWithProgress = ((data ?? []) as Goal[]).map((goal) => ({
+          ...goal,
+          ...getGoalProgress(goal.current_amount, goal.target_amount),
+        }))
+        setGoals(goalsWithProgress)
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught))
+        setGoals([])
+      }
     }
 
     setLoading(false)

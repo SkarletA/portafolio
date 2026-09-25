@@ -281,4 +281,40 @@ describe('useBudgets', () => {
     expect(breakdown.reduce((sum, item) => sum + item.amount, 0)).toBe(470)
     expect(breakdown.find((item) => item.name === 'Other')?.amount).toBe(20)
   })
+
+  it('widens the limit by reimbursements exactly, without float noise', async () => {
+    vi.mocked(getBudgets).mockResolvedValue({
+      data: [{ id: '1', category_id: 'c1', monthly_limit: 0.1 }],
+      error: null,
+    } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: { c1: 0.3 }, raw: {}, reimbursements: { c1: 0.2 } },
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useBudgets())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.budgets[0].effectiveLimit).toBe(0.3)
+    expect(result.current.budgets[0].status).toBe('exceeded')
+  })
+
+  it('shows an error and stops loading when an amount has more than 2 decimals', async () => {
+    vi.mocked(getBudgets).mockResolvedValue({
+      data: [{ id: '1', category_id: 'c1', monthly_limit: 10.005 }],
+      error: null,
+    } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: {}, raw: {}, reimbursements: { c1: 1 } },
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useBudgets())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.error).toMatch(/2 decimals/)
+    expect(result.current.budgets).toEqual([])
+  })
 })

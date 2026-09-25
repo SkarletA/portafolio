@@ -39,3 +39,15 @@ describe('getAvailableForExpense', () => {
     expect(getAvailableForExpense({ id: 'g', current_amount: 0.1 }, { goal_id: 'g', amount: 0.2 })).toBe(0.3)
   })
 })
+
+describe('getGoalProgress remaining', () => {
+  it('is the exact difference where float subtraction leaves noise', () => {
+    expect(0.3 - 0.1).not.toBe(0.2)
+    expect(getGoalProgress(0.1, 0.3).remaining).toBe(0.2)
+  })
+
+  it('is 0 once the goal is reached or exceeded', () => {
+    expect(getGoalProgress(0.3, 0.3).remaining).toBe(0)
+    expect(getGoalProgress(500.75, 500).remaining).toBe(0)
+  })
+})

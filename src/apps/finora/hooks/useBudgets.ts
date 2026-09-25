@@ -4,6 +4,7 @@ import { getCurrentMonthRange, getExpensesByCategory } from '@services/transacti
 import { getCategories } from '@services/categoriesService'
 import { getBudgetProgress, type BudgetStatus } from '@domain/budget'
 import type { Category } from '@domain/category'
+import { addMoney } from '@domain/money'
 
 export interface BudgetBreakdownItem {
   category_id: string
@@ -86,28 +87,35 @@ export function useBudgets() {
       setError(fetchError.message)
       setBudgets([])
     } else {
-      const totalsByCategory = expensesData?.totals ?? {}
-      const rawByCategory = expensesData?.raw ?? {}
-      const reimbursementsByCategory = expensesData?.reimbursements ?? {}
-      const savingsCoveredByCategory = expensesData?.savingsCovered ?? {}
-      const categories = (categoriesData ?? []) as Category[]
+      // Money arithmetic throws for an amount with more than 2 decimals (ADR-005);
+      // that is shown as an error instead of leaving the page loading.
+      try {
+        const totalsByCategory = expensesData?.totals ?? {}
+        const rawByCategory = expensesData?.raw ?? {}
+        const reimbursementsByCategory = expensesData?.reimbursements ?? {}
+        const savingsCoveredByCategory = expensesData?.savingsCovered ?? {}
+        const categories = (categoriesData ?? []) as Category[]
 
-      const budgetsWithProgress = ((budgetsData ?? []) as BudgetWithCategory[]).map((budget) => {
-        const spent = totalsByCategory[budget.category_id] ?? 0
-        // A reimbursement widens how much a budget can absorb this period
-        // rather than shrinking the displayed spend. See
-        // docs/adr/002-gross-spend-and-effective-limit.md.
-        const effectiveLimit = budget.monthly_limit + (reimbursementsByCategory[budget.category_id] ?? 0)
-        const { percentage, status } = getBudgetProgress(effectiveLimit, spent)
-        const breakdown = buildBreakdown(budget.category_id, categories, rawByCategory)
-        // Excluded from `spent` but reported, so it doesn't silently vanish.
-        // See docs/adr/003-installments-and-savings-funding.md.
-        const coveredBySavings = savingsCoveredByCategory[budget.category_id] ?? 0
+        const budgetsWithProgress = ((budgetsData ?? []) as BudgetWithCategory[]).map((budget) => {
+          const spent = totalsByCategory[budget.category_id] ?? 0
+          // A reimbursement widens how much a budget can absorb this period
+          // rather than shrinking the displayed spend. See
+          // docs/adr/002-gross-spend-and-effective-limit.md.
+          const effectiveLimit = addMoney(budget.monthly_limit, reimbursementsByCategory[budget.category_id] ?? 0)
+          const { percentage, status } = getBudgetProgress(effectiveLimit, spent)
+          const breakdown = buildBreakdown(budget.category_id, categories, rawByCategory)
+          // Excluded from `spent` but reported, so it doesn't silently vanish.
+          // See docs/adr/003-installments-and-savings-funding.md.
+          const coveredBySavings = savingsCoveredByCategory[budget.category_id] ?? 0
 
-        return { ...budget, spent, effectiveLimit, coveredBySavings, percentage, status, breakdown }
-      })
+          return { ...budget, spent, effectiveLimit, coveredBySavings, percentage, status, breakdown }
+        })
 
-      setBudgets(budgetsWithProgress)
+        setBudgets(budgetsWithProgress)
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : String(caught))
+        setBudgets([])
+      }
     }
 
     setLoading(false)

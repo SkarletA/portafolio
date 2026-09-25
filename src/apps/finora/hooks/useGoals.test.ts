@@ -67,4 +67,31 @@ describe('useGoals', () => {
       { id: '1', current_amount: 3500, target_amount: 5000, percentage: 70, remaining: 1500 },
     ])
   })
+
+  it('computes the remaining amount exactly', async () => {
+    vi.mocked(getGoals).mockResolvedValue({
+      data: [{ id: '1', current_amount: 0.1, target_amount: 0.3 }],
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useGoals())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.goals[0].remaining).toBe(0.2)
+  })
+
+  it('shows an error and stops loading when an amount has more than 2 decimals', async () => {
+    vi.mocked(getGoals).mockResolvedValue({
+      data: [{ id: '1', current_amount: 1, target_amount: 10.005 }],
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useGoals())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.error).toMatch(/2 decimals/)
+    expect(result.current.goals).toEqual([])
+  })
 })

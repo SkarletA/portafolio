@@ -213,3 +213,35 @@ describe('getCategoryDisplayName', () => {
     expect(getCategoryDisplayName(custom, t)).toBe('My Custom Category')
   })
 })
+
+describe('exact sums', () => {
+  const entry = (category_id: string, amount: number) => ({
+    category_id,
+    type: 'expense' as const,
+    amount,
+    funding_source: 'income' as const,
+  })
+
+  it('sums amounts per category without float noise', () => {
+    expect(0.1 + 0.2).not.toBe(0.3)
+    expect(getRawGrossSpendByCategory([entry('meat', 0.1), entry('meat', 0.2)])).toEqual({ meat: 0.3 })
+    expect(getRawGrossSpendByCategory([entry('market', 4.06), entry('market', 9.54)])).toEqual({ market: 13.6 })
+  })
+
+  it('rolls subcategories up into the parent exactly', () => {
+    const totals = getGrossSpendByCategory([entry('meat', 0.1), entry('market', 0.2), entry('food', 0.7)], categories)
+
+    expect(totals.food).toBe(1)
+    expect(totals.meat).toBe(0.1)
+  })
+
+  it('gives two categories with the same decimal total strictly equal values', () => {
+    const totals = getRawGrossSpendByCategory([
+      entry('meat', 0.1),
+      entry('meat', 0.2),
+      entry('transport', 0.3),
+    ])
+
+    expect(totals.meat).toBe(totals.transport)
+  })
+})

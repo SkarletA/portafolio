@@ -14,6 +14,7 @@ import { useBudgets } from '@hooks/useBudgets'
 import { useDashboardSummary } from '@hooks/useDashboardSummary'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { subtractMoney } from '@domain/money'
 import { TransactionItem } from '@molecules/TransactionItem/TransactionItem'
 import { BudgetCard } from '@molecules/BudgetCard/BudgetCard'
 import { AsyncState } from '@molecules/AsyncState/AsyncState'
@@ -55,7 +56,7 @@ export function Dashboard() {
     (stats.totalSpent > 0 || stats.totalCoveredBySavings > 0 || stats.totalDepositedToGoals > 0 || stats.totalIncome > 0)
   // Money still spendable this month: deposits to Goals leave it, too.
   // See docs/adr/004-goal-transfers.md.
-  const balance = stats ? stats.totalIncome - stats.totalSpent - stats.totalDepositedToGoals : 0
+  const balance = stats ? subtractMoney(subtractMoney(stats.totalIncome, stats.totalSpent), stats.totalDepositedToGoals) : 0
 
   const handleAddTransactionClick = useCallback(() => {
     navigate('/finora/add-transaction')

@@ -1,4 +1,4 @@
-import { toMinorUnits } from './money'
+import { addMoney, subtractMoney } from './money'
 
 export interface Goal {
   id: string
@@ -22,7 +22,7 @@ export function getGoalProgress(current: number, target: number): GoalProgress {
 
   return {
     percentage: (current / target) * 100,
-    remaining: Math.max(target - current, 0),
+    remaining: Math.max(subtractMoney(target, current), 0),
   }
 }
 
@@ -46,13 +46,13 @@ export interface GoalTransfer {
 /**
  * How much of a Goal an expense can use. When editing an expense that already
  * withdraws from this Goal, that withdrawal is returned to the Goal before the
- * new one is taken, so it counts as available. Summed in cents so the figure
- * shown matches the database's exact arithmetic.
+ * new one is taken, so it counts as available. Summed exactly so the figure
+ * shown matches the database's arithmetic.
  */
 export function getAvailableForExpense(
   goal: Pick<Goal, 'id' | 'current_amount'>,
   existingWithdrawal: { goal_id: string; amount: number } | null
 ): number {
   const returned = existingWithdrawal?.goal_id === goal.id ? existingWithdrawal.amount : 0
-  return (toMinorUnits(goal.current_amount) + toMinorUnits(returned)) / 100
+  return addMoney(goal.current_amount, returned)
 }

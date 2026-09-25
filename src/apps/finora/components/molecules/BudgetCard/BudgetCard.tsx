@@ -3,6 +3,7 @@ import cn from 'clsx'
 import type { BudgetWithProgress } from '@hooks/useBudgets'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { subtractMoney } from '@domain/money'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
@@ -34,7 +35,7 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
   const iconStyle = category?.color ? { backgroundColor: category.color } : undefined
   // A reimbursement widens the effective limit rather than shrinking displayed
   // spend - see docs/adr/002-gross-spend-and-effective-limit.md.
-  const reimbursedAmount = effectiveLimit - monthlyLimit
+  const reimbursedAmount = subtractMoney(effectiveLimit, monthlyLimit)
   const hasReimbursement = reimbursedAmount > 0
 
   return (

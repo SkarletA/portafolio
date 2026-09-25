@@ -1,4 +1,5 @@
 import { isIncomeFundedExpense } from './installments'
+import { addMoney, sumMoney } from './money'
 import type { FundingSource, TransactionType } from './transaction'
 
 export interface Category {
@@ -67,7 +68,7 @@ function sumByCategory(
   return entries.reduce<Record<string, number>>((totals, entry) => {
     if (!entry.category_id || !predicate(entry)) return totals
 
-    totals[entry.category_id] = (totals[entry.category_id] ?? 0) + entry.amount
+    totals[entry.category_id] = addMoney(totals[entry.category_id] ?? 0, entry.amount)
     return totals
   }, {})
 }
@@ -77,7 +78,7 @@ function rollupByCategory(rawByCategory: Record<string, number>, categories: Cat
 
   for (const category of categories) {
     const rollupIds = getCategoryIdsForRollup(categories, category.id)
-    totalsByCategory[category.id] = rollupIds.reduce((sum, id) => sum + (rawByCategory[id] ?? 0), 0)
+    totalsByCategory[category.id] = sumMoney(rollupIds.map((id) => rawByCategory[id] ?? 0))
   }
 
   return totalsByCategory
