@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { roundMoneyInput, toMinorUnits } from './money'
+import { paymentsMatchAmount, roundMoneyInput, sumToMinorUnits, toMinorUnits } from './money'
 
 describe('roundMoneyInput', () => {
   it('rounds more than 2 decimals half up', () => {
@@ -63,5 +63,45 @@ describe('toMinorUnits', () => {
     expect(() => toMinorUnits(Number.POSITIVE_INFINITY)).toThrow(RangeError)
     expect(() => toMinorUnits(1e21)).toThrow(RangeError)
     expect(() => toMinorUnits(Number.MAX_SAFE_INTEGER)).toThrow(RangeError)
+  })
+})
+
+describe('sumToMinorUnits', () => {
+  it('recovers the exact cents of a float sum', () => {
+    expect(0.7 + 0.1).not.toBe(0.8)
+    expect(sumToMinorUnits(0.7 + 0.1)).toBe(80)
+    expect(sumToMinorUnits(0.1 + 0.2)).toBe(30)
+    expect(sumToMinorUnits(1.1 + 2.2)).toBe(330)
+    expect(sumToMinorUnits(10.1 + 20.2)).toBe(3030)
+  })
+
+  it('handles zero and negative differences', () => {
+    expect(sumToMinorUnits(0)).toBe(0)
+    expect(sumToMinorUnits(0.1 - 0.3)).toBe(-20)
+  })
+})
+
+describe('paymentsMatchAmount', () => {
+  it('matches payments that add up to the amount where float addition does not', () => {
+    expect(0.1 + 0.2).not.toBe(0.3)
+    expect(paymentsMatchAmount([0.1, 0.2], 0.3)).toBe(true)
+    expect(paymentsMatchAmount([10.1, 20.2], 30.3)).toBe(true)
+    expect(paymentsMatchAmount([500], 500)).toBe(true)
+  })
+
+  it('does not match a difference of one cent', () => {
+    expect(paymentsMatchAmount([10.1, 20.2], 30.31)).toBe(false)
+    expect(paymentsMatchAmount([10.1, 20.19], 30.3)).toBe(false)
+  })
+
+  it('does not match when nothing is assigned to a positive amount', () => {
+    expect(paymentsMatchAmount([], 10)).toBe(false)
+    expect(paymentsMatchAmount([], 0)).toBe(true)
+  })
+
+  it('reports values with more than 2 decimals as a mismatch instead of throwing or rounding', () => {
+    expect(paymentsMatchAmount([10.005], 10.01)).toBe(false)
+    expect(paymentsMatchAmount([10.01], 10.005)).toBe(false)
+    expect(paymentsMatchAmount([Number.NaN], 1)).toBe(false)
   })
 })

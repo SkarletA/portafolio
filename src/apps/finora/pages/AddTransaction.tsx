@@ -32,7 +32,7 @@ import {
 } from '@domain/installments'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getAvailableForExpense } from '@domain/goal'
-import { roundMoneyInput } from '@domain/money'
+import { paymentsMatchAmount, roundMoneyInput } from '@domain/money'
 import { getTodayLocalDate } from '@domain/date'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
@@ -459,6 +459,12 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
       const checkedPayments = payments.filter((payment) => payment.checked)
 
+      // Amounts are rounded on blur; this catches one submitted before leaving
+      // the field (e.g. with Enter). The database would reject it anyway.
+      const hasTooManyDecimals =
+        roundMoneyInput(amount) !== amount ||
+        (!isSingleMethod && checkedPayments.some((payment) => roundMoneyInput(payment.amount) !== payment.amount))
+
       if (isSingleMethod) {
         if (!receivedMethod) {
           nextErrors.payments = t('transactions:validation.selectReceivedVia')
@@ -475,7 +481,14 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         } else {
           const assigned = checkedPayments.reduce((sum, payment) => sum + Number(payment.amount), 0)
 
-          if (Math.abs(assigned - parsedAmount) > 0.001) {
+          // A too-many-decimals value is reported on the amount below, not as a mismatch.
+          if (
+            !hasTooManyDecimals &&
+            !paymentsMatchAmount(
+              checkedPayments.map((payment) => Number(payment.amount)),
+              parsedAmount
+            )
+          ) {
             nextErrors.payments = t('transactions:validation.assignedMustEqualTotal', {
               assigned: formatCurrency(assigned, currency, locale),
               total: formatCurrency(parsedAmount || 0, currency, locale),
@@ -492,12 +505,6 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         savingsGoalId: effectiveSavingsGoalId,
         paymentMethodCount: checkedPayments.length,
       })
-
-      // Amounts are rounded on blur; this catches one submitted before leaving
-      // the field (e.g. with Enter). The database would reject it anyway.
-      const hasTooManyDecimals =
-        roundMoneyInput(amount) !== amount ||
-        (!isSingleMethod && checkedPayments.some((payment) => roundMoneyInput(payment.amount) !== payment.amount))
 
       if (planErrors.includes('invalidMonths')) {
         nextErrors.installmentMonths = t('transactions:validation.installmentMonthsRange', {
@@ -608,6 +615,10 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     0
   )
   const totalAmount = Number(amount) || 0
+  const paymentsMatchTotal = paymentsMatchAmount(
+    payments.filter((payment) => payment.checked).map((payment) => Number(payment.amount) || 0),
+    totalAmount
+  )
 
   // Computed with the same domain functions the monthly figures use, so the
   // preview always matches what Budgets and Analytics will count.
@@ -968,7 +979,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 </div>
               ))}
             </div>
-            <p className={cn(s.paymentSummary, assignedTotal !== totalAmount && s.paymentSummaryMismatch)}>
+            <p className={cn(s.paymentSummary, !paymentsMatchTotal && s.paymentSummaryMismatch)}>
               {t('transactions:form.assignedSummary', {
                 assigned: formatCurrency(assignedTotal, currency, locale),
                 total: formatCurrency(totalAmount, currency, locale),
