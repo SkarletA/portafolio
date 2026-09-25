@@ -64,9 +64,9 @@ describe('GoalCard', () => {
     renderCard()
 
     expect(screen.getByText('Emergency Fund')).toBeInTheDocument()
-    expect(screen.getByText('$3,500')).toBeInTheDocument()
-    expect(screen.getByText('/ $5,000')).toBeInTheDocument()
-    expect(screen.getByText('goals:card.remaining:{"amount":"$1,500"}')).toBeInTheDocument()
+    expect(screen.getByText('$3,500.00')).toBeInTheDocument()
+    expect(screen.getByText('/ $5,000.00')).toBeInTheDocument()
+    expect(screen.getByText('goals:card.remaining:{"amount":"$1,500.00"}')).toBeInTheDocument()
     expect(screen.getByText('70%')).toBeInTheDocument()
   })
 

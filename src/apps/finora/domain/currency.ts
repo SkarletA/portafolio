@@ -7,20 +7,20 @@ export function getLocaleForLanguage(language: Language): string {
   return language === 'es' ? 'es-MX' : 'en-US'
 }
 
+// Amounts are always shown with exactly 2 decimals: every supported currency
+// (MXN, USD, EUR) has 2 and amounts are stored as numeric(12,2), so showing
+// fewer would hide cents the user recorded. This is set explicitly, not left to
+// Intl's per-currency default, and there is deliberately no per-call override.
+const MONEY_FRACTION_DIGITS = 2
+
 // Formatting only - amounts are not converted between currencies. The number
 // stored is displayed as-is, just relabeled with the selected currency's
-// symbol and separators. `options` is an escape hatch for call sites that
-// need a non-default precision (e.g. whole-amount stat cards), so those
-// don't have to redefine their own Intl.NumberFormat.
-export function formatCurrency(
-  amount: number,
-  currency: Currency,
-  locale: string,
-  options?: Intl.NumberFormatOptions
-): string {
+// symbol and separators.
+export function formatCurrency(amount: number, currency: Currency, locale: string): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
-    ...options,
+    minimumFractionDigits: MONEY_FRACTION_DIGITS,
+    maximumFractionDigits: MONEY_FRACTION_DIGITS,
   }).format(amount)
 }

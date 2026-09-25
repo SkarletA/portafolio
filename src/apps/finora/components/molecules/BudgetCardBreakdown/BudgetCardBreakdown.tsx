@@ -70,7 +70,7 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
                   </div>
                   <span className={s.name}>{itemDisplayName}</span>
                   <span className={s.amount}>
-                    {formatCurrency(item.amount, currency, locale, { maximumFractionDigits: 0 })}
+                    {formatCurrency(item.amount, currency, locale)}
                   </span>
                 </div>
                 <div
@@ -81,8 +81,8 @@ export function BudgetCardBreakdown({ categoryId, categoryName, limit, items }: 
                   aria-valuemax={100}
                   aria-label={t('breakdown.progressAriaLabel', {
                     name: itemDisplayName,
-                    spent: formatCurrency(item.amount, currency, locale, { maximumFractionDigits: 0 }),
-                    limit: formatCurrency(limit, currency, locale, { maximumFractionDigits: 0 }),
+                    spent: formatCurrency(item.amount, currency, locale),
+                    limit: formatCurrency(limit, currency, locale),
                   })}
                 >
                   <div className={s.progressFill} style={{ width: `${cappedPercentage}%` }} />

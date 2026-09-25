@@ -442,6 +442,8 @@ When implementing monetary calculations:
 * Keep financial calculations testable and deterministic.
 * Separate presentation formatting from financial calculations.
 
+Amounts are always displayed with exactly 2 decimals, through `formatCurrency` in `domain/currency.ts` and with no per-screen override: every supported currency has 2 decimals and amounts are stored as `numeric(12,2)`, so showing fewer would hide cents the user recorded. Do not format money with `toFixed`, `toLocaleString` or a separate `Intl.NumberFormat`.
+
 ### Arithmetic on amounts in the client (see `docs/adr/005-money-arithmetic-in-the-client.md`)
 
 Amounts stay `number` in the client; Postgres (`numeric`) is the source of truth for anything persisted.

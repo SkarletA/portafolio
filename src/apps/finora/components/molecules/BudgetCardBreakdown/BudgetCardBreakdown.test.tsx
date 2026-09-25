@@ -37,7 +37,7 @@ describe('BudgetCardBreakdown', () => {
     expect(screen.getByText('Groceries')).toBeInTheDocument()
     expect(screen.getByText('Meat')).toBeInTheDocument()
     expect(screen.getByText('Restaurants')).toBeInTheDocument()
-    expect(screen.getByText('$0')).toBeInTheDocument()
+    expect(screen.getByText('$0.00')).toBeInTheDocument()
 
     const restaurantsRow = screen.getByText('Restaurants').closest('li')
     expect(restaurantsRow).not.toBeNull()

@@ -51,7 +51,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
   const locale = getLocaleForLanguage(language)
   const isIncome = transaction.type === 'income'
   const isReimbursement = transaction.type === 'reimbursement'
-  const amountLabel = `${isIncome || isReimbursement ? '+' : '-'}${formatCurrency(Math.abs(transaction.amount), currency, locale, { maximumFractionDigits: 0 })}`
+  const amountLabel = `${isIncome || isReimbursement ? '+' : '-'}${formatCurrency(Math.abs(transaction.amount), currency, locale)}`
   const categoryDisplayName = transaction.category ? getCategoryDisplayName(transaction.category, t) : null
   const fallbackIcon = categoryDisplayName?.[0] || '•'
   const paymentMethodsLabel = transaction.payments.map((payment) => payment.payment_method).join(' + ')
@@ -65,7 +65,7 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
       ? t('item.installmentsCount', { count: transaction.installment_months })
       : t('item.installmentsSummary', {
           count: transaction.installment_months,
-          amount: formatCurrency(firstInstallmentAmount, currency, locale, { maximumFractionDigits: 0 }),
+          amount: formatCurrency(firstInstallmentAmount, currency, locale),
         })
   const isSavingsFunded = transaction.funding_source === 'savings'
   const savingsGoalName = transaction.withdrawal?.goal?.name ?? null

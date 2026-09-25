@@ -18,8 +18,11 @@ describe('formatCurrency', () => {
     expect(formatCurrency(1234.5, 'EUR', 'en-US')).toBe('€1,234.50')
   })
 
-  it('supports an options override, e.g. to drop decimals for compact display', () => {
-    expect(formatCurrency(1234, 'USD', 'en-US', { maximumFractionDigits: 0 })).toBe('$1,234')
+  it('always shows exactly 2 decimals, so recorded cents are never hidden', () => {
+    expect(formatCurrency(1234, 'USD', 'en-US')).toBe('$1,234.00')
+    expect(formatCurrency(550.45, 'USD', 'en-US')).toBe('$550.45')
+    expect(formatCurrency(550.45, 'MXN', 'es-MX')).toBe('$550.45')
+    expect(formatCurrency(0, 'EUR', 'en-US')).toBe('€0.00')
   })
 
   it('does not convert or round the underlying amount, only relabels it', () => {
