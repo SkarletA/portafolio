@@ -1,4 +1,4 @@
-import { toMinorUnits } from './installments'
+import { toMinorUnits } from './money'
 
 export interface Goal {
   id: string

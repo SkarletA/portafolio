@@ -11,7 +11,8 @@ import {
   type PeriodType,
 } from '@domain/analytics'
 import type { Category } from '@domain/category'
-import { expandLedgerRowsInRange, isIncomeFundedExpense, toMinorUnits } from '@domain/installments'
+import { expandLedgerRowsInRange, isIncomeFundedExpense } from '@domain/installments'
+import { toMinorUnits } from '@domain/money'
 import type { FundingSource } from '@domain/transaction'
 
 export interface MonthlyStats {

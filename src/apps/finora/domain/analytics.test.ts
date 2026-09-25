@@ -81,4 +81,22 @@ describe('getPercentChange', () => {
   it('returns null when previous is 0 but current is not, since there is no baseline', () => {
     expect(getPercentChange(50, 0)).toBeNull()
   })
+
+  it('returns exactly 0 when both totals are the same amount, whatever float noise their sums carry', () => {
+    const current = 0.1 + 0.2 // 0.30000000000000004
+
+    expect(current).not.toBe(0.3)
+    expect(getPercentChange(current, 0.3)).toBe(0)
+    expect(getPercentChange(4.06 + 9.54, 13.6)).toBe(0)
+  })
+
+  it('still reports a one-cent change', () => {
+    expect(getPercentChange(0.31, 0.3)).toBeGreaterThan(0)
+    expect(getPercentChange(0.29, 0.3)).toBeLessThan(0)
+  })
+
+  it('treats a previous total that is float noise around zero as no baseline', () => {
+    expect(getPercentChange(50, 0.1 + 0.2 - 0.3)).toBeNull()
+    expect(getPercentChange(0.1 + 0.2 - 0.3, 0.1 + 0.2 - 0.3)).toBe(0)
+  })
 })

@@ -2,41 +2,13 @@
 // docs/adr/003-installments-and-savings-funding.md. A purchase is stored as
 // one row; its installments are derived from it with these pure functions.
 
+import { fromMinorUnits, toMinorUnits } from './money'
 import type { FundingSource, TransactionType } from './transaction'
 
 export const MIN_INSTALLMENT_MONTHS = 2
 export const MAX_INSTALLMENT_MONTHS = 48
 
-const CENTS_PER_UNIT = 100
-const MONEY_PATTERN = /^(-?)(\d+)(?:\.(\d{1,2}))?$/
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
-
-/**
- * Converts an amount to integer cents without floating-point multiplication:
- * it reads the number's shortest decimal representation (the one JS prints,
- * e.g. `1666.67`), so `0.29` becomes exactly `29` rather than
- * `28.999999999999996`. Throws a `RangeError` for
- * anything that isn't a finite amount with at most 2 decimals - it never
- * rounds.
- */
-export function toMinorUnits(amount: number): number {
-  const match = MONEY_PATTERN.exec(String(amount))
-  if (!match) {
-    throw new RangeError(`Amount ${amount} is not a finite value with at most 2 decimals`)
-  }
-
-  const [, sign, units, decimals = ''] = match
-  const cents = Number(units) * CENTS_PER_UNIT + Number(decimals.padEnd(2, '0'))
-  if (!Number.isSafeInteger(cents)) {
-    throw new RangeError(`Amount ${amount} is too large to represent exactly in cents`)
-  }
-
-  return sign ? -cents : cents
-}
-
-function fromMinorUnits(cents: number): number {
-  return cents / CENTS_PER_UNIT
-}
 
 /**
  * Splits a purchase into `months` installments that always add up to exactly

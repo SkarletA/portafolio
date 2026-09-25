@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "gen:types": "supabase gen types typescript --project-id ixdsrzqtkgnwpngxxgzj --schema public > src/apps/finora/domain/database.types.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

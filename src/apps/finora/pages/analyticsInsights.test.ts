@@ -1,5 +1,6 @@
 import i18next, { type TFunction } from 'i18next'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { getPercentChange } from '@domain/analytics'
 import type { PeriodComparison, PeriodComparisonCategory } from '@services/analyticsService'
 import enAnalytics from '../locales/en/analytics.json'
 import esAnalytics from '../locales/es/analytics.json'
@@ -58,6 +59,21 @@ describe('buildInsights', () => {
       'Gastaste 28% menos en Food que en el periodo anterior.',
       'Gastaste 10% más en Transport que en el periodo anterior.',
       'En general, gastaste 450% más que en el periodo anterior.',
+    ])
+  })
+
+  it('says spending stayed the same when two periods total the same despite float noise', () => {
+    const sameTotal: PeriodComparison = {
+      currentTotal: 0.1 + 0.2,
+      previousTotal: 0.3,
+      totalPercentChange: getPercentChange(0.1 + 0.2, 0.3),
+      categories: [category('Food', getPercentChange(0.1 + 0.2, 0.3))],
+      hasPreviousData: true,
+    }
+
+    expect(buildInsights(i18n.getFixedT('en') as TFunction, sameTotal)).toEqual([
+      'Your spending on Food stayed the same as the previous period.',
+      'Your total spending stayed the same as the previous period.',
     ])
   })
 })

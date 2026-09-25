@@ -442,6 +442,16 @@ When implementing monetary calculations:
 * Keep financial calculations testable and deterministic.
 * Separate presentation formatting from financial calculations.
 
+### Arithmetic on amounts in the client (see `docs/adr/005-money-arithmetic-in-the-client.md`)
+
+Amounts stay `number` in the client; Postgres (`numeric`) is the source of truth for anything persisted.
+
+1. A sum or difference of amounts that is compared, tested for equality or zero, checked against a threshold, or shown as a money figure must go through the cents helpers in `domain/money.ts`. Do not compare floating-point sums with `===`, `!==` or a magic tolerance.
+2. Ratios (percentages, averages) may use floating-point division for display only; never compare a ratio result against another amount.
+3. Never send a value computed in JavaScript to the database as an amount. Only the user's typed value, after `roundMoneyInput`, is sent.
+4. Money inputs round visibly on blur with `roundMoneyInput` and validate decimals on submit. The database must never be the one that rounds.
+5. Do not add a decimal library or convert the whole app to cents without revisiting ADR-005.
+
 Before implementing significant financial calculations, document the chosen money representation and related decisions in an ADR.
 
 Potential domain concepts include:

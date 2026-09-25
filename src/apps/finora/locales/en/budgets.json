@@ -38,6 +38,7 @@
   },
   "validation": {
     "selectCategory": "Select a category",
-    "limitGreaterThanZero": "Enter a limit greater than 0"
+    "limitGreaterThanZero": "Enter a limit greater than 0",
+    "amountMaxDecimals": "Amounts can have at most 2 decimals"
   }
 }

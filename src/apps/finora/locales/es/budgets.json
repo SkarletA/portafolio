@@ -38,6 +38,7 @@
   },
   "validation": {
     "selectCategory": "Selecciona una categoría",
-    "limitGreaterThanZero": "Ingresa un límite mayor a 0"
+    "limitGreaterThanZero": "Ingresa un límite mayor a 0",
+    "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales"
   }
 }

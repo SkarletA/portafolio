@@ -8,6 +8,7 @@ import { useBudgets } from '@hooks/useBudgets'
 import { BackLink } from '@molecules/BackLink/BackLink'
 import { createBudget, type NewBudgetInput } from '@services/budgetsService'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
+import { roundMoneyInput } from '@domain/money'
 import s from './AddBudget.module.css'
 
 interface FormErrors {
@@ -62,6 +63,11 @@ export function AddBudget() {
     setErrors((prev) => (prev.monthly_limit ? { ...prev, monthly_limit: undefined } : prev))
   }, [])
 
+  // Visible rounding to 2 decimals, so the user sees what will be saved (ADR-004).
+  const handleMonthlyLimitBlur = useCallback(() => {
+    setMonthlyLimit((prev) => roundMoneyInput(prev))
+  }, [])
+
   const handleSubmit = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
@@ -74,6 +80,9 @@ export function AddBudget() {
       }
       if (!monthlyLimit || Number.isNaN(parsedLimit) || parsedLimit <= 0) {
         nextErrors.monthly_limit = t('budgets:validation.limitGreaterThanZero')
+      } else if (roundMoneyInput(monthlyLimit) !== monthlyLimit) {
+        // Submitted before leaving the field (e.g. with Enter); the column would round it silently.
+        nextErrors.monthly_limit = t('budgets:validation.amountMaxDecimals')
       }
 
       setErrors(nextErrors)
@@ -153,6 +162,7 @@ export function AddBudget() {
             required
             value={monthlyLimit}
             onChange={handleMonthlyLimitChange}
+            onBlur={handleMonthlyLimitBlur}
             className={s.input}
             aria-invalid={!!errors.monthly_limit}
             aria-describedby={errors.monthly_limit ? 'add-budget-monthly-limit-error' : undefined}
