@@ -54,6 +54,12 @@ describe('GoalCard', () => {
     vi.mocked(getGoalTransfers).mockReset()
   })
 
+  it('links to the goal edit screen', () => {
+    renderCard()
+
+    expect(screen.getByTestId('goal-card-1-edit-icon')).toHaveAttribute('href', '/finora/goals/1/edit')
+  })
+
   it('renders the goal name, amounts, remaining, and percentage', () => {
     renderCard()
 

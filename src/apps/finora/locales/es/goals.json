@@ -15,7 +15,8 @@
     "amountPlaceholder": "Monto",
     "amountAriaLabel": "Monto para agregar a {{name}}",
     "showActivity": "Ver movimientos",
-    "hideActivity": "Ocultar movimientos"
+    "hideActivity": "Ocultar movimientos",
+    "editAriaLabel": "Editar {{name}}"
   },
   "activity": {
     "loading": "Cargando movimientos…",
@@ -37,7 +38,14 @@
     "targetAmount": "Monto objetivo",
     "startingAmount": "Ya ahorrado",
     "targetDate": "Fecha límite",
-    "saveGoal": "Guardar meta"
+    "saveGoal": "Guardar meta",
+    "editTitle": "Editar meta",
+    "saveChanges": "Guardar cambios",
+    "backToGoals": "Volver a metas",
+    "loadingGoal": "Cargando meta…",
+    "loadError": "No pudimos cargar esta meta. Inténtalo de nuevo más tarde.",
+    "notFound": "No encontramos esta meta.",
+    "belowSavedWarning": "Tu objetivo es menor que los {{saved}} que ya ahorraste, así que ya alcanzaste esta meta. Aún puedes guardar."
   },
   "validation": {
     "targetAmountGreaterThanZero": "Ingresa un monto objetivo mayor a 0",

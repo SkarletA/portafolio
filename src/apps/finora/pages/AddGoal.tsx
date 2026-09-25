@@ -1,10 +1,16 @@
 import { useCallback, useState, type ChangeEvent, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
-import { createGoal, type NewGoalInput } from '@services/goalsService'
+import { BackLink } from '@molecules/BackLink/BackLink'
+import { createGoal, updateGoal, type EditableGoalInput, type NewGoalInput } from '@services/goalsService'
 import { parseMoneyMovementError } from '@services/moneyMovementErrors'
+import { useGoals } from '@hooks/useGoals'
+import { useCurrency } from '@context/CurrencyContext'
+import { useLanguage } from '@context/LanguageContext'
+import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getTodayLocalDate } from '@domain/date'
+import type { Goal } from '@domain/goal'
 import { roundMoneyInput } from '@domain/money'
 import s from './AddGoal.module.css'
 
@@ -14,14 +20,64 @@ interface FormErrors {
   opening_balance?: string
 }
 
-export function AddGoal() {
+interface AddGoalProps {
+  mode: 'create' | 'edit'
+}
+
+/** Creates a Goal, or edits an existing one's name, target amount and target date. */
+export function AddGoal({ mode }: AddGoalProps) {
+  return mode === 'edit' ? <EditGoal /> : <GoalForm mode="create" />
+}
+
+// Loads the Goal named in the route, then hands it to the form as its initial values.
+function EditGoal() {
+  const { t } = useTranslation('goals')
+  const { id } = useParams<{ id: string }>()
+  const { goals, loading, error } = useGoals()
+  const goal = goals.find((item) => item.id === id)
+
+  if (loading) {
+    return (
+      <section className={s.section}>
+        <p className={s.hint}>{t('form.loadingGoal')}</p>
+      </section>
+    )
+  }
+
+  if (error || !goal) {
+    return (
+      <section className={s.section}>
+        <BackLink to="/finora/goals" data-testid="edit-goal-back-link">
+          {t('form.backToGoals')}
+        </BackLink>
+        <p role="alert" className={s.error}>
+          {error ? t('form.loadError') : t('form.notFound')}
+        </p>
+      </section>
+    )
+  }
+
+  return <GoalForm mode="edit" goal={goal} />
+}
+
+interface GoalFormProps {
+  mode: 'create' | 'edit'
+  /** The Goal being edited; required in edit mode. */
+  goal?: Goal
+}
+
+function GoalForm({ mode, goal }: GoalFormProps) {
   const { t } = useTranslation(['goals', 'common'])
   const navigate = useNavigate()
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const isEdit = mode === 'edit' && !!goal
+  const testIdPrefix = isEdit ? 'edit-goal' : 'add-goal'
 
-  const [name, setName] = useState('')
-  const [targetAmount, setTargetAmount] = useState('')
+  const [name, setName] = useState(goal?.name ?? '')
+  const [targetAmount, setTargetAmount] = useState(goal ? String(goal.target_amount) : '')
   const [currentAmount, setCurrentAmount] = useState('')
-  const [targetDate, setTargetDate] = useState('')
+  const [targetDate, setTargetDate] = useState(goal?.target_date ?? '')
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -72,10 +128,13 @@ export function AddGoal() {
         nextErrors.target_amount = t('goals:validation.amountMaxDecimals')
       }
       // Already saved becomes the Goal's opening balance, which can't be negative.
-      if (Number.isNaN(parsedCurrentAmount) || parsedCurrentAmount < 0) {
-        nextErrors.opening_balance = t('goals:validation.alreadySavedNotNegative')
-      } else if (roundMoneyInput(currentAmount) !== currentAmount) {
-        nextErrors.opening_balance = t('goals:validation.amountMaxDecimals')
+      // Editing never touches it: the saved amount only moves through deposits and withdrawals.
+      if (!isEdit) {
+        if (Number.isNaN(parsedCurrentAmount) || parsedCurrentAmount < 0) {
+          nextErrors.opening_balance = t('goals:validation.alreadySavedNotNegative')
+        } else if (roundMoneyInput(currentAmount) !== currentAmount) {
+          nextErrors.opening_balance = t('goals:validation.amountMaxDecimals')
+        }
       }
 
       setErrors(nextErrors)
@@ -85,34 +144,51 @@ export function AddGoal() {
       setSubmitting(true)
       setSubmitError(null)
 
-      const input: NewGoalInput = {
+      const fields: EditableGoalInput = {
         name: trimmedName,
         target_amount: parsedTargetAmount,
-        opening_balance: parsedCurrentAmount,
         target_date: targetDate || null,
       }
 
-      const { error } = await createGoal(input, getTodayLocalDate())
+      let error
+      if (isEdit) {
+        ;({ error } = await updateGoal(goal.id, fields))
+      } else {
+        const input: NewGoalInput = { ...fields, opening_balance: parsedCurrentAmount }
+        ;({ error } = await createGoal(input, getTodayLocalDate()))
+      }
 
       setSubmitting(false)
 
       if (error) {
-        if (parseMoneyMovementError(error)?.code === 'invalid_amount') {
-          setErrors({ opening_balance: t('goals:validation.amountMaxDecimals') })
+        const moneyError = parseMoneyMovementError(error)
+        if (moneyError?.code === 'invalid_amount') {
+          setErrors(
+            isEdit
+              ? { target_amount: t('goals:validation.amountMaxDecimals') }
+              : { opening_balance: t('goals:validation.amountMaxDecimals') }
+          )
           return
         }
-        setSubmitError(error.message)
+        setSubmitError(moneyError?.code === 'goal_not_found' ? t('goals:form.notFound') : error.message)
         return
       }
 
       navigate('/finora/goals')
     },
-    [name, targetAmount, currentAmount, targetDate, navigate, t]
+    [name, targetAmount, currentAmount, targetDate, isEdit, goal, navigate, t]
   )
+
+  // Not an error: a target below what is already saved just means the goal is already reached.
+  const parsedTarget = Number(targetAmount)
+  const targetBelowSaved = isEdit && targetAmount !== '' && parsedTarget > 0 && parsedTarget < goal.current_amount
 
   return (
     <section className={s.section}>
-      <h1 className={s.title}>{t('goals:form.title')}</h1>
+      <BackLink to="/finora/goals" data-testid={`${testIdPrefix}-back-link`}>
+        {t('goals:form.backToGoals')}
+      </BackLink>
+      <h1 className={s.title}>{isEdit ? t('goals:form.editTitle') : t('goals:form.title')}</h1>
 
       <form onSubmit={handleSubmit} className={s.form} noValidate>
         <label className={s.field}>
@@ -124,11 +200,11 @@ export function AddGoal() {
             onChange={handleNameChange}
             className={s.input}
             aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? 'add-goal-name-error' : undefined}
-            data-testid="add-goal-name-input"
+            aria-describedby={errors.name ? `${testIdPrefix}-name-error` : undefined}
+            data-testid={`${testIdPrefix}-name-input`}
           />
           {errors.name && (
-            <p id="add-goal-name-error" role="alert" className={s.error}>
+            <p id={`${testIdPrefix}-name-error`} role="alert" className={s.error}>
               {errors.name}
             </p>
           )}
@@ -147,37 +223,47 @@ export function AddGoal() {
             onBlur={handleTargetAmountBlur}
             className={s.input}
             aria-invalid={!!errors.target_amount}
-            aria-describedby={errors.target_amount ? 'add-goal-target-amount-error' : undefined}
-            data-testid="add-goal-target-amount-input"
+            aria-describedby={errors.target_amount ? `${testIdPrefix}-target-amount-error` : undefined}
+            data-testid={`${testIdPrefix}-target-amount-input`}
           />
           {errors.target_amount && (
-            <p id="add-goal-target-amount-error" role="alert" className={s.error}>
+            <p id={`${testIdPrefix}-target-amount-error`} role="alert" className={s.error}>
               {errors.target_amount}
             </p>
           )}
         </label>
 
-        <label className={s.field}>
-          {t('goals:form.startingAmount')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={currentAmount}
-            onChange={handleCurrentAmountChange}
-            onBlur={handleCurrentAmountBlur}
-            className={s.input}
-            aria-invalid={!!errors.opening_balance}
-            aria-describedby={errors.opening_balance ? 'add-goal-current-amount-error' : undefined}
-            data-testid="add-goal-current-amount-input"
-          />
-          {errors.opening_balance && (
-            <p id="add-goal-current-amount-error" role="alert" className={s.error}>
-              {errors.opening_balance}
-            </p>
-          )}
-        </label>
+        {targetBelowSaved && (
+          <p role="status" className={s.warning} data-testid={`${testIdPrefix}-below-saved-warning`}>
+            {t('goals:form.belowSavedWarning', {
+              saved: formatCurrency(goal.current_amount, currency, getLocaleForLanguage(language)),
+            })}
+          </p>
+        )}
+
+        {!isEdit && (
+          <label className={s.field}>
+            {t('goals:form.startingAmount')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={currentAmount}
+              onChange={handleCurrentAmountChange}
+              onBlur={handleCurrentAmountBlur}
+              className={s.input}
+              aria-invalid={!!errors.opening_balance}
+              aria-describedby={errors.opening_balance ? `${testIdPrefix}-current-amount-error` : undefined}
+              data-testid={`${testIdPrefix}-current-amount-input`}
+            />
+            {errors.opening_balance && (
+              <p id={`${testIdPrefix}-current-amount-error`} role="alert" className={s.error}>
+                {errors.opening_balance}
+              </p>
+            )}
+          </label>
+        )}
 
         <label className={s.field}>
           {t('goals:form.targetDate')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
@@ -186,7 +272,7 @@ export function AddGoal() {
             value={targetDate}
             onChange={handleTargetDateChange}
             className={s.input}
-            data-testid="add-goal-target-date-input"
+            data-testid={`${testIdPrefix}-target-date-input`}
           />
         </label>
 
@@ -196,8 +282,13 @@ export function AddGoal() {
           </p>
         )}
 
-        <Button id="add-goal-save-button" data-testid="add-goal-save-button" type="submit" disabled={submitting}>
-          {submitting ? t('common:buttons.saving') : t('goals:form.saveGoal')}
+        <Button
+          id={`${testIdPrefix}-save-button`}
+          data-testid={`${testIdPrefix}-save-button`}
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting ? t('common:buttons.saving') : isEdit ? t('goals:form.saveChanges') : t('goals:form.saveGoal')}
         </Button>
       </form>
     </section>

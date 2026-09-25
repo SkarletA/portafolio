@@ -15,7 +15,8 @@
     "amountPlaceholder": "Amount",
     "amountAriaLabel": "Amount to add to {{name}}",
     "showActivity": "Show activity",
-    "hideActivity": "Hide activity"
+    "hideActivity": "Hide activity",
+    "editAriaLabel": "Edit {{name}}"
   },
   "activity": {
     "loading": "Loading activity…",
@@ -37,7 +38,14 @@
     "targetAmount": "Target amount",
     "startingAmount": "Already saved",
     "targetDate": "Target date",
-    "saveGoal": "Save goal"
+    "saveGoal": "Save goal",
+    "editTitle": "Edit goal",
+    "saveChanges": "Save changes",
+    "backToGoals": "Back to goals",
+    "loadingGoal": "Loading goal…",
+    "loadError": "We couldn't load this goal. Please try again later.",
+    "notFound": "We couldn't find this goal.",
+    "belowSavedWarning": "Your target is below the {{saved}} you've already saved, so you've already reached this goal. You can still save."
   },
   "validation": {
     "targetAmountGreaterThanZero": "Enter a target amount greater than 0",

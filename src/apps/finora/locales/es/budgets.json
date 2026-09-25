@@ -33,7 +33,8 @@
     "couldntLoadCategories": "No pudimos cargar las categorías: {{message}}",
     "allCategoriesBudgeted": "Todas tus categorías ya tienen un presupuesto.",
     "monthlyLimit": "Límite mensual",
-    "saveBudget": "Guardar presupuesto"
+    "saveBudget": "Guardar presupuesto",
+    "backToBudgets": "Volver a presupuestos"
   },
   "validation": {
     "selectCategory": "Selecciona una categoría",

@@ -14,12 +14,15 @@ export async function getGoals() {
     .order('target_date', { ascending: true })
 }
 
-export interface NewGoalInput {
+export interface EditableGoalInput {
   name: string
   target_amount: number
+  target_date: string | null
+}
+
+export interface NewGoalInput extends EditableGoalInput {
   /** Money already saved before tracking it in Finora; recorded as the Goal's opening balance. */
   opening_balance: number
-  target_date: string | null
 }
 
 // Creates the Goal and its opening balance together, in one database
@@ -31,6 +34,18 @@ export function createGoal(data: NewGoalInput, today: string) {
     p_target_date: data.target_date,
     p_opening_balance: data.opening_balance,
     p_today: today,
+  })
+}
+
+// Edits name, target amount and target date. current_amount is not an input on
+// purpose: it is a cache of the goal_transfers ledger and only deposits and
+// withdrawals change it. See docs/adr/004-goal-transfers.md.
+export function updateGoal(id: string, data: EditableGoalInput) {
+  return supabase.rpc('update_goal', {
+    p_id: id,
+    p_name: data.name,
+    p_target_amount: data.target_amount,
+    p_target_date: data.target_date,
   })
 }
 

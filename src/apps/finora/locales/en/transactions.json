@@ -92,7 +92,8 @@
     "savingsGoalOption": "{{name}} · {{available}} available",
     "noGoalsYet": "You don't have any goals yet.",
     "createGoal": "Create a goal first",
-    "fullWithdrawalNotice": "The full {{amount}} is taken from {{goal}} on the purchase date."
+    "fullWithdrawalNotice": "The full {{amount}} is taken from {{goal}} on the purchase date.",
+    "backToTransactions": "Back to transactions"
   },
   "validation": {
     "selectCategory": "Select a category",

@@ -26,6 +26,7 @@ export default {
         'plus',
         'search',
         'edit',
+        'arrow-left',
         'trash',
         'language',
         'currency',
@@ -63,6 +64,7 @@ const ALL_ICON_NAMES: IconName[] = [
   'plus',
   'search',
   'edit',
+  'arrow-left',
   'trash',
 ]
 

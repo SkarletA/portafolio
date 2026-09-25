@@ -1,5 +1,5 @@
 // The stable error codes raised by the save_transaction / create_goal
-// functions and the Goal balance constraint - see
+// (and update_goal) functions and the Goal balance constraint - see
 // supabase/migrations/20260923120000_goal_transfers.sql and
 // docs/adr/004-goal-transfers.md. Callers map them to their own messages.
 export type MoneyMovementErrorCode =

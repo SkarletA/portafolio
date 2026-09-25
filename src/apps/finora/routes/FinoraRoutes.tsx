@@ -85,7 +85,15 @@ export function FinoraRoutes() {
         path="add-goal"
         element={
           <ProtectedRoute>
-            <AddGoal />
+            <AddGoal mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="goals/:id/edit"
+        element={
+          <ProtectedRoute>
+            <AddGoal mode="edit" />
           </ProtectedRoute>
         }
       />

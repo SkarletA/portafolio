@@ -13,6 +13,7 @@ export type IconName =
   | 'plus'
   | 'search'
   | 'edit'
+  | 'arrow-left'
   | 'trash'
   | 'language'
   | 'currency'
@@ -144,6 +145,15 @@ function EditGlyph() {
   )
 }
 
+function ArrowLeftGlyph() {
+  return (
+    <>
+      <path d="M19 12 H5" />
+      <path d="M12 19 L5 12 L12 5" />
+    </>
+  )
+}
+
 function TrashGlyph() {
   return (
     <>
@@ -167,6 +177,7 @@ const GLYPHS: Record<IconName, () => ReactElement> = {
   plus: PlusGlyph,
   search: SearchGlyph,
   edit: EditGlyph,
+  'arrow-left': ArrowLeftGlyph,
   trash: TrashGlyph,
   language: LanguageGlyph,
   currency: CurrencyGlyph,
