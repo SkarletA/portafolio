@@ -100,7 +100,13 @@
     "noGoalsYet": "Todavía no tienes metas.",
     "createGoal": "Crea una meta primero",
     "fullWithdrawalNotice": "Los {{amount}} completos se toman de {{goal}} en la fecha de compra.",
-    "backToTransactions": "Volver a transacciones"
+    "backToTransactions": "Volver a transacciones",
+    "refundOf": "¿De qué compra es este reembolso?",
+    "refundStandalone": "Ninguna: reembolso suelto",
+    "refundPurchaseOption": "{{description}} · {{date}} · {{remaining}} reembolsable",
+    "loadingRefundablePurchases": "Cargando compras…",
+    "refundCategoryLockedHint": "Determinada por la compra vinculada.",
+    "refundGoalNotice": "Esta compra se pagó con la meta {{goal}}. Los {{amount}} reembolsados volverán a ella y no aumentarán el límite del presupuesto ni la tasa de ahorro."
   },
   "validation": {
     "selectCategory": "Selecciona una categoría",
@@ -114,6 +120,11 @@
     "financedSinglePaymentMethod": "Una compra a meses debe usar un solo método de pago",
     "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales",
     "selectSavingsGoal": "Selecciona la meta de la que sale este dinero",
-    "insufficientGoalFunds": "{{name}} solo tiene {{available}} disponibles"
+    "insufficientGoalFunds": "{{name}} solo tiene {{available}} disponibles",
+    "invalidRefundLink": "Selecciona una compra válida para vincular este reembolso.",
+    "refundCategoryMismatch": "Este reembolso debe usar la misma categoría que la compra.",
+    "refundBeforePurchase": "La fecha del reembolso no puede ser anterior a la de la compra.",
+    "refundExceedsPurchase": "De esta compra solo quedan {{remaining}} por reembolsar.",
+    "purchaseHasLinkedRefunds": "Esta compra no se puede cambiar así mientras tenga reembolsos vinculados. Desvincúlalos o bórralos primero."
   }
 }

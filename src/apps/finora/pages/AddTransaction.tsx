@@ -18,6 +18,7 @@ import { CategoryIcon, CATEGORY_ICON_NAMES, DEFAULT_CATEGORY_ICON } from '@atoms
 import { useCategories } from '@hooks/useCategories'
 import { useTransaction } from '@hooks/useTransaction'
 import { useGoals } from '@hooks/useGoals'
+import { useRefundablePurchases } from '@hooks/useRefundablePurchases'
 import { createCategory } from '@services/categoriesService'
 import { saveTransaction, type NewTransactionInput } from '@services/transactionsService'
 import { parseMoneyMovementError } from '@services/moneyMovementErrors'
@@ -32,6 +33,7 @@ import {
 } from '@domain/installments'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getAvailableForExpense } from '@domain/goal'
+import { fitsRefundableRemaining } from '@domain/refund'
 import { paymentsMatchAmount, roundMoneyInput } from '@domain/money'
 import { getTodayLocalDate } from '@domain/date'
 import { useCurrency } from '@context/CurrencyContext'
@@ -62,6 +64,8 @@ interface FormErrors {
   payments?: string
   installmentMonths?: string
   savingsGoal?: string
+  /** The selected refund link itself is no longer valid (ADR-006). */
+  refundLink?: string
 }
 
 interface PaymentEntry {
@@ -108,6 +112,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const [installmentMonths, setInstallmentMonths] = useState('')
   const [isSavingsFunded, setIsSavingsFunded] = useState(false)
   const [savingsGoalId, setSavingsGoalId] = useState('')
+  const [refundsTransactionId, setRefundsTransactionId] = useState('')
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -154,6 +159,20 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   // never "available" to another expense.
   const existingWithdrawal = mode === 'edit' && transaction?.type === 'expense' ? (transaction?.goal_transfer ?? null) : null
 
+  const isReimbursement = type === 'reimbursement'
+  // The reimbursement's own stored amount, excluded from what counts as
+  // already refunded (ADR-006); 0 for a new reimbursement.
+  const ownRefundAmount = mode === 'edit' && transaction?.type === 'reimbursement' ? transaction.amount : 0
+  const { purchases: refundablePurchases, loading: refundablePurchasesLoading } = useRefundablePurchases({
+    refundDate: date || null,
+    currentPurchaseId: refundsTransactionId || null,
+    ownRefundAmount,
+  })
+  const selectedPurchase = refundsTransactionId
+    ? (refundablePurchases.find((purchase) => purchase.id === refundsTransactionId) ?? null)
+    : null
+  const isCategoryLockedByPurchase = isReimbursement && refundsTransactionId !== ''
+
   const savingsGoalOptions = useMemo(
     () =>
       goals.map((goal) => ({
@@ -166,6 +185,26 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     [goals, existingWithdrawal, currency, locale, t]
   )
   const selectedSavingsGoal = goals.find((goal) => goal.id === effectiveSavingsGoalId) ?? null
+
+  const refundOptionDateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }),
+    [locale]
+  )
+
+  const refundLinkOptions = useMemo(
+    () => [
+      { value: '', label: t('transactions:form.refundStandalone') },
+      ...refundablePurchases.map((purchase) => ({
+        value: purchase.id,
+        label: t('transactions:form.refundPurchaseOption', {
+          description: purchase.description,
+          date: refundOptionDateFormatter.format(new Date(`${purchase.date}T00:00:00Z`)),
+          remaining: formatCurrency(purchase.remaining, currency, locale),
+        }),
+      })),
+    ],
+    [refundablePurchases, currency, locale, t, refundOptionDateFormatter]
+  )
 
   const categoryOptions = useMemo(
     () => [
@@ -219,6 +258,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     // (ADR-006); only an expense's own funding is "covered by savings" here.
     setIsSavingsFunded(transaction.type === 'expense' && transaction.funding_source === 'savings')
     setSavingsGoalId(transaction.type === 'expense' ? (transaction.goal_transfer?.goal_id ?? '') : '')
+    setRefundsTransactionId(transaction.refunds_transaction_id ?? '')
     setHasPreloaded(true)
   }, [mode, transaction, hasPreloaded])
 
@@ -363,6 +403,19 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setSavingsGoalId(value)
     setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
   }, [])
+
+  // Linking a reimbursement takes the purchase's category, so its own
+  // category select stays a plain choice for a standalone one (ADR-006).
+  const handleRefundLinkChange = useCallback(
+    (value: string) => {
+      setRefundsTransactionId(value)
+      setErrors((prev) => (prev.amount || prev.date || prev.category_id || prev.refundLink ? { ...prev, amount: undefined, date: undefined, category_id: undefined, refundLink: undefined } : prev))
+
+      const purchase = value ? (refundablePurchases.find((candidate) => candidate.id === value) ?? null) : null
+      if (purchase) setCategoryId(purchase.category_id ?? '')
+    },
+    [refundablePurchases]
+  )
 
   // Visible rounding to 2 decimals when a money input loses focus, so the
   // user sees the amount that will be saved (ADR-004).
@@ -535,6 +588,20 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         }
       }
 
+      // Friendly early checks for a linked reimbursement (ADR-005: cents, no
+      // computed amount ever sent); the database is what actually enforces
+      // the cap and the date, in numeric, under a lock on the purchase.
+      if (selectedPurchase) {
+        if (!nextErrors.date && date < selectedPurchase.date) {
+          nextErrors.date = t('transactions:validation.refundBeforePurchase')
+        }
+        if (!nextErrors.amount && amount && !hasTooManyDecimals && !fitsRefundableRemaining(parsedAmount, selectedPurchase.remaining)) {
+          nextErrors.amount = t('transactions:validation.refundExceedsPurchase', {
+            remaining: formatCurrency(selectedPurchase.remaining, currency, locale),
+          })
+        }
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -551,6 +618,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         notes: notes.trim() || null,
         installment_months: effectiveInstallmentMonths,
         savings_goal_id: effectiveSavingsGoalId,
+        // Never sent for anything but a reimbursement; funding_source for a
+        // linked one is derived by the RPC from the purchase, never here (ADR-006).
+        refunds_transaction_id: isReimbursement ? refundsTransactionId || null : null,
         payments: isSingleMethod
           ? [{ payment_method: receivedMethod, amount: parsedAmount }]
           : checkedPayments.map((payment) => ({
@@ -583,6 +653,33 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           setErrors({ amount: t('transactions:validation.amountMaxDecimals') })
           return
         }
+        // ADR-006: the link itself, or the purchase's category or date.
+        if (moneyError?.code === 'invalid_refund_link') {
+          setErrors({ refundLink: t('transactions:validation.invalidRefundLink') })
+          return
+        }
+        if (moneyError?.code === 'refund_category_mismatch') {
+          setErrors({ category_id: t('transactions:validation.refundCategoryMismatch') })
+          return
+        }
+        if (moneyError?.code === 'refund_before_purchase') {
+          setErrors({ date: t('transactions:validation.refundBeforePurchase') })
+          return
+        }
+        if (moneyError?.code === 'refund_exceeds_purchase') {
+          setErrors({
+            amount: t('transactions:validation.refundExceedsPurchase', {
+              remaining: formatCurrency(moneyError.available ?? 0, currency, locale),
+            }),
+          })
+          return
+        }
+        // Saving a purchase (not the refund form) that already has linked
+        // reimbursements and would change what they mean.
+        if (moneyError?.code === 'purchase_has_linked_refunds') {
+          setSubmitError(t('transactions:validation.purchaseHasLinkedRefunds'))
+          return
+        }
 
         setSubmitError(error.message)
         return
@@ -605,6 +702,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
       effectiveSavingsGoalId,
       selectedSavingsGoal,
       existingWithdrawal,
+      isReimbursement,
+      refundsTransactionId,
+      selectedPurchase,
       mode,
       id,
       navigate,
@@ -769,6 +869,35 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           )}
         </label>
 
+        {isReimbursement && (
+          <label className={s.field}>
+            {t('transactions:form.refundOf')}
+            <Select
+              options={refundLinkOptions}
+              value={refundsTransactionId}
+              onChange={handleRefundLinkChange}
+              placeholder={refundablePurchasesLoading ? t('transactions:form.loadingRefundablePurchases') : undefined}
+              disabled={refundablePurchasesLoading}
+              ariaInvalid={!!errors.refundLink}
+              ariaDescribedBy={errors.refundLink ? 'add-transaction-refund-link-error' : undefined}
+              testId="add-transaction-refund-link-select"
+            />
+            {errors.refundLink && (
+              <p id="add-transaction-refund-link-error" role="alert" className={s.error}>
+                {errors.refundLink}
+              </p>
+            )}
+            {selectedPurchase?.withdrawal && (
+              <p role="status" className={s.notice} data-testid="add-transaction-refund-goal-notice">
+                {t('transactions:form.refundGoalNotice', {
+                  goal: selectedPurchase.withdrawal.goal?.name ?? '',
+                  amount: formatCurrency(totalAmount, currency, locale),
+                })}
+              </p>
+            )}
+          </label>
+        )}
+
         <label className={s.field}>
           {t('transactions:form.category')}
           <Select
@@ -776,7 +905,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
             value={selectedParent?.id ?? ''}
             onChange={handleCategoryChange}
             placeholder={categoriesLoading ? t('transactions:form.loadingCategories') : t('transactions:form.selectCategory')}
-            disabled={categoriesLoading}
+            disabled={categoriesLoading || isCategoryLockedByPurchase}
             ariaInvalid={!!errors.category_id}
             ariaDescribedBy={errors.category_id ? 'add-transaction-category-error' : undefined}
             testId="add-transaction-category-select"
@@ -791,6 +920,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
               {t('transactions:form.couldntLoadCategories', { message: categoriesError })}
             </p>
           )}
+          {isCategoryLockedByPurchase && <p className={s.hint}>{t('transactions:form.refundCategoryLockedHint')}</p>}
         </label>
 
         {selectedGroup && (
@@ -806,6 +936,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                     : categoryId
               }
               onChange={handleSubcategoryChange}
+              disabled={isCategoryLockedByPurchase}
               testId="add-transaction-subcategory-select"
             />
             {isCreatingSubcategory && (
