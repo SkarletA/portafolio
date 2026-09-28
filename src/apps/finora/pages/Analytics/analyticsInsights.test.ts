@@ -2,8 +2,8 @@ import i18next, { type TFunction } from 'i18next'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { getPercentChange } from '@domain/analytics'
 import type { PeriodComparison, PeriodComparisonCategory } from '@services/analyticsService'
-import enAnalytics from '../locales/en/analytics.json'
-import esAnalytics from '../locales/es/analytics.json'
+import enAnalytics from '../../locales/en/analytics.json'
+import esAnalytics from '../../locales/es/analytics.json'
 import { buildInsights } from './analyticsInsights'
 
 // A real i18next instance with the real locale files (not the global

@@ -5,13 +5,13 @@ import { AddGoal } from './AddGoal'
 import { createGoal, updateGoal } from '@services/goalsService'
 import { useGoals } from '@hooks/useGoals'
 
-vi.mock('../services/goalsService', () => ({
+vi.mock('@services/goalsService', () => ({
   createGoal: vi.fn(),
   updateGoal: vi.fn(),
 }))
-vi.mock('../hooks/useGoals', () => ({ useGoals: vi.fn() }))
-vi.mock('../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
-vi.mock('../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('@hooks/useGoals', () => ({ useGoals: vi.fn() }))
+vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
+vi.mock('@context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
 
 const goal = {
   id: 'g1',
