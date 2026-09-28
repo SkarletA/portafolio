@@ -31,7 +31,14 @@
     "installmentsSummary": "{{count}} mensualidades de {{amount}}",
     "installmentsCount": "{{count}} mensualidades",
     "coveredBySavings": "Cubierto con ahorros",
-    "coveredBySavingsFrom": "Cubierto con ahorros de {{goal}}"
+    "coveredBySavingsFrom": "Cubierto con ahorros de {{goal}}",
+    "refundOf": "Reembolso de {{description}}",
+    "refundReturnedToGoal": "Devuelto a ahorros",
+    "refundReturnedToGoalFrom": "Devuelto a {{goal}}",
+    "refundsSummary": "{{count}} reembolsos · {{total}} reembolsado",
+    "deleteBlockedByRefunds": "No se puede eliminar: {{count}} reembolso(s) vinculado(s) deben desvincularse o eliminarse primero: {{list}}",
+    "refundListItem": "{{description}} ({{amount}})",
+    "goalBalanceNegative": "El dinero de este reembolso ya se usó de su meta. Eliminarlo la dejaría en negativo."
   },
   "form": {
     "addTitle": "Agregar transacción",

@@ -10,6 +10,8 @@ import { Icon } from '@atoms/Icon/Icon'
 import { Select } from '@atoms/Select/Select'
 import { PAYMENT_METHODS } from '@domain/transaction'
 import { getCategoryDisplayName } from '@domain/category'
+import { summarizeRefundsByPurchase } from '@domain/refund'
+import type { TransactionWithCategory } from '@services/transactionsService'
 import s from './Transactions.module.css'
 
 const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({ value: method, label: method }))
@@ -61,6 +63,18 @@ export function Transactions() {
       return true
     })
   }, [transactions, search, categoryId, paymentMethod])
+
+  // Both computed from the full, unfiltered list (ADR-006), so a search or
+  // filter never hides a purchase's refund count or a reimbursement's linked
+  // purchase - only which rows are rendered changes.
+  const refundsByPurchase = useMemo(() => summarizeRefundsByPurchase(transactions), [transactions])
+  const purchaseById = useMemo(() => {
+    const map = new Map<string, TransactionWithCategory>()
+    for (const transaction of transactions) {
+      if (transaction.type === 'expense') map.set(transaction.id, transaction)
+    }
+    return map
+  }, [transactions])
 
   return (
     <section className={s.section}>
@@ -132,7 +146,13 @@ export function Transactions() {
             <p className={s.stateMessage}>{t('transactions:list.noMatches')}</p>
           ) : (
             filteredTransactions.map((transaction) => (
-              <TransactionItem key={transaction.id} transaction={transaction} onDeleted={refetch} />
+              <TransactionItem
+                key={transaction.id}
+                transaction={transaction}
+                onDeleted={refetch}
+                refundedPurchase={transaction.refunds_transaction_id ? (purchaseById.get(transaction.refunds_transaction_id) ?? null) : null}
+                refundsSummary={refundsByPurchase[transaction.id] ?? null}
+              />
             ))
           )}
         </AsyncState>

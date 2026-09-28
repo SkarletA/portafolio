@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { TransactionWithCategory } from '@services/transactionsService'
 import { deleteTransaction } from '@services/transactionsService'
+import { parseMoneyMovementError, PurchaseHasLinkedRefundsError } from '@services/moneyMovementErrors'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { allocateInstallments } from '@domain/installments'
+import type { RefundSummary } from '@domain/refund'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
@@ -17,6 +19,10 @@ interface TransactionItemProps {
   transaction: TransactionWithCategory
   /** Called after a successful delete, so the caller can refresh its list. */
   onDeleted: () => void
+  /** The purchase this reimbursement refunds, when linked (ADR-006). */
+  refundedPurchase?: Pick<TransactionWithCategory, 'id' | 'description'> | null
+  /** This purchase's linked reimbursements, when any exist (ADR-006). */
+  refundsSummary?: RefundSummary | null
 }
 
 // The first installment's amount, for the list's "N monthly payments of $X"
@@ -39,7 +45,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 /** A single transaction row: description, category, date, signed amount, and edit/delete actions. */
-export function TransactionItem({ transaction, onDeleted }: TransactionItemProps) {
+export function TransactionItem({ transaction, onDeleted, refundedPurchase = null, refundsSummary = null }: TransactionItemProps) {
   const { t } = useTranslation(['transactions', 'common', 'categories'])
   const navigate = useNavigate()
   const { currency } = useCurrency()
@@ -77,6 +83,21 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
       ? t('item.coveredBySavingsFrom', { goal: savingsGoalName })
       : t('item.coveredBySavings')
 
+  // A reimbursement linked to a purchase (ADR-006): its own text, and, when
+  // that purchase was covered by savings, that the money returned to the Goal
+  // - always as text, never color alone.
+  const refundOfLabel = isReimbursement && refundedPurchase ? t('item.refundOf', { description: refundedPurchase.description }) : null
+  const isRefundToGoal = isReimbursement && transaction.funding_source === 'savings'
+  const refundGoalLabel = !isRefundToGoal
+    ? null
+    : savingsGoalName
+      ? t('item.refundReturnedToGoalFrom', { goal: savingsGoalName })
+      : t('item.refundReturnedToGoal')
+  const refundsSummaryLabel =
+    refundsSummary && refundsSummary.count > 0
+      ? t('item.refundsSummary', { count: refundsSummary.count, total: formatCurrency(refundsSummary.total, currency, locale) })
+      : null
+
   const handleEditClick = useCallback(() => {
     navigate(`/finora/transactions/${transaction.id}/edit`)
   }, [navigate, transaction.id])
@@ -99,12 +120,34 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
     setDeleting(false)
 
     if (error) {
+      // A purchase with linked reimbursements: name them so the user knows
+      // what to unlink or delete first (ADR-006).
+      if (error instanceof PurchaseHasLinkedRefundsError) {
+        setDeleteError(
+          t('item.deleteBlockedByRefunds', {
+            count: error.refunds.length,
+            list: error.refunds
+              .map((refund) =>
+                t('item.refundListItem', { description: refund.description, amount: formatCurrency(refund.amount, currency, locale) })
+              )
+              .join(', '),
+          })
+        )
+        return
+      }
+
+      // Deleting a reimbursement whose Goal already spent the refunded money.
+      if (parseMoneyMovementError(error)?.code === 'goal_balance_negative') {
+        setDeleteError(t('item.goalBalanceNegative'))
+        return
+      }
+
       setDeleteError(error.message)
       return
     }
 
     onDeleted()
-  }, [transaction.id, onDeleted])
+  }, [transaction.id, onDeleted, t, currency, locale])
 
   if (isConfirmingDelete) {
     return (
@@ -163,6 +206,9 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
             {paymentMethodsLabel ? ` · ${paymentMethodsLabel}` : ''}
             {installmentsLabel ? ` · ${installmentsLabel}` : ''}
             {savingsLabel ? ` · ${savingsLabel}` : ''}
+            {refundOfLabel ? ` · ${refundOfLabel}` : ''}
+            {refundGoalLabel ? ` · ${refundGoalLabel}` : ''}
+            {refundsSummaryLabel ? ` · ${refundsSummaryLabel}` : ''}
           </p>
         </div>
       </div>

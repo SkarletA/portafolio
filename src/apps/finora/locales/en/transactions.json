@@ -31,7 +31,14 @@
     "installmentsSummary": "{{count}} monthly payments of {{amount}}",
     "installmentsCount": "{{count}} monthly payments",
     "coveredBySavings": "Covered by savings",
-    "coveredBySavingsFrom": "Covered by savings from {{goal}}"
+    "coveredBySavingsFrom": "Covered by savings from {{goal}}",
+    "refundOf": "Refund of {{description}}",
+    "refundReturnedToGoal": "Returned to savings",
+    "refundReturnedToGoalFrom": "Returned to {{goal}}",
+    "refundsSummary": "{{count}} refunds · {{total}} refunded",
+    "deleteBlockedByRefunds": "Can't delete: {{count}} linked refund(s) must be unlinked or deleted first: {{list}}",
+    "refundListItem": "{{description}} ({{amount}})",
+    "goalBalanceNegative": "This refund's money was already used from its goal. Deleting it would leave the goal negative."
   },
   "form": {
     "addTitle": "Add transaction",

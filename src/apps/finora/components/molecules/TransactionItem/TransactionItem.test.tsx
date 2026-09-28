@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionItem } from './TransactionItem'
 import { deleteTransaction } from '@services/transactionsService'
 import type { TransactionWithCategory } from '@services/transactionsService'
+import { PurchaseHasLinkedRefundsError } from '@services/moneyMovementErrors'
 
 vi.mock('../../../services/transactionsService', async () => {
   const actual = await vi.importActual<typeof import('@services/transactionsService')>(
@@ -34,10 +35,14 @@ const baseTransaction: TransactionWithCategory = {
   payments: [{ id: 'p1', transaction_id: '1', payment_method: 'Credit Card', amount: 120 }],
 }
 
-function renderItem(transaction: TransactionWithCategory, onDeleted = vi.fn()) {
+function renderItem(
+  transaction: TransactionWithCategory,
+  onDeleted = vi.fn(),
+  extra: { refundedPurchase?: Pick<TransactionWithCategory, 'id' | 'description'> | null; refundsSummary?: { count: number; total: number } | null } = {}
+) {
   return render(
     <MemoryRouter>
-      <TransactionItem transaction={transaction} onDeleted={onDeleted} />
+      <TransactionItem transaction={transaction} onDeleted={onDeleted} {...extra} />
     </MemoryRouter>
   )
 }
@@ -160,5 +165,88 @@ describe('TransactionItem', () => {
 
     expect(screen.getByText('Starbucks')).toBeInTheDocument()
     expect(deleteTransaction).not.toHaveBeenCalled()
+  })
+
+  it('names the purchase a linked reimbursement refunds', () => {
+    renderItem(
+      { ...baseTransaction, type: 'reimbursement', amount: 40, description: 'Refund', refunds_transaction_id: 'p1' },
+      vi.fn(),
+      { refundedPurchase: { id: 'p1', description: 'Shoes' } }
+    )
+
+    expect(screen.getByText(/item\.refundOf:\{"description":"Shoes"\}/)).toBeInTheDocument()
+  })
+
+  it('says a reimbursement returned money to its goal, in text, not just color', () => {
+    renderItem({
+      ...baseTransaction,
+      type: 'reimbursement',
+      amount: 40,
+      funding_source: 'savings',
+      refunds_transaction_id: 'p1',
+      goal_transfer: { kind: 'refund', goal_id: 'g1', amount: 40, goal: { name: 'Vacation' } },
+    })
+
+    expect(screen.getByText(/item\.refundReturnedToGoalFrom:\{"goal":"Vacation"\}/)).toBeInTheDocument()
+    expect(screen.queryByText(/item\.coveredBySavings/)).not.toBeInTheDocument()
+  })
+
+  it('falls back to a goal-less label when a savings refund has no goal name yet', () => {
+    renderItem({
+      ...baseTransaction,
+      type: 'reimbursement',
+      amount: 40,
+      funding_source: 'savings',
+      refunds_transaction_id: 'p1',
+    })
+
+    expect(screen.getByText(/item\.refundReturnedToGoal\b/)).toBeInTheDocument()
+  })
+
+  it('never shows "covered by savings" for a reimbursement, even when funding_source is savings', () => {
+    renderItem({ ...baseTransaction, type: 'reimbursement', amount: 40, funding_source: 'savings' })
+
+    expect(screen.queryByText(/item\.coveredBySavings\b/)).not.toBeInTheDocument()
+  })
+
+  it("summarizes a purchase's linked reimbursements", () => {
+    renderItem(baseTransaction, vi.fn(), { refundsSummary: { count: 2, total: 70 } })
+
+    expect(screen.getByText(/item\.refundsSummary:\{"count":2,"total":"\$70.00"\}/)).toBeInTheDocument()
+  })
+
+  it('names the linked reimbursements that block deleting a purchase', async () => {
+    vi.mocked(deleteTransaction).mockResolvedValue({
+      error: new PurchaseHasLinkedRefundsError([
+        { id: 'r1', description: 'Refund 1', amount: 20, date: '2026-09-10' },
+        { id: 'r2', description: 'Refund 2', amount: 30, date: '2026-09-11' },
+      ]),
+    } as never)
+
+    renderItem(baseTransaction)
+
+    fireEvent.click(screen.getByTestId('transaction-item-1-delete-icon'))
+    fireEvent.click(screen.getByTestId('transaction-item-1-confirm-delete-button'))
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'item.deleteBlockedByRefunds:{"count":2,"list":"item.refundListItem:{\\"description\\":\\"Refund 1\\",\\"amount\\":\\"$20.00\\"}, item.refundListItem:{\\"description\\":\\"Refund 2\\",\\"amount\\":\\"$30.00\\"}"}'
+        )
+      ).toBeInTheDocument()
+    )
+  })
+
+  it('shows a clear message when deleting a reimbursement whose goal already spent the money', async () => {
+    vi.mocked(deleteTransaction).mockResolvedValue({
+      error: { code: 'P0001', message: 'goal_balance_negative' },
+    } as never)
+
+    renderItem({ ...baseTransaction, type: 'reimbursement', amount: 40 })
+
+    fireEvent.click(screen.getByTestId('transaction-item-1-delete-icon'))
+    fireEvent.click(screen.getByTestId('transaction-item-1-confirm-delete-button'))
+
+    await waitFor(() => expect(screen.getByText('item.goalBalanceNegative')).toBeInTheDocument())
   })
 })
