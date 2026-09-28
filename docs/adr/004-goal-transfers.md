@@ -12,6 +12,14 @@ purchase, installments derived at query time, the cents allocation,
 `spent`, `totalSpent`, the trend buckets and the savings rate everywhere - is
 unchanged. ADR-001/002 are unaffected.
 
+Amended by [ADR-006](./006-reimbursement-purchase-links.md): a reimbursement
+linked to a savings-funded purchase now returns its money to that purchase's Goal
+through a new `refund` transfer kind (superseding "Reimbursements are unchanged
+and still unlinked to purchases; a reimbursement never refills a Goal", the
+`Reimbursement X` row of the rules table, the consequence "Reimbursing a
+savings-funded purchase does not refill the Goal", and the list of `kind` values
+and the `(kind = 'withdrawal') = (transaction_id IS NOT NULL)` check).
+
 ## Context
 
 Money moves between the month's spendable money and savings Goals in two ways
@@ -41,6 +49,8 @@ row - the Goal withdrawal - must stay consistent with them.
   - `kind` is `opening_balance`, `deposit` or `withdrawal`. Amounts are always
     positive with at most 2 decimals; direction comes from `kind`, like
     `transactions.type`.
+
+    > Amended by ADR-006: `kind` also admits `refund` (money returned to a Goal by a linked reimbursement).
   - `amount` is an **unconstrained `numeric`** with checks `amount > 0`,
     `amount = round(amount, 2)` and `amount < 10000000000` (so it always fits
     `goals.current_amount`, which is `numeric(12,2)`). A `numeric(12,2)` column
@@ -49,6 +59,8 @@ row - the Goal withdrawal - must stay consistent with them.
   - A withdrawal always belongs to exactly one expense and vice versa:
     `(kind = 'withdrawal') = (transaction_id IS NOT NULL)`, `transaction_id`
     unique, `on delete cascade` from `transactions`.
+
+    > Amended by ADR-006: the check becomes `(kind in ('withdrawal', 'refund')) = (transaction_id IS NOT NULL)`; a `refund` is keyed on the reimbursement, and `transaction_id` stays unique.
   - `goal_id` references `goals` with `NO ACTION` (not `RESTRICT`), so deleting
     an account still cascades from `auth.users` through both tables.
   - `opening_balance` records money saved before Finora tracked it (the
@@ -81,6 +93,8 @@ row - the Goal withdrawal - must stay consistent with them.
   withdrawal. The invariant "`funding_source = 'savings'` if and only if exactly
   one withdrawal exists with the transaction's amount and date" has a single
   writer, `save_transaction`.
+
+  > Amended by ADR-006: the invariant also covers reimbursements linked to a savings-funded purchase, whose single transfer is a `refund`.
 
 - **Write paths.**
   - *Deposit*: a single insert into `goal_transfers`, dated today (the
@@ -125,6 +139,8 @@ row - the Goal withdrawal - must stay consistent with them.
 - **Reimbursements are unchanged** and still unlinked to purchases; a
   reimbursement never refills a Goal.
 
+  > Amended by ADR-006: a reimbursement linked to a savings-funded purchase refills that purchase's Goal; an unlinked one is still unchanged.
+
 - **Amounts with more than 2 decimals are rounded visibly in the form, and
   rejected by the database.** When a money input loses focus, the form rounds it
   to 2 decimals (half up: 10.005 becomes 10.01) so the user sees the value that
@@ -146,6 +162,8 @@ row - the Goal withdrawal - must stay consistent with them.
   | Edit that expense | old withdrawal credited back, then new one checked and debited; rejected if insufficient | ADR-003 | ADR-003 | - | - |
   | Delete that expense | +A | - | - | - | - |
   | Reimbursement X | unchanged | ADR-002/003 | nets X (ADR-002) | unchanged | - |
+
+  > Amended by ADR-006: the `Reimbursement X` row applies only to unlinked reimbursements and those linked to income-funded purchases; the rules for linked ones are in ADR-006.
 
 ## Implementation
 
@@ -231,6 +249,8 @@ row - the Goal withdrawal - must stay consistent with them.
 - **Reimbursing a savings-funded purchase does not refill the Goal**; the user
   adds a deposit. Returning such a purchase in full is done by editing or
   deleting it, which restores the Goal automatically.
+
+  > Amended by ADR-006: a reimbursement linked to the purchase refills the Goal; only an unlinked one still needs a manual deposit.
 - **Goals with transfers cannot be deleted** from the app (no Goal can be
   deleted today).
 - **Money inputs round visibly to 2 decimals on blur.** The user always sees
