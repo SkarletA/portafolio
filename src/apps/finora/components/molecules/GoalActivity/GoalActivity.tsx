@@ -74,19 +74,22 @@ export function GoalActivity({
       <ul className={s.list} aria-label={t('activity.listAriaLabel', { name: goalName })}>
         {transfers.map((transfer) => {
           const isWithdrawal = transfer.kind === 'withdrawal'
+          // A refund (ADR-006) returns a linked reimbursement's money to this
+          // Goal; like a withdrawal, it always has the transaction it belongs to.
+          const isRefund = transfer.kind === 'refund'
           const amount = formatCurrency(transfer.amount, currency, locale)
           const date = dateFormatter.format(new Date(`${transfer.date}T00:00:00Z`))
 
           return (
             <li key={transfer.id} className={s.item}>
               <div className={s.info}>
-                {isWithdrawal && transfer.transaction ? (
+                {(isWithdrawal || isRefund) && transfer.transaction ? (
                   <Link
                     to={`/finora/transactions/${transfer.transaction.id}/edit`}
                     className={s.link}
-                    data-testid={`goal-activity-transfer-${transfer.id}-expense-link`}
+                    data-testid={`goal-activity-transfer-${transfer.id}-${isWithdrawal ? 'expense' : 'refund'}-link`}
                   >
-                    {t('activity.withdrawal', { description: transfer.transaction.description })}
+                    {t(isWithdrawal ? 'activity.withdrawal' : 'activity.refund', { description: transfer.transaction.description })}
                   </Link>
                 ) : (
                   <span className={s.label}>{t(`activity.kind.${transfer.kind}`)}</span>

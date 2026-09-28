@@ -61,7 +61,7 @@ export function addGoalDeposit(goalId: string, amount: number, date: string) {
 }
 
 export type GoalTransferWithTransaction = GoalTransfer & {
-  /** The expense a withdrawal covers. */
+  /** The expense a withdrawal covers, or the reimbursement a refund returns (ADR-006). */
   transaction: { id: string; description: string } | null
 }
 

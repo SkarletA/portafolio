@@ -46,6 +46,15 @@ export const WithActivity = {
       },
       { ...base, id: 'd1', kind: 'deposit', amount: 5000, date: '2026-09-01', transaction_id: null, transaction: null },
       { ...base, id: 'o1', kind: 'opening_balance', amount: 18000, date: '2026-05-10', transaction_id: null, transaction: null },
+      {
+        ...base,
+        id: 'r1',
+        kind: 'refund',
+        amount: 3000,
+        date: '2026-09-20',
+        transaction_id: 'tx2',
+        transaction: { id: 'tx2', description: 'Airline refund for the Madrid trip' },
+      },
     ],
   },
 }
