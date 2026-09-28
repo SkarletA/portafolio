@@ -12,7 +12,7 @@ const preview: Preview = {
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
     options: {
       storySort: {
-        order: ['Finora', ['Introduction', 'Atoms', 'Molecules', 'Organisms']],
+        order: ['Finora', ['Introduction', 'Atoms', 'Molecules', 'Organisms', 'Pages']],
       },
     },
   },
