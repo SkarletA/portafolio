@@ -152,7 +152,7 @@ Create a `.env.local` file at the repository root with your own Supabase project
 
 ```bash
 VITE_SUPABASE_URL=<your-supabase-project-url>
-VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-or-publishable-key>
 ```
 
 Then:
