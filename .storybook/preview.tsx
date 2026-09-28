@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react'
 import type { Preview } from '@storybook/react-vite'
 import { MemoryRouter } from 'react-router-dom'
+import { mswLoader } from 'msw-storybook-addon/csf3'
 import { AuthProvider } from '@context/AuthContext'
 import { ThemeProvider } from '@context/ThemeContext'
 import { LanguageProvider } from '@context/LanguageContext'
@@ -12,10 +13,11 @@ const preview: Preview = {
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
     options: {
       storySort: {
-        order: ['Finora', ['Introduction', 'Atoms', 'Molecules', 'Organisms']],
+        order: ['Finora', ['Introduction', 'Atoms', 'Molecules', 'Organisms', 'Pages']],
       },
     },
   },
+  loaders: [mswLoader()],
   decorators: [
     // Global so every story can freely use useAuth/useTheme/useLanguage/useCurrency
     // or <Link>/<NavLink> without repeating this per story. Uses the app's real

@@ -29,6 +29,11 @@ export default defineConfig({
       '@portfolio-components': fileURLToPath(new URL('./src/components', import.meta.url)),
       '@portfolio-sections': fileURLToPath(new URL('./src/sections', import.meta.url)),
       '@portfolio-data': fileURLToPath(new URL('./src/data', import.meta.url)),
+      // MSW fixtures/handlers shared across page stories - keeps
+      // Page.stories.tsx imports stable regardless of how deep the page
+      // component lives, instead of a `../../../../.storybook/mocks/...` that
+      // breaks the moment a story moves.
+      '@storybook-mocks': fileURLToPath(new URL('./.storybook/mocks', import.meta.url)),
     },
   },
   test: {
