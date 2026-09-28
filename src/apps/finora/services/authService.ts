@@ -67,7 +67,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
 }
 
 // Invokes the delete-account Edge Function, which verifies the caller's JWT
-// server-side (with the service_role key, never exposed to the frontend) and
+// server-side (with the secret key, never exposed to the frontend) and
 // deletes exactly that user. supabase-js attaches the current session token
 // to functions.invoke automatically.
 export function deleteAccount() {

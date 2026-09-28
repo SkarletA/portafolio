@@ -1,7 +1,7 @@
 // Deletes the calling user's own Finora account and all of their data.
 //
-// Runs with the service_role key, which only ever lives here (server-side),
-// never in the frontend. The user to delete is derived exclusively from the
+// Runs with the secret key, which only ever lives here (server-side), never
+// in the frontend. The user to delete is derived exclusively from the
 // caller's own verified JWT - no id is accepted in the request body - so
 // there's nothing a client could tamper with to delete a different account.
 //
@@ -38,9 +38,27 @@ Deno.serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const secretKeysRaw = Deno.env.get('SUPABASE_SECRET_KEYS')
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !secretKeysRaw) {
+    console.error('delete-account: SUPABASE_URL or SUPABASE_SECRET_KEYS is not set')
+    return jsonResponse({ error: 'Server misconfiguration' }, 500)
+  }
+
+  // SUPABASE_SECRET_KEYS is a JSON dictionary auto-provisioned by the Edge
+  // Functions runtime (replaces the old plain-string SUPABASE_SERVICE_ROLE_KEY),
+  // keyed by key name - 'default' is the project's current secret key.
+  let serviceRoleKey: string | undefined
+  try {
+    const secretKeys = JSON.parse(secretKeysRaw)
+    serviceRoleKey = secretKeys?.default
+  } catch (parseError) {
+    console.error('delete-account: SUPABASE_SECRET_KEYS is not valid JSON', parseError)
+    return jsonResponse({ error: 'Server misconfiguration' }, 500)
+  }
+
+  if (!serviceRoleKey) {
+    console.error("delete-account: SUPABASE_SECRET_KEYS has no 'default' entry")
     return jsonResponse({ error: 'Server misconfiguration' }, 500)
   }
 
