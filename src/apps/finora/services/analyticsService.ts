@@ -12,7 +12,7 @@ import {
   type PeriodType,
 } from '@domain/analytics'
 import type { Category } from '@domain/category'
-import { expandLedgerRowsInRange, isIncomeFundedExpense } from '@domain/installments'
+import { expandLedgerRowsInRange, isIncomeFundedExpense, isIncomeFundedReimbursement } from '@domain/installments'
 import { addMoney, sumMoney, subtractMoney } from '@domain/money'
 import type { FundingSource, TransactionType } from '@domain/transaction'
 
@@ -51,7 +51,10 @@ export interface LedgerTotals {
   totalReimbursed: number
 }
 
-// Adds each row's amount to the total for its kind, exactly (ADR-005).
+// Adds each row's amount to the total for its kind, exactly (ADR-005). A
+// reimbursement linked to a savings-funded purchase returns to the Goal, so it
+// is in none of the totals - and must never fall through to income. See
+// docs/adr/006-reimbursement-purchase-links.md.
 export function sumLedgerTotals(
   rows: { type: TransactionType; funding_source: FundingSource; amount: number }[]
 ): LedgerTotals {
@@ -62,7 +65,7 @@ export function sumLedgerTotals(
       } else if (row.type === 'expense') {
         acc.totalCoveredBySavings = addMoney(acc.totalCoveredBySavings, row.amount)
       } else if (row.type === 'reimbursement') {
-        acc.totalReimbursed = addMoney(acc.totalReimbursed, row.amount)
+        if (isIncomeFundedReimbursement(row)) acc.totalReimbursed = addMoney(acc.totalReimbursed, row.amount)
       } else {
         acc.totalIncome = addMoney(acc.totalIncome, row.amount)
       }

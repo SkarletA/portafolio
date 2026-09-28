@@ -98,6 +98,17 @@ export function isIncomeFundedExpense(entry: { type: TransactionType; funding_so
   return entry.type === 'expense' && entry.funding_source === 'income'
 }
 
+/**
+ * Whether a reimbursement counts toward `effectiveLimit` and the savings rate.
+ * One linked to a savings-funded purchase has `funding_source = 'savings'`: its
+ * money returns to the Goal instead. Every reimbursement created before
+ * ADR-006 is `'income'`, so none of their figures change. See
+ * docs/adr/006-reimbursement-purchase-links.md.
+ */
+export function isIncomeFundedReimbursement(entry: { type: TransactionType; funding_source: FundingSource }): boolean {
+  return entry.type === 'reimbursement' && entry.funding_source === 'income'
+}
+
 export type PaymentPlanError =
   | 'notAnExpense'
   | 'invalidMonths'

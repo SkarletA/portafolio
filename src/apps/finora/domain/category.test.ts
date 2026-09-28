@@ -155,6 +155,35 @@ describe('getReimbursementsByCategory', () => {
 
     expect(getReimbursementsByCategory(entries, categories).transport).toBe(0)
   })
+
+  it('leaves out a reimbursement linked to a savings-funded purchase', () => {
+    const entries = [
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 200, funding_source: 'income' as const },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 700, funding_source: 'savings' as const },
+    ]
+
+    expect(getReimbursementsByCategory(entries, categories)).toEqual({ food: 200, meat: 200, market: 0, transport: 0 })
+  })
+
+  // No backfill (ADR-006): every reimbursement that exists today is
+  // funding_source 'income', so each one still widens its category's limit by
+  // its full amount (the rule before ADR-006), sums exact to the cent.
+  it('widens the limit for every existing reimbursement exactly as before ADR-006', () => {
+    const existing = [
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 0.1, funding_source: 'income' as const },
+      { category_id: 'meat', type: 'reimbursement' as const, amount: 0.2, funding_source: 'income' as const },
+      { category_id: 'market', type: 'reimbursement' as const, amount: 300, funding_source: 'income' as const },
+      { category_id: 'transport', type: 'reimbursement' as const, amount: 40.5, funding_source: 'income' as const },
+      { category_id: 'meat', type: 'expense' as const, amount: 999, funding_source: 'income' as const },
+    ]
+
+    expect(getReimbursementsByCategory(existing, categories)).toEqual({
+      food: 300.3,
+      meat: 0.3,
+      market: 300,
+      transport: 40.5,
+    })
+  })
 })
 
 describe('savings-funded expenses', () => {

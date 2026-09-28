@@ -4,6 +4,11 @@
 
 Accepted
 
+Amended by [ADR-006](./006-reimbursement-purchase-links.md): a reimbursement
+linked to a savings-funded purchase no longer widens `effectiveLimit` or nets the
+savings rate. Unlinked reimbursements and those linked to income-funded purchases
+behave as described here.
+
 ## Context
 
 ADR-001 defined a category's "spent" as `sum(expense amounts) - sum(reimbursement
@@ -77,6 +82,8 @@ calculation). It does **not** change:
   This is a **budget-only** concept — Analytics' `totalSpent` has no "limit" to
   widen, so reimbursements don't feed into it there.
 
+  > Amended by ADR-006: a reimbursement linked to a savings-funded purchase does not widen `effectiveLimit`.
+
 - **`percentage`/`status`/`remaining`** for a budget are computed against
   `effectiveLimit`, not the raw `monthly_limit`. `monthly_limit` remains stored and
   displayed as the budget's nominal, user-set limit; `effectiveLimit` is the derived
@@ -108,6 +115,8 @@ calculation). It does **not** change:
     cash position grew by more than their income this period due to a windfall,
     which a period-based cash-flow metric should reflect rather than hide behind an
     artificial cap.
+
+  > Amended by ADR-006: a reimbursement linked to a savings-funded purchase is not netted here; its money returns to the Goal instead.
 
 ## Implementation
 

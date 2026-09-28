@@ -29,7 +29,9 @@ export function getGoalProgress(current: number, target: number): GoalProgress {
 // A movement of money into or out of a Goal - see
 // docs/adr/004-goal-transfers.md. Amounts are positive; direction comes from
 // `kind`. goals.current_amount is kept equal to the ledger by the database.
-export type GoalTransferKind = 'opening_balance' | 'deposit' | 'withdrawal'
+// A `refund` returns money to the Goal a linked reimbursement's purchase was
+// covered from - see docs/adr/006-reimbursement-purchase-links.md.
+export type GoalTransferKind = 'opening_balance' | 'deposit' | 'withdrawal' | 'refund'
 
 export interface GoalTransfer {
   id: string
@@ -38,7 +40,7 @@ export interface GoalTransfer {
   kind: GoalTransferKind
   amount: number
   date: string
-  /** The expense a withdrawal covers; null for opening balances and deposits. */
+  /** The expense a withdrawal covers, or the reimbursement a refund returns; null for opening balances and deposits. */
   transaction_id: string | null
   created_at: string
 }

@@ -27,6 +27,7 @@ const baseTransaction: TransactionWithCategory = {
   created_at: null,
   installment_months: 1,
   funding_source: 'income',
+  refunds_transaction_id: null,
   last_installment_date: '2026-09-08',
   withdrawal: null,
   category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null },
@@ -129,6 +130,7 @@ describe('TransactionItem', () => {
     renderItem({
       ...baseTransaction,
       funding_source: 'savings',
+      refunds_transaction_id: null,
       withdrawal: { goal_id: 'g1', amount: 120, goal: { name: 'Vacation' } },
     })
 

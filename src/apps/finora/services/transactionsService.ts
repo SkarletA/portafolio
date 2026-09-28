@@ -8,8 +8,12 @@ import {
   getSavingsCoveredByCategory,
 } from '@domain/category'
 import { expandLedgerRowsInRange } from '@domain/installments'
+import { selectRefundablePurchases, summarizeRefundsByPurchase } from '@domain/refund'
+import type { RefundablePurchaseOptions } from '@domain/refund'
 import { getCategories } from './categoriesService'
 import { catchServiceErrors } from './catchServiceErrors'
+import { isLinkedRefundsViolation, PurchaseHasLinkedRefundsError } from './moneyMovementErrors'
+import type { LinkedRefund } from './moneyMovementErrors'
 
 export type TransactionWithCategory = Transaction & {
   category: Pick<Category, 'id' | 'name' | 'icon' | 'color' | 'translationKey'> | null
@@ -60,6 +64,12 @@ export interface NewTransactionInput {
   installment_months: number
   /** The Goal a savings-funded expense withdraws from; null when funded by income. */
   savings_goal_id: string | null
+  /**
+   * The purchase a reimbursement refunds; null or omitted for a standalone
+   * reimbursement and for every other type. See
+   * docs/adr/006-reimbursement-purchase-links.md.
+   */
+  refunds_transaction_id?: string | null
   payments: TransactionPaymentInput[]
 }
 
@@ -79,11 +89,81 @@ export function saveTransaction(id: string | null, data: NewTransactionInput) {
     p_installment_months: data.installment_months,
     p_savings_goal_id: data.savings_goal_id,
     p_payments: data.payments,
+    p_refunds_transaction_id: data.refunds_transaction_id ?? null,
   })
 }
 
-export function deleteTransaction(id: string) {
-  return supabase.from('transactions').delete().eq('id', id)
+// A purchase with reimbursements linked to it cannot be deleted (ADR-006). When
+// the database refuses for that reason, the error names those reimbursements so
+// the user knows which ones to unlink or delete first.
+export async function deleteTransaction(id: string) {
+  const result = await supabase.from('transactions').delete().eq('id', id)
+
+  if (!isLinkedRefundsViolation(result.error)) return result
+
+  const { data } = await supabase
+    .from('transactions')
+    .select('id, description, amount, date')
+    .eq('refunds_transaction_id', id)
+    .order('date')
+
+  return { ...result, error: new PurchaseHasLinkedRefundsError((data ?? []) as LinkedRefund[]) }
+}
+
+interface RefundablePurchaseRow {
+  id: string
+  type: TransactionType
+  description: string
+  amount: number
+  date: string
+  category_id: string | null
+  /** The Goal that covered the purchase, when it was paid from savings. */
+  withdrawal: { goal_id: string; goal: { name: string } | null } | null
+}
+
+export interface RefundablePurchase extends RefundablePurchaseRow {
+  /** What can still be refunded, exact to the cent. */
+  remaining: number
+}
+
+// The purchases a reimbursement can be linked to, each with what is still
+// refundable. Every expense and every linked reimbursement of the user is read
+// and the rules live in selectRefundablePurchases, so the list and the
+// database's cap in save_transaction cannot drift apart in how they count.
+export function getRefundablePurchases(options: RefundablePurchaseOptions) {
+  return catchServiceErrors(() => loadRefundablePurchases(options))
+}
+
+async function loadRefundablePurchases(options: RefundablePurchaseOptions) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+
+  if (userError) return { data: null, error: userError }
+  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
+
+  const [{ data: purchases, error: purchasesError }, { data: refunds, error: refundsError }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('id, type, description, amount, date, category_id, withdrawal:goal_transfers(goal_id, goal:goals(name))')
+      .eq('user_id', userData.user.id)
+      .eq('type', 'expense')
+      .not('category_id', 'is', null),
+    supabase
+      .from('transactions')
+      .select('amount, refunds_transaction_id')
+      .eq('user_id', userData.user.id)
+      .not('refunds_transaction_id', 'is', null),
+  ])
+
+  if (purchasesError) return { data: null, error: purchasesError }
+  if (refundsError) return { data: null, error: refundsError }
+
+  const data = selectRefundablePurchases(
+    (purchases ?? []) as unknown as RefundablePurchaseRow[],
+    summarizeRefundsByPurchase(refunds ?? []),
+    options
+  )
+
+  return { data, error: null }
 }
 
 function toIsoDate(date: Date): string {

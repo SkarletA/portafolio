@@ -9,6 +9,14 @@ withdraw from a specific Goal (superseding the consequence that "Covered by
 savings" is not linked to Goals), and the Dashboard balance also subtracts
 deposits to Goals.
 
+Amended by [ADR-006](./006-reimbursement-purchase-links.md): a reimbursement can
+now be linked to the purchase it refunds, and one linked to a savings-funded
+purchase carries `funding_source = 'savings'` (superseding "Reimbursements are
+unchanged ... remain unlinked to expenses", the reimbursement column of the
+combination table, the `transactions_schedule_expense_only` constraint for
+reimbursements, and the consequence "Accepted: reimbursing a savings-funded
+purchase still widens `effectiveLimit`").
+
 Amends [ADR-002](./002-gross-spend-and-effective-limit.md): the definition of
 gross `spent` / `totalSpent` (and the trend buckets that move in lockstep with it)
 changes from "sum of expense amounts dated in the period" to "sum of the
@@ -66,6 +74,8 @@ must specify a deterministic allocation with no lost cents.
   behavior is identical to today. `amount` remains the purchase total and
   `transaction_payments` keeps summing to it.
 
+  > Amended by ADR-006: the check is replaced so a reimbursement may have `funding_source = 'savings'` when linked to a savings-funded purchase; installments stay expense-only.
+
 - **Installment dates.** `date` is the purchase date **and** the date of the first
   installment. Installment `k` (0-based) is dated `k` months after `date`, on the
   same day of the month, clamped to that month's last day (Jan 31 → Feb 28/29),
@@ -111,6 +121,8 @@ must specify a deterministic allocation with no lost cents.
   `netSpentForSavings`, exactly as in ADR-002, regardless of how the purchase it
   refunds was financed or funded. Reimbursements remain unlinked to expenses.
 
+  > Amended by ADR-006: a reimbursement may be linked to the purchase it refunds, and then its effect depends on how that purchase was funded.
+
 - **Combination rules** for one underlying purchase (the reimbursement column is a
   separate reimbursement row of amount X dated in month R, and behaves identically
   in every case):
@@ -121,6 +133,8 @@ must specify a deterministic allocation with no lost cents.
   | Single | savings | 0 in all of the above; full amount in `totalCoveredBySavings` / `savingsCovered` in the purchase month | Same |
   | N months | income | Installment k counts in its own month, in all of the above | Same |
   | N months | savings | Installment k goes to `totalCoveredBySavings` / `savingsCovered` in its own month; 0 in `spent` | Same |
+
+  > Amended by ADR-006: the "Same" in the reimbursement column no longer holds for a reimbursement linked to a savings-funded purchase, which changes neither `effectiveLimit` nor `netSpentForSavings` and refills the Goal instead.
 
 ## Implementation
 
@@ -205,6 +219,8 @@ must specify a deterministic allocation with no lost cents.
   know the refunded purchase was savings-funded. This is consistent with ADR-002's
   accepted treatment of refunds landing in a different period, and linking
   reimbursements to purchases is explicitly out of scope.
+
+  > Amended by ADR-006: a reimbursement linked to a savings-funded purchase no longer widens `effectiveLimit` or raises the savings rate; an unlinked one still does.
 - **Returning a financed purchase** should be recorded by editing or deleting the
   purchase, not with a reimbursement, since the issuer cancels the remaining
   installments; a reimbursement would leave the future installments counting.
@@ -239,3 +255,5 @@ must specify a deterministic allocation with no lost cents.
   - *Allowing `funding_source` / `installment_months` on income or reimbursements*:
     no current requirement, and it would make a reimbursement's effect depend on
     hidden flags.
+
+    > Amended by ADR-006: `funding_source = 'savings'` is now allowed on a reimbursement, but only derived by the RPC from the purchase it is linked to, never chosen by the user.

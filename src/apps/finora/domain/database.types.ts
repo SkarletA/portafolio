@@ -245,6 +245,7 @@ export type Database = {
           installment_months: number
           last_installment_date: string | null
           notes: string | null
+          refunds_transaction_id: string | null
           type: string
           user_id: string
         }
@@ -259,6 +260,7 @@ export type Database = {
           installment_months?: number
           last_installment_date?: string | null
           notes?: string | null
+          refunds_transaction_id?: string | null
           type: string
           user_id: string
         }
@@ -273,6 +275,7 @@ export type Database = {
           installment_months?: number
           last_installment_date?: string | null
           notes?: string | null
+          refunds_transaction_id?: string | null
           type?: string
           user_id?: string
         }
@@ -282,6 +285,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_refunds_transaction_id_fkey"
+            columns: ["refunds_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -311,6 +321,7 @@ export type Database = {
           p_installment_months: number
           p_notes: string
           p_payments: Json
+          p_refunds_transaction_id?: string
           p_savings_goal_id: string
           p_type: string
         }
