@@ -29,7 +29,7 @@ const baseTransaction: TransactionWithCategory = {
   funding_source: 'income',
   refunds_transaction_id: null,
   last_installment_date: '2026-09-08',
-  withdrawal: null,
+  goal_transfer: null,
   category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null },
   payments: [{ id: 'p1', transaction_id: '1', payment_method: 'Credit Card', amount: 120 }],
 }
@@ -131,7 +131,7 @@ describe('TransactionItem', () => {
       ...baseTransaction,
       funding_source: 'savings',
       refunds_transaction_id: null,
-      withdrawal: { goal_id: 'g1', amount: 120, goal: { name: 'Vacation' } },
+      goal_transfer: { kind: 'withdrawal', goal_id: 'g1', amount: 120, goal: { name: 'Vacation' } },
     })
 
     expect(screen.getByText(/item\.coveredBySavingsFrom:\{"goal":"Vacation"\}/)).toBeInTheDocument()

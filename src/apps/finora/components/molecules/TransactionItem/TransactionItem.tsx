@@ -67,8 +67,10 @@ export function TransactionItem({ transaction, onDeleted }: TransactionItemProps
           count: transaction.installment_months,
           amount: formatCurrency(firstInstallmentAmount, currency, locale),
         })
-  const isSavingsFunded = transaction.funding_source === 'savings'
-  const savingsGoalName = transaction.withdrawal?.goal?.name ?? null
+  // funding_source also marks a reimbursement whose money returns to a Goal
+  // (ADR-006); "covered by savings" only describes an expense's own funding.
+  const isSavingsFunded = transaction.type === 'expense' && transaction.funding_source === 'savings'
+  const savingsGoalName = transaction.goal_transfer?.goal?.name ?? null
   const savingsLabel = !isSavingsFunded
     ? null
     : savingsGoalName

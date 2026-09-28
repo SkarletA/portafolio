@@ -149,8 +149,10 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const fundingSource: FundingSource = isExpense && isSavingsFunded ? 'savings' : 'income'
   const effectiveSavingsGoalId = fundingSource === 'savings' && savingsGoalId ? savingsGoalId : null
   // Editing returns this expense's current withdrawal to its Goal before taking
-  // the new one, so it counts as available (ADR-004).
-  const existingWithdrawal = mode === 'edit' ? (transaction?.withdrawal ?? null) : null
+  // the new one, so it counts as available (ADR-004). Only an expense's own
+  // transfer is a withdrawal; a reimbursement's is a refund (ADR-006) and is
+  // never "available" to another expense.
+  const existingWithdrawal = mode === 'edit' && transaction?.type === 'expense' ? (transaction?.goal_transfer ?? null) : null
 
   const savingsGoalOptions = useMemo(
     () =>
@@ -213,8 +215,10 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setHadMultiplePayments(transaction.payments.length > 1)
     setIsFinanced(transaction.installment_months > 1)
     setInstallmentMonths(transaction.installment_months > 1 ? String(transaction.installment_months) : '')
-    setIsSavingsFunded(transaction.funding_source === 'savings')
-    setSavingsGoalId(transaction.withdrawal?.goal_id ?? '')
+    // funding_source also marks a reimbursement whose money returns to a Goal
+    // (ADR-006); only an expense's own funding is "covered by savings" here.
+    setIsSavingsFunded(transaction.type === 'expense' && transaction.funding_source === 'savings')
+    setSavingsGoalId(transaction.type === 'expense' ? (transaction.goal_transfer?.goal_id ?? '') : '')
     setHasPreloaded(true)
   }, [mode, transaction, hasPreloaded])
 
