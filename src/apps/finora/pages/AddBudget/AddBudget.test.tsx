@@ -4,15 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AddBudget } from './AddBudget'
 import { createBudget } from '@services/budgetsService'
 
-vi.mock('../services/budgetsService', () => ({ createBudget: vi.fn() }))
+vi.mock('../../services/budgetsService', () => ({ createBudget: vi.fn() }))
 const categories = [{ id: 'c1', name: 'Food', icon: null, color: null, parent_id: null, translationKey: null }]
 
-vi.mock('../hooks/useCategories', () => ({
+vi.mock('../../hooks/useCategories', () => ({
   useCategories: () => ({ categories, loading: false, error: null, refetch: vi.fn() }),
 }))
-vi.mock('../hooks/useBudgets', () => ({ useBudgets: () => ({ budgets: [], loading: false }) }))
+vi.mock('../../hooks/useBudgets', () => ({ useBudgets: () => ({ budgets: [], loading: false }) }))
 // The select's own behavior is not under test: this stands in for picking a category.
-vi.mock('../components/atoms/Select/GroupedSelect', () => ({
+vi.mock('../../components/atoms/Select/GroupedSelect', () => ({
   GroupedSelect: ({ onChange }: { onChange: (value: string) => void }) => (
     <button type="button" data-testid="pick-category" onClick={() => onChange('c1')}>
       pick

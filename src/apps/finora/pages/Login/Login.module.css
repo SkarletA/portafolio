@@ -1,7 +1,7 @@
-@reference '../styles/theme.css';
+@reference '../../styles/theme.css';
 
 .section {
-  @apply mx-auto max-w-sm px-6 py-10 sm:py-20;
+  @apply mx-auto max-w-sm px-6 py-20;
 }
 
 .title {
@@ -17,13 +17,13 @@
 }
 
 .input {
-  @apply rounded-lg border border-finora-border px-3 py-2;
+  @apply rounded-lg border border-finora-ink/20 px-3 py-2;
 }
 
 .error {
   @apply text-sm text-finora-danger;
 }
 
-.hint {
-  @apply text-sm text-finora-ink-muted;
+.footer {
+  @apply mt-6 text-sm text-finora-ink-muted;
 }

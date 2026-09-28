@@ -1,19 +1,35 @@
-@reference '../styles/theme.css';
+@reference '../../styles/theme.css';
 
 .section {
-  @apply mx-auto max-w-sm px-6 py-20;
+  @apply mx-auto max-w-md px-6 py-16;
+}
+
+.sectionCentered {
+  @apply mx-auto max-w-sm px-6 py-20 text-center;
 }
 
 .title {
   @apply font-finora-display text-3xl text-finora-ink;
 }
 
+.confirmationText {
+  @apply mt-4 text-finora-ink-muted;
+}
+
 .form {
   @apply mt-8 flex flex-col gap-4;
 }
 
+.fieldRow {
+  @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
+}
+
 .field {
   @apply flex flex-col gap-1 text-sm text-finora-ink;
+}
+
+.hint {
+  @apply font-normal text-finora-ink-muted;
 }
 
 .input {

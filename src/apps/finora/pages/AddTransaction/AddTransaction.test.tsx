@@ -12,17 +12,17 @@ import { useTransaction } from '@hooks/useTransaction'
 import { useGoals } from '@hooks/useGoals'
 import { useRefundablePurchases } from '@hooks/useRefundablePurchases'
 
-vi.mock('../services/transactionsService', async () => {
-  const actual = await vi.importActual<typeof import('@services/transactionsService')>('../services/transactionsService')
+vi.mock('../../services/transactionsService', async () => {
+  const actual = await vi.importActual<typeof import('@services/transactionsService')>('../../services/transactionsService')
   return { ...actual, saveTransaction: vi.fn() }
 })
-vi.mock('../services/categoriesService', () => ({ createCategory: vi.fn() }))
-vi.mock('../hooks/useCategories', () => ({ useCategories: vi.fn() }))
-vi.mock('../hooks/useTransaction', () => ({ useTransaction: vi.fn() }))
-vi.mock('../hooks/useGoals', () => ({ useGoals: vi.fn() }))
-vi.mock('../hooks/useRefundablePurchases', () => ({ useRefundablePurchases: vi.fn() }))
-vi.mock('../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
-vi.mock('../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('../../services/categoriesService', () => ({ createCategory: vi.fn() }))
+vi.mock('../../hooks/useCategories', () => ({ useCategories: vi.fn() }))
+vi.mock('../../hooks/useTransaction', () => ({ useTransaction: vi.fn() }))
+vi.mock('../../hooks/useGoals', () => ({ useGoals: vi.fn() }))
+vi.mock('../../hooks/useRefundablePurchases', () => ({ useRefundablePurchases: vi.fn() }))
+vi.mock('../../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
+vi.mock('../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
 
 const food = { id: 'food', name: 'Food', icon: null, color: null, parent_id: null, translationKey: 'food' }
 const travel = { id: 'travel', name: 'Travel', icon: null, color: null, parent_id: null, translationKey: 'travel' }
