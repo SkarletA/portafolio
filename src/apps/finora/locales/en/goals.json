@@ -26,9 +26,11 @@
     "kind": {
       "opening_balance": "Already saved",
       "deposit": "Deposit",
-      "withdrawal": "Covered an expense"
+      "withdrawal": "Covered an expense",
+      "refund": "Reimbursement returned"
     },
     "withdrawal": "Covered: {{description}}",
+    "refund": "Reimbursement: {{description}}",
     "deleteDepositAriaLabel": "Delete deposit of {{amount}} on {{date}}",
     "depositAlreadyUsed": "This deposit was already used by expenses covered by savings, so it can't be deleted."
   },

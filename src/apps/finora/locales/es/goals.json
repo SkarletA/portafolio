@@ -26,9 +26,11 @@
     "kind": {
       "opening_balance": "Ya ahorrado",
       "deposit": "Depósito",
-      "withdrawal": "Cubrió un gasto"
+      "withdrawal": "Cubrió un gasto",
+      "refund": "Reembolso devuelto"
     },
     "withdrawal": "Cubrió: {{description}}",
+    "refund": "Reembolso: {{description}}",
     "deleteDepositAriaLabel": "Eliminar depósito de {{amount}} del {{date}}",
     "depositAlreadyUsed": "Este depósito ya se usó en gastos cubiertos con ahorros, así que no se puede eliminar."
   },

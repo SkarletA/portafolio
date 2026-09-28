@@ -1,4 +1,3 @@
-import { MemoryRouter } from 'react-router-dom'
 import { BackLink } from './BackLink'
 
 export default {
@@ -23,13 +22,8 @@ export default {
       table: { type: { summary: 'ReactNode' } },
     },
   },
-  decorators: [
-    (Story: () => React.ReactElement) => (
-      <MemoryRouter>
-        <Story />
-      </MemoryRouter>
-    ),
-  ],
+  // No local <MemoryRouter> here: .storybook/preview.tsx already wraps every
+  // story in one, and react-router forbids nesting a Router inside another.
 }
 
 export const Default = {

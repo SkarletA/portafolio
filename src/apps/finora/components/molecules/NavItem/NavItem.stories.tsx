@@ -1,4 +1,5 @@
-import { MemoryRouter } from 'react-router-dom'
+import { useEffect, type ReactElement } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { NavItem } from './NavItem'
 
 const SampleIcon = () => (
@@ -6,6 +7,20 @@ const SampleIcon = () => (
     <circle cx="12" cy="12" r="9" />
   </svg>
 )
+
+// Points the single global Router from .storybook/preview.tsx at the given
+// path before rendering, so NavLink's isActive matches it. Not a local
+// <MemoryRouter>: react-router forbids nesting a Router inside another, and
+// preview.tsx already provides one for every story.
+function withRoute(path: string) {
+  return (Story: () => ReactElement) => {
+    const navigate = useNavigate()
+    useEffect(() => {
+      navigate(path)
+    }, [navigate])
+    return <Story />
+  }
+}
 
 export default {
   title: 'Finora/Molecules/NavItem',
@@ -40,17 +55,11 @@ export default {
       table: { type: { summary: 'string' }, defaultValue: { summary: 'sidebar' } },
     },
   },
-  decorators: [
-    (Story: () => React.ReactElement) => (
-      <MemoryRouter initialEntries={['/finora/transactions']}>
-        <Story />
-      </MemoryRouter>
-    ),
-  ],
 }
 
 export const Active = {
   args: { label: 'Transactions', icon: <SampleIcon />, to: '/finora/transactions' },
+  decorators: [withRoute('/finora/transactions')],
 }
 
 export const Disabled = {

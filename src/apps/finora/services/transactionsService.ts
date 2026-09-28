@@ -20,7 +20,7 @@ export type TransactionWithCategory = Transaction & {
 }
 
 const TRANSACTION_SELECT =
-  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), withdrawal:goal_transfers(goal_id, amount, goal:goals(name))'
+  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), goal_transfer:goal_transfers(kind, goal_id, amount, goal:goals(name))'
 
 export async function getTransactions() {
   const { data: userData, error: userError } = await supabase.auth.getUser()

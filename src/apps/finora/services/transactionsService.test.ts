@@ -130,7 +130,7 @@ describe('getRefundablePurchases', () => {
     amount,
     date,
     category_id: 'food',
-    withdrawal: goalName ? { goal_id: 'g1', goal: { name: goalName } } : null,
+    withdrawal: goalName ? { goal_id: 'g1', goal: { name: goalName } } : null, // RefundablePurchase.withdrawal, unrelated to Transaction.goal_transfer
   })
 
   beforeEach(() => {

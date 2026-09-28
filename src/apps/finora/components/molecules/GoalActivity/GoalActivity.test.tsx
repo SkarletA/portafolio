@@ -32,6 +32,13 @@ const transfers = [
   }),
   transfer({ id: 'd1', kind: 'deposit', amount: 500 }),
   transfer({ id: 'o1', kind: 'opening_balance', amount: 2000, date: '2026-05-10' }),
+  transfer({
+    id: 'r1',
+    kind: 'refund',
+    amount: 80,
+    transaction_id: 'tx2',
+    transaction: { id: 'tx2', description: 'Airline refund' },
+  }),
 ]
 
 function renderActivity(props: Partial<Parameters<typeof GoalActivity>[0]> = {}) {
@@ -71,6 +78,17 @@ describe('GoalActivity', () => {
       'href',
       '/finora/transactions/tx1/edit'
     )
+  })
+
+  it('links a refund to the reimbursement that returned the money, with no delete button', () => {
+    renderActivity()
+
+    expect(screen.getByTestId('goal-activity-transfer-r1-refund-link')).toHaveAttribute(
+      'href',
+      '/finora/transactions/tx2/edit'
+    )
+    expect(screen.getByText('+$80.00')).toBeInTheDocument()
+    expect(screen.queryByTestId('goal-activity-transfer-r1-delete-icon')).not.toBeInTheDocument()
   })
 
   it('offers deletion for deposits only', () => {
