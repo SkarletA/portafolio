@@ -740,6 +740,16 @@ For simple sequential tasks, work directly.
 * This does not apply to code identifiers, `data-testid`s, comments, or conversation with the user — only to strings rendered in the UI.
 * Component tests run against the global `react-i18next` mock in `vitest.setup.js` (`t()` returns the key), so assert on keys there. When the rendered text itself matters (interpolation, punctuation, symbols like `%`), test with a real `i18next` instance loaded with the real locale files.
 
+### Database Types
+
+`src/apps/finora/domain/database.types.ts` is the reference for the database schema: tables, columns, nullability, foreign keys and relationships between tables, and the arguments of RPC functions. It must be complete and current enough that nobody has to ask the user (or the live database) about the schema each time something changes.
+
+* **Consult it first.** Before writing a query, a service, a domain type or a test that touches the database, read the relevant part of `database.types.ts` instead of guessing, inferring from old migrations, or asking.
+* **Keep it in step with every change.** Whatever changes the schema (a migration, a new column or foreign key, a changed RPC signature) is not done until `database.types.ts` is regenerated in the same piece of work. Run `npm run gen:types`, but write to a temporary file first and diff it before replacing the real one, since the script's redirect empties the file if the CLI fails. The migration must be applied to the database first.
+* **Update what mirrors it.** In the same change, update the domain types that describe those rows (e.g. `Transaction` in `domain/transaction.ts`) and the tests, fixtures, mocks and stories built from them, so nothing is left describing the old shape.
+* **Doubt means it is stale.** If you are unsure how a table relates to another, whether a column exists, or what an RPC takes, and the file does not answer it, treat that as a sign the file is out of date. Do not guess and do not work around it: regenerate the types (or ask the user to apply the pending migration and regenerate them), then continue with the updated file.
+* **What it does not cover.** It has no CHECK constraints, triggers, RLS policies or function bodies. Those live in `supabase/migrations/` and the ADRs; when they may have drifted from the live database, ask for the `pg_constraint`, `pg_indexes` and `pg_trigger` results, as was done for ADR-006, rather than assuming.
+
 ## Agent and Token Usage
 
 * Use the subagents already defined in `.claude/agents/` when the task matches their purpose, instead of solving everything with the main agent.
