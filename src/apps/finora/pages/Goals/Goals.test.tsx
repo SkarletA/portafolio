@@ -8,8 +8,8 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return { ...actual, useNavigate: vi.fn() }
 })
-vi.mock('../../hooks/useGoals', () => ({ useGoals: vi.fn() }))
-vi.mock('../../components/molecules/GoalCard/GoalCard', () => ({
+vi.mock('@hooks/useGoals', () => ({ useGoals: vi.fn() }))
+vi.mock('@molecules/GoalCard/GoalCard', () => ({
   GoalCard: ({ goal }: { goal: { id: string } }) => <div data-testid={`mock-goal-card-${goal.id}`} />,
 }))
 

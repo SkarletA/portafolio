@@ -8,13 +8,13 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return { ...actual, useNavigate: vi.fn() }
 })
-vi.mock('../../hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
-vi.mock('../../components/molecules/BudgetCard/BudgetCard', () => ({
+vi.mock('@hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
+vi.mock('@molecules/BudgetCard/BudgetCard', () => ({
   BudgetCard: ({ budget, flush }: { budget: { id: string }; flush: boolean }) => (
     <div data-testid={`mock-budget-card-${budget.id}`} data-flush={flush} />
   ),
 }))
-vi.mock('../../components/molecules/BudgetCardBreakdown/BudgetCardBreakdown', () => ({
+vi.mock('@molecules/BudgetCardBreakdown/BudgetCardBreakdown', () => ({
   BudgetCardBreakdown: ({ categoryId }: { categoryId: string }) => (
     <div data-testid={`mock-budget-breakdown-${categoryId}`} />
   ),

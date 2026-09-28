@@ -15,21 +15,21 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return { ...actual, useNavigate: vi.fn() }
 })
-vi.mock('../../context/AuthContext', () => ({ useAuth: vi.fn() }))
-vi.mock('../../hooks/useProfile', () => ({ useProfile: vi.fn() }))
-vi.mock('../../context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
-vi.mock('../../context/LanguageContext', () => ({ useLanguage: vi.fn() }))
-vi.mock('../../hooks/useTransactions', () => ({ useTransactions: vi.fn() }))
-vi.mock('../../hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
-vi.mock('../../hooks/useDashboardSummary', () => ({ useDashboardSummary: vi.fn() }))
+vi.mock('@context/AuthContext', () => ({ useAuth: vi.fn() }))
+vi.mock('@hooks/useProfile', () => ({ useProfile: vi.fn() }))
+vi.mock('@context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
+vi.mock('@context/LanguageContext', () => ({ useLanguage: vi.fn() }))
+vi.mock('@hooks/useTransactions', () => ({ useTransactions: vi.fn() }))
+vi.mock('@hooks/useBudgets', () => ({ useBudgets: vi.fn() }))
+vi.mock('@hooks/useDashboardSummary', () => ({ useDashboardSummary: vi.fn() }))
 // Not under test here - TransactionItem/BudgetCard have their own tests. Stand
 // in for them so Dashboard's own data-slicing/section logic is what's exercised.
-vi.mock('../../components/molecules/TransactionItem/TransactionItem', () => ({
+vi.mock('@molecules/TransactionItem/TransactionItem', () => ({
   TransactionItem: ({ transaction }: { transaction: { id: string; description: string } }) => (
     <li data-testid={`mock-transaction-${transaction.id}`}>{transaction.description}</li>
   ),
 }))
-vi.mock('../../components/molecules/BudgetCard/BudgetCard', () => ({
+vi.mock('@molecules/BudgetCard/BudgetCard', () => ({
   BudgetCard: ({ budget }: { budget: { id: string } }) => <li data-testid={`mock-budget-${budget.id}`} />,
 }))
 
