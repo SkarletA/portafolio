@@ -1,4 +1,4 @@
-import { isIncomeFundedExpense } from './installments'
+import { isIncomeFundedExpense, isIncomeFundedReimbursement } from './installments'
 import { addMoney, sumMoney } from './money'
 import type { FundingSource, TransactionType } from './transaction'
 
@@ -109,12 +109,12 @@ export function getGrossSpendByCategory(entries: CategoryLedgerEntry[], categori
 
 // Reimbursements per category, rolled up the same way as gross spend, so a
 // budget's effective limit (monthly_limit + reimbursements) can be computed
-// per rollup scope. See docs/adr/002-gross-spend-and-effective-limit.md.
+// per rollup scope. Reimbursements linked to a savings-funded purchase are left
+// out: their money returns to the Goal. See
+// docs/adr/002-gross-spend-and-effective-limit.md and
+// docs/adr/006-reimbursement-purchase-links.md.
 export function getReimbursementsByCategory(entries: CategoryLedgerEntry[], categories: Category[]): Record<string, number> {
-  return rollupByCategory(
-    sumByCategory(entries, (entry) => entry.type === 'reimbursement'),
-    categories
-  )
+  return rollupByCategory(sumByCategory(entries, isIncomeFundedReimbursement), categories)
 }
 
 // Expenses covered by savings per category, rolled up the same way as gross

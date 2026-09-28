@@ -45,6 +45,16 @@ describe('sumLedgerTotals', () => {
       ])
     ).toEqual({ totalSpent: 0.3, totalCoveredBySavings: 13.6, totalIncome: 0.8, totalReimbursed: 0.3 })
   })
+
+  it('leaves a reimbursement linked to a savings-funded purchase out of every total, including income', () => {
+    expect(
+      sumLedgerTotals([
+        expense(40, 'savings'),
+        { type: 'income', funding_source: 'income', amount: 1000 },
+        { type: 'reimbursement', funding_source: 'savings', amount: 15 },
+      ])
+    ).toEqual({ totalSpent: 0, totalCoveredBySavings: 40, totalIncome: 1000, totalReimbursed: 0 })
+  })
 })
 
 describe('grossSpendByBucketKey', () => {
@@ -93,6 +103,39 @@ describe('getMonthlyStats', () => {
     expect(data?.totalIncome).toBe(1)
     expect(data?.totalDepositedToGoals).toBe(0.3)
     expect(data?.savingsRate).toBeCloseTo(70)
+  })
+
+  // No backfill (ADR-006): the rows stored today are unlinked reimbursements with
+  // funding_source 'income', and they net the savings rate exactly as before.
+  it('nets every existing reimbursement against the savings rate exactly as before ADR-006', async () => {
+    tables.transactions = [
+      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1 },
+      { ...expense(400), date: '2026-09-02', installment_months: 1 },
+      { type: 'reimbursement', funding_source: 'income', amount: 100, date: '2026-09-05', installment_months: 1 },
+    ]
+    tables.goal_transfers = []
+
+    const { data } = await getMonthlyStats(range)
+
+    expect(data?.totalSpent).toBe(400)
+    expect(data?.totalIncome).toBe(1000)
+    expect(data?.savingsRate).toBeCloseTo(70)
+  })
+
+  it('does not raise the savings rate or income for a reimbursement returned to a Goal', async () => {
+    tables.transactions = [
+      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1 },
+      { ...expense(400), date: '2026-09-02', installment_months: 1 },
+      { ...expense(200, 'savings'), date: '2026-09-03', installment_months: 1 },
+      { type: 'reimbursement', funding_source: 'savings', amount: 200, date: '2026-09-05', installment_months: 1 },
+    ]
+    tables.goal_transfers = []
+
+    const { data } = await getMonthlyStats(range)
+
+    expect(data?.totalIncome).toBe(1000)
+    expect(data?.totalCoveredBySavings).toBe(200)
+    expect(data?.savingsRate).toBeCloseTo(60)
   })
 
   it('returns an error instead of throwing when a stored amount has more than 2 decimals', async () => {

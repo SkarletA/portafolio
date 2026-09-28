@@ -5,6 +5,7 @@ import {
   getInstallmentDate,
   getPaymentPlanErrors,
   isIncomeFundedExpense,
+  isIncomeFundedReimbursement,
   type PaymentPlan,
 } from './installments'
 import { toMinorUnits } from './money'
@@ -212,6 +213,21 @@ describe('isIncomeFundedExpense', () => {
   it('never counts income or reimbursements as spend', () => {
     expect(isIncomeFundedExpense({ type: 'income', funding_source: 'income' })).toBe(false)
     expect(isIncomeFundedExpense({ type: 'reimbursement', funding_source: 'income' })).toBe(false)
+  })
+})
+
+describe('isIncomeFundedReimbursement', () => {
+  it('counts reimbursements that are standalone or linked to an income-funded purchase', () => {
+    expect(isIncomeFundedReimbursement({ type: 'reimbursement', funding_source: 'income' })).toBe(true)
+  })
+
+  it('leaves out a reimbursement linked to a savings-funded purchase, whose money returns to the Goal', () => {
+    expect(isIncomeFundedReimbursement({ type: 'reimbursement', funding_source: 'savings' })).toBe(false)
+  })
+
+  it('never counts expenses or income', () => {
+    expect(isIncomeFundedReimbursement({ type: 'expense', funding_source: 'income' })).toBe(false)
+    expect(isIncomeFundedReimbursement({ type: 'income', funding_source: 'income' })).toBe(false)
   })
 })
 
