@@ -1,3 +1,20 @@
+// Placeholder Supabase credentials for Storybook's own build - never a real
+// project. .storybook/preview.tsx wraps every story in the app's real
+// AuthProvider (so stories can freely use useAuth/<Link>), which imports
+// services/supabaseClient.ts; that file throws at import time if
+// VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY are missing, which would crash the
+// preview iframe for every story, not just ones that touch Supabase. Locally
+// this is masked by .env.local (read for `npm run dev` too), but Storybook's
+// own Vercel deployment is a separate project with no such variables set, so
+// it fails there. `define` forces these two references to safe placeholders
+// in Storybook's build specifically, regardless of the environment - Storybook
+// should never need real, or even locally-configured, credentials just to
+// render a component catalog.
+const STORYBOOK_SUPABASE_DEFINES = {
+  'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://storybook.invalid'),
+  'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify('storybook-placeholder-anon-key'),
+}
+
 /** @type {import('@storybook/react-vite').StorybookConfig} */
 const config = {
   stories: ['../src/apps/finora/**/*.mdx', '../src/apps/finora/**/*.stories.@(js|jsx|ts|tsx)'],
@@ -5,6 +22,10 @@ const config = {
   framework: {
     name: '@storybook/react-vite',
     options: {},
+  },
+  async viteFinal(viteConfig) {
+    viteConfig.define = { ...viteConfig.define, ...STORYBOOK_SUPABASE_DEFINES }
+    return viteConfig
   },
 }
 
