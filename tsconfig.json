@@ -25,7 +25,8 @@
       "@organisms/*": ["./src/apps/finora/components/organisms/*"],
       "@portfolio-components/*": ["./src/components/*"],
       "@portfolio-sections/*": ["./src/sections/*"],
-      "@portfolio-data/*": ["./src/data/*"]
+      "@portfolio-data/*": ["./src/data/*"],
+      "@storybook-mocks/*": ["./.storybook/mocks/*"]
     }
   },
   "include": ["src", ".storybook"]
