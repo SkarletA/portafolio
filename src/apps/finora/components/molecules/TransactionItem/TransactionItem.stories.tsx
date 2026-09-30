@@ -279,3 +279,21 @@ export const HouseholdPartnerRow = {
     onDeleted: () => {},
   },
 }
+
+// ADR-010, Case B: the owner's own expense in full, simply tagged as
+// counting toward the household - no split, so a plain text tag rather than
+// the split chips (which need two amounts to show).
+export const HouseholdExpenseTag = {
+  args: {
+    transaction: {
+      ...Expense.args.transaction,
+      id: '10',
+      description: 'Medicine',
+      amount: 250,
+      is_shared: false,
+      shares: [],
+      is_household_expense: true,
+    },
+    onDeleted: () => {},
+  },
+}

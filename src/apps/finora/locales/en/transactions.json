@@ -48,7 +48,8 @@
     "paidBy": "Paid by {{who}}",
     "you": "You",
     "chipYou": "You {{amount}}",
-    "chipOther": "{{name}} {{amount}}"
+    "chipOther": "{{name}} {{amount}}",
+    "householdExpenseTag": "Household expense"
   },
   "form": {
     "addTitle": "Add transaction",
@@ -117,12 +118,15 @@
     "loadingRefundablePurchases": "Loading purchases…",
     "refundCategoryLockedHint": "Set from the linked purchase.",
     "refundGoalNotice": "This purchase was paid from the {{goal}} goal. The {{amount}} refunded will go back to it and will not raise the budget limit or the savings rate.",
-    "sharedExpense": "Shared expense",
-    "shareExpense": "Share this expense with {{partner}}",
+    "sharedExpense": "Household expense",
+    "shareExpense": "Split the amount with {{partner}}",
     "sharedHint": "The full amount still counts against your own budget. This only records who put in how much.",
     "sharedDisabledHint": "Can't share a financed or savings-funded expense yet.",
     "yourSharePart": "Your part",
-    "partnerSharePart": "{{partner}}'s part: {{amount}}"
+    "partnerSharePart": "{{partner}}'s part: {{amount}}",
+    "householdExpense": "It's 100% mine, but counts toward the household",
+    "householdExpenseHint": "The full amount still counts against your own budget. This only marks it as a household expense - nothing is split.",
+    "householdExpenseDisabledHint": "Can't combine with splitting the amount."
   },
   "validation": {
     "selectCategory": "Select a category",

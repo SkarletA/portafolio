@@ -119,6 +119,11 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
   const myShare = transaction.is_shared ? transaction.shares.find((share) => share.user_id === user?.id) : null
   const partnerShare = transaction.is_shared ? transaction.shares.find((share) => share.user_id !== user?.id) : null
 
+  // Case B (docs/adr/010-household-expense-tag-and-household-budget.md): a
+  // plain text tag, not a chip - there is no split amount to show, only that
+  // this expense counts toward the household.
+  const householdExpenseLabel = transaction.is_household_expense ? t('item.householdExpenseTag') : null
+
   const handleEditClick = useCallback(() => {
     navigate(`/finora/transactions/${transaction.id}/edit`)
   }, [navigate, transaction.id])
@@ -231,6 +236,7 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
             {refundOfLabel ? ` · ${refundOfLabel}` : ''}
             {refundGoalLabel ? ` · ${refundGoalLabel}` : ''}
             {refundsSummaryLabel ? ` · ${refundsSummaryLabel}` : ''}
+            {householdExpenseLabel ? ` · ${householdExpenseLabel}` : ''}
           </p>
           {transaction.is_shared && myShare && partnerShare && (
             <div className={s.sharedChips}>

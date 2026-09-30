@@ -421,3 +421,99 @@ describe('AddTransaction shared expense', () => {
     expect(screen.getByTestId('add-transaction-own-share-input')).toHaveValue(600)
   })
 })
+
+describe('AddTransaction household expense (Case B, no split)', () => {
+  beforeEach(() => {
+    vi.mocked(saveTransaction).mockReset()
+  })
+
+  it('sends is_household_expense with no shares, unlike a split', async () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    vi.mocked(saveTransaction).mockResolvedValue({ data: 't1', error: null } as never)
+    renderCreate()
+    fillBasicExpenseFields('250')
+    fireEvent.click(screen.getByTestId('add-transaction-household-expense-checkbox'))
+    fireEvent.click(screen.getByTestId('add-transaction-save-button'))
+
+    await waitFor(() => expect(saveTransaction).toHaveBeenCalled())
+    const sentInput = vi.mocked(saveTransaction).mock.calls[0][1]
+    expect(sentInput.is_household_expense).toBe(true)
+    expect(sentInput.shares).toBeUndefined()
+  })
+
+  it('disables the split checkbox while household-expense is checked, and vice versa', () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    renderCreate()
+
+    fireEvent.click(screen.getByTestId('add-transaction-household-expense-checkbox'))
+    expect(screen.getByTestId('add-transaction-shared-checkbox')).toBeDisabled()
+
+    fireEvent.click(screen.getByTestId('add-transaction-household-expense-checkbox'))
+    fireEvent.click(screen.getByTestId('add-transaction-shared-checkbox'))
+    expect(screen.getByTestId('add-transaction-household-expense-checkbox')).toBeDisabled()
+  })
+
+  it('unlike a split, allows combining household-expense with financed or savings-funded', () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    renderCreate()
+
+    fireEvent.click(screen.getByTestId('add-transaction-financed-checkbox'))
+    expect(screen.getByTestId('add-transaction-household-expense-checkbox')).toBeEnabled()
+
+    fireEvent.click(screen.getByTestId('add-transaction-household-expense-checkbox'))
+    expect(screen.getByTestId('add-transaction-household-expense-checkbox')).toBeChecked()
+  })
+
+  it('preloads an existing household-tagged transaction', () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    vi.mocked(useTransaction).mockReturnValue({
+      transaction: {
+        id: 't1',
+        user_id: 'u1',
+        description: 'Medicine',
+        amount: 250,
+        type: 'expense',
+        category_id: 'food',
+        date: '2026-09-05',
+        notes: null,
+        created_at: null,
+        installment_months: 1,
+        funding_source: 'income',
+        refunds_transaction_id: null,
+        last_installment_date: '2026-09-05',
+        goal_transfer: null,
+        category: food,
+        payments: [{ id: 'pay1', transaction_id: 't1', payment_method: 'Cash', amount: 250 }],
+        is_shared: false,
+        shares: [],
+        is_household_expense: true,
+      },
+      loading: false,
+      error: null,
+    } as never)
+
+    render(
+      <MemoryRouter initialEntries={['/finora/transactions/t1/edit']}>
+        <Routes>
+          <Route path="/finora/transactions/:id/edit" element={<AddTransaction mode="edit" />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByTestId('add-transaction-household-expense-checkbox')).toBeChecked()
+  })
+
+  it('maps a rejected household tag to the share field', async () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    vi.mocked(saveTransaction).mockResolvedValue({
+      data: null,
+      error: { code: 'P0001', message: 'household_required_for_household_expense' },
+    } as never)
+    renderCreate()
+    fillBasicExpenseFields('250')
+    fireEvent.click(screen.getByTestId('add-transaction-household-expense-checkbox'))
+    fireEvent.click(screen.getByTestId('add-transaction-save-button'))
+
+    expect(await screen.findByText('transactions:validation.shareNoLongerValid')).toBeInTheDocument()
+  })
+})

@@ -82,6 +82,19 @@ describe('TransactionItem', () => {
     expect(screen.queryByText(/item\.chipOther/)).not.toBeInTheDocument()
   })
 
+  it('shows a plain household-expense tag for Case B, not chips', () => {
+    renderItem({ ...baseTransaction, is_household_expense: true })
+
+    expect(screen.getByText(/item\.householdExpenseTag/)).toBeInTheDocument()
+    expect(screen.queryByText(/item\.chipYou/)).not.toBeInTheDocument()
+  })
+
+  it('shows no household-expense tag for a personal expense', () => {
+    renderItem(baseTransaction)
+
+    expect(screen.queryByText(/item\.householdExpenseTag/)).not.toBeInTheDocument()
+  })
+
   it('shows edit and delete for the signed-in user\'s own row', () => {
     renderItem(baseTransaction)
 
