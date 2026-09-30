@@ -7,7 +7,7 @@ import { useTheme } from '@context/ThemeContext'
 import { useLanguage } from '@context/LanguageContext'
 import { useCurrency } from '@context/CurrencyContext'
 import { useProfile } from '@hooks/useProfile'
-import { useHousehold } from '@hooks/useHousehold'
+import { useHousehold } from '@context/HouseholdContext'
 import { updateProfile } from '@services/profilesService'
 
 vi.mock('@context/AuthContext', () => ({ useAuth: vi.fn() }))
@@ -15,7 +15,7 @@ vi.mock('@context/ThemeContext', () => ({ useTheme: vi.fn() }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
 vi.mock('@hooks/useProfile', () => ({ useProfile: vi.fn() }))
-vi.mock('@hooks/useHousehold', () => ({ useHousehold: vi.fn() }))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 vi.mock('@services/profilesService', () => ({
   updateProfile: vi.fn(),
   uploadAvatar: vi.fn(),

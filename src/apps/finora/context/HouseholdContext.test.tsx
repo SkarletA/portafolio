@@ -1,6 +1,6 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useHousehold } from './useHousehold'
+import { HouseholdProvider, useHousehold } from './HouseholdContext'
 import { useAuth } from '@context/AuthContext'
 import {
   acceptHouseholdInvite,
@@ -51,7 +51,11 @@ function mockNoHousehold() {
   vi.mocked(getHouseholdPartner).mockResolvedValue({ data: null, error: null } as never)
 }
 
-describe('useHousehold', () => {
+function renderUseHousehold() {
+  return renderHook(() => useHousehold(), { wrapper: HouseholdProvider })
+}
+
+describe('HouseholdContext', () => {
   beforeEach(() => {
     vi.mocked(getHouseholdMembers).mockReset()
     vi.mocked(getHouseholdPartner).mockReset()
@@ -62,10 +66,14 @@ describe('useHousehold', () => {
     vi.mocked(useAuth).mockReturnValue({ user: { id: 'u1', email: 'a@example.com' } } as never)
   })
 
+  it('throws when used outside a HouseholdProvider', () => {
+    expect(() => renderHook(() => useHousehold())).toThrow('useHousehold must be used within a HouseholdProvider')
+  })
+
   it('has no household when neither row exists', async () => {
     mockNoHousehold()
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
 
     expect(result.current.loading).toBe(true)
     await waitFor(() => expect(result.current.loading).toBe(false))
@@ -79,7 +87,7 @@ describe('useHousehold', () => {
     vi.mocked(getHouseholdMembers).mockResolvedValue({ data: [ownRow, partnerRow], error: null } as never)
     vi.mocked(getHouseholdPartner).mockResolvedValue({ data: partnerProfile, error: null } as never)
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -91,7 +99,7 @@ describe('useHousehold', () => {
   it('does not fetch and clears loading when there is no signed-in user', async () => {
     vi.mocked(useAuth).mockReturnValue({ user: null } as never)
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
@@ -102,7 +110,7 @@ describe('useHousehold', () => {
     mockNoHousehold()
     vi.mocked(inviteHouseholdMember).mockResolvedValue({ data: 'h1', error: null } as never)
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     let success: boolean = false
@@ -123,7 +131,7 @@ describe('useHousehold', () => {
       error: { code: 'P0001', message: 'user_not_found' },
     } as never)
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     let success: boolean = true
@@ -136,11 +144,28 @@ describe('useHousehold', () => {
     expect(getHouseholdMembers).toHaveBeenCalledTimes(1)
   })
 
+  it('invite() falls back to a generic error for an unrecognized failure', async () => {
+    mockNoHousehold()
+    vi.mocked(inviteHouseholdMember).mockResolvedValue({
+      data: null,
+      error: { message: 'Network error' },
+    } as never)
+
+    const { result } = renderUseHousehold()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await result.current.invite('partner@example.com')
+    })
+
+    expect(result.current.actionError).toBe('generic')
+  })
+
   it('accept() calls the RPC and refetches', async () => {
     mockNoHousehold()
     vi.mocked(acceptHouseholdInvite).mockResolvedValue({ data: 'h1', error: null } as never)
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -155,7 +180,7 @@ describe('useHousehold', () => {
     mockNoHousehold()
     vi.mocked(declineHouseholdInvite).mockResolvedValue({ data: null, error: null } as never)
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -170,7 +195,7 @@ describe('useHousehold', () => {
     mockNoHousehold()
     vi.mocked(leaveHousehold).mockResolvedValue({ data: null, error: null } as never)
 
-    const { result } = renderHook(() => useHousehold())
+    const { result } = renderUseHousehold()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
@@ -179,5 +204,58 @@ describe('useHousehold', () => {
 
     expect(leaveHousehold).toHaveBeenCalled()
     expect(getHouseholdMembers).toHaveBeenCalledTimes(2)
+  })
+
+  // Regression test for the bug this context replaces a plain hook to fix:
+  // accepting from Settings' block left AppShell's banner showing until a
+  // full reload, because each used its own `useHousehold()` call with
+  // independent state. Two consumers under one shared HouseholdProvider -
+  // the way AppShell and Settings both sit under the single provider
+  // mounted in FinoraApp - must both update from one action.
+  function BannerLikeConsumer() {
+    const { ownMember, accept } = useHousehold()
+    return (
+      <div>
+        <span data-testid="banner-status">{ownMember?.status ?? 'none'}</span>
+        <button type="button" data-testid="banner-accept" onClick={accept}>
+          accept
+        </button>
+      </div>
+    )
+  }
+
+  function SettingsLikeConsumer() {
+    const { ownMember } = useHousehold()
+    return <span data-testid="settings-status">{ownMember?.status ?? 'none'}</span>
+  }
+
+  it('updates every consumer under the same provider when one of them accepts', async () => {
+    vi.mocked(getHouseholdMembers).mockResolvedValueOnce({
+      data: [{ ...ownRow, status: 'pending' }],
+      error: null,
+    } as never)
+    vi.mocked(getHouseholdPartner).mockResolvedValue({ data: partnerProfile, error: null } as never)
+    vi.mocked(acceptHouseholdInvite).mockResolvedValue({ data: 'h1', error: null } as never)
+
+    render(
+      <HouseholdProvider>
+        <BannerLikeConsumer />
+        <SettingsLikeConsumer />
+      </HouseholdProvider>
+    )
+
+    await waitFor(() => expect(screen.getByTestId('banner-status')).toHaveTextContent('pending'))
+    expect(screen.getByTestId('settings-status')).toHaveTextContent('pending')
+
+    vi.mocked(getHouseholdMembers).mockResolvedValue({
+      data: [{ ...ownRow, status: 'accepted' }],
+      error: null,
+    } as never)
+
+    fireEvent.click(screen.getByTestId('banner-accept'))
+
+    await waitFor(() => expect(screen.getByTestId('banner-status')).toHaveTextContent('accepted'))
+    // The fix: Settings' reader sees the same update without its own action.
+    expect(screen.getByTestId('settings-status')).toHaveTextContent('accepted')
   })
 })

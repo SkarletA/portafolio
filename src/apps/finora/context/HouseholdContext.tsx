@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '@context/AuthContext'
 import {
   acceptHouseholdInvite,
@@ -16,7 +16,33 @@ import type { HouseholdMember, HouseholdPartner } from '@domain/household'
 // of silently doing nothing.
 export type HouseholdActionError = HouseholdErrorCode | 'generic'
 
-export function useHousehold() {
+interface HouseholdContextValue {
+  // My own membership row: null outside a household, 'pending' while I'm the
+  // invitee awaiting my own decision, 'accepted' once I'm in.
+  ownMember: HouseholdMember | null
+  // The other member's row: present once I've invited someone or I've
+  // accepted someone else's invite, whatever their status.
+  partnerMember: HouseholdMember | null
+  partner: HouseholdPartner | null
+  loading: boolean
+  error: string | null
+  actionPending: boolean
+  actionError: HouseholdActionError | null
+  invite: (email: string) => Promise<boolean>
+  accept: () => Promise<boolean>
+  decline: () => Promise<boolean>
+  leave: () => Promise<boolean>
+  refetch: () => Promise<void>
+}
+
+const HouseholdContext = createContext<HouseholdContextValue | undefined>(undefined)
+
+// One shared instance for the whole app (mounted once in FinoraApp, above
+// AppShell), not a plain hook: AppShell's pending-invite banner and
+// Settings' Household block would otherwise each hold their own copy of
+// this state, so accepting/declining/leaving from one would not clear the
+// other's view of it until a full reload.
+export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [ownMember, setOwnMember] = useState<HouseholdMember | null>(null)
   const [partnerMember, setPartnerMember] = useState<HouseholdMember | null>(null)
@@ -139,12 +165,8 @@ export function useHousehold() {
     return true
   }, [refetch])
 
-  return {
-    // My own membership row: null outside a household, 'pending' while I'm
-    // the invitee awaiting my own decision, 'accepted' once I'm in.
+  const value: HouseholdContextValue = {
     ownMember,
-    // The other member's row: present once I've invited someone or I've
-    // accepted someone else's invite, whatever their status.
     partnerMember,
     partner,
     loading,
@@ -157,4 +179,14 @@ export function useHousehold() {
     leave,
     refetch,
   }
+
+  return <HouseholdContext.Provider value={value}>{children}</HouseholdContext.Provider>
+}
+
+export function useHousehold() {
+  const context = useContext(HouseholdContext)
+  if (!context) {
+    throw new Error('useHousehold must be used within a HouseholdProvider')
+  }
+  return context
 }

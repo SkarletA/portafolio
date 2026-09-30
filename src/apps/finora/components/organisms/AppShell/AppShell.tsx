@@ -7,7 +7,7 @@ import { LocaleBadge } from '@molecules/LocaleBadge/LocaleBadge'
 import { HouseholdInviteBanner } from '@molecules/HouseholdInviteBanner/HouseholdInviteBanner'
 import { Icon } from '@atoms/Icon/Icon'
 import { useTheme } from '@context/ThemeContext'
-import { useHousehold } from '@hooks/useHousehold'
+import { useHousehold } from '@context/HouseholdContext'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
 import s from './AppShell.module.css'
 

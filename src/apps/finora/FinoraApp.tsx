@@ -6,6 +6,7 @@ import { AuthProvider } from '@context/AuthContext'
 import { ThemeProvider } from '@context/ThemeContext'
 import { LanguageProvider } from '@context/LanguageContext'
 import { CurrencyProvider } from '@context/CurrencyContext'
+import { HouseholdProvider } from '@context/HouseholdContext'
 
 export default function FinoraApp() {
   return (
@@ -13,9 +14,11 @@ export default function FinoraApp() {
       <ThemeProvider>
         <LanguageProvider>
           <CurrencyProvider>
-            <AppShell>
-              <FinoraRoutes />
-            </AppShell>
+            <HouseholdProvider>
+              <AppShell>
+                <FinoraRoutes />
+              </AppShell>
+            </HouseholdProvider>
           </CurrencyProvider>
         </LanguageProvider>
       </ThemeProvider>
