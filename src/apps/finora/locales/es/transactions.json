@@ -38,7 +38,8 @@
     "refundsSummary": "{{count}} reembolsos · {{total}} reembolsado",
     "deleteBlockedByRefunds": "No se puede eliminar: {{count}} reembolso(s) vinculado(s) deben desvincularse o eliminarse primero: {{list}}",
     "refundListItem": "{{description}} ({{amount}})",
-    "goalBalanceNegative": "El dinero de este reembolso ya se usó de su meta. Eliminarlo la dejaría en negativo."
+    "goalBalanceNegative": "El dinero de este reembolso ya se usó de su meta. Eliminarlo la dejaría en negativo.",
+    "sharedWith": "Compartido con {{partner}} · tu parte {{amount}}"
   },
   "form": {
     "addTitle": "Agregar transacción",
@@ -106,7 +107,13 @@
     "refundPurchaseOption": "{{description}} · {{date}} · {{remaining}} reembolsable",
     "loadingRefundablePurchases": "Cargando compras…",
     "refundCategoryLockedHint": "Determinada por la compra vinculada.",
-    "refundGoalNotice": "Esta compra se pagó con la meta {{goal}}. Los {{amount}} reembolsados volverán a ella y no aumentarán el límite del presupuesto ni la tasa de ahorro."
+    "refundGoalNotice": "Esta compra se pagó con la meta {{goal}}. Los {{amount}} reembolsados volverán a ella y no aumentarán el límite del presupuesto ni la tasa de ahorro.",
+    "sharedExpense": "Gasto compartido",
+    "shareExpense": "Compartir este gasto con {{partner}}",
+    "sharedHint": "El monto completo sigue contando contra tu propio presupuesto. Esto solo registra quién puso cuánto.",
+    "sharedDisabledHint": "Todavía no se puede compartir un gasto a meses o cubierto con ahorros.",
+    "yourSharePart": "Tu parte",
+    "partnerSharePart": "Parte de {{partner}}: {{amount}}"
   },
   "validation": {
     "selectCategory": "Selecciona una categoría",
@@ -125,6 +132,8 @@
     "refundCategoryMismatch": "Este reembolso debe usar la misma categoría que la compra.",
     "refundBeforePurchase": "La fecha del reembolso no puede ser anterior a la de la compra.",
     "refundExceedsPurchase": "De esta compra solo quedan {{remaining}} por reembolsar.",
-    "purchaseHasLinkedRefunds": "Esta compra no se puede cambiar así mientras tenga reembolsos vinculados. Desvincúlalos o bórralos primero."
+    "purchaseHasLinkedRefunds": "Esta compra no se puede cambiar así mientras tenga reembolsos vinculados. Desvincúlalos o bórralos primero.",
+    "shareAmountRange": "Ingresa un monto mayor a 0 y menor al total",
+    "shareNoLongerValid": "Este reparto ya no es válido — revisa tu hogar en Configuración e intenta de nuevo."
   }
 }

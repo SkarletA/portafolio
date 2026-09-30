@@ -34,10 +34,13 @@ import {
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getAvailableForExpense } from '@domain/goal'
 import { fitsRefundableRemaining } from '@domain/refund'
-import { paymentsMatchAmount, roundMoneyInput } from '@domain/money'
+import { paymentsMatchAmount, roundMoneyInput, subtractMoney } from '@domain/money'
 import { getTodayLocalDate } from '@domain/date'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
+import { useAuth } from '@context/AuthContext'
+import { useHousehold } from '@context/HouseholdContext'
 import s from './AddTransaction.module.css'
 
 const CATEGORY_COLORS = ['#2563eb', '#7c3aed', '#0ea5e9', '#f59e0b', '#ec4899', '#16a34a', '#dc2626', '#64748b']
@@ -66,6 +69,8 @@ interface FormErrors {
   savingsGoal?: string
   /** The selected refund link itself is no longer valid (ADR-006). */
   refundLink?: string
+  /** The split (docs/adr/009-shared-expense-split.md). */
+  share?: string
 }
 
 interface PaymentEntry {
@@ -98,6 +103,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     error: transactionError,
   } = useTransaction(mode === 'edit' ? id : undefined)
   const { goals, loading: goalsLoading } = useGoals()
+  const { user } = useAuth()
+  const { partnerMember, partner } = useHousehold()
 
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
@@ -113,6 +120,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const [isSavingsFunded, setIsSavingsFunded] = useState(false)
   const [savingsGoalId, setSavingsGoalId] = useState('')
   const [refundsTransactionId, setRefundsTransactionId] = useState('')
+  const [isShared, setIsShared] = useState(false)
+  const [ownSharePart, setOwnSharePart] = useState('')
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -158,6 +167,15 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   // transfer is a withdrawal; a reimbursement's is a refund (ADR-006) and is
   // never "available" to another expense.
   const existingWithdrawal = mode === 'edit' && transaction?.type === 'expense' ? (transaction?.goal_transfer ?? null) : null
+
+  // Sharing needs an accepted household partner (docs/adr/009-shared-expense-split.md);
+  // a pending invitation either way is not enough to share with yet.
+  const hasAcceptedPartner = partnerMember?.status === 'accepted'
+  const partnerName = getHouseholdPartnerDisplayName(partner)
+  // v1: a shared expense is a plain income-funded, single-installment expense
+  // (the same constraint the database enforces) - the checkbox is disabled
+  // rather than left to fail at submit time.
+  const canShareExpense = isExpense && !isFinanced && !isSavingsFunded && hasAcceptedPartner
 
   const isReimbursement = type === 'reimbursement'
   // The reimbursement's own stored amount, excluded from what counts as
@@ -259,8 +277,11 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setIsSavingsFunded(transaction.type === 'expense' && transaction.funding_source === 'savings')
     setSavingsGoalId(transaction.type === 'expense' ? (transaction.goal_transfer?.goal_id ?? '') : '')
     setRefundsTransactionId(transaction.refunds_transaction_id ?? '')
+    setIsShared(transaction.is_shared)
+    const ownShare = transaction.is_shared ? transaction.shares.find((share) => share.user_id === user?.id) : undefined
+    setOwnSharePart(ownShare ? String(ownShare.amount) : '')
     setHasPreloaded(true)
-  }, [mode, transaction, hasPreloaded])
+  }, [mode, transaction, hasPreloaded, user])
 
   const handleTypeChange = useCallback((event: MouseEvent<HTMLButtonElement>) => {
     const nextType = event.currentTarget.dataset.type as TransactionType | undefined
@@ -402,6 +423,20 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const handleSavingsGoalChange = useCallback((value: string) => {
     setSavingsGoalId(value)
     setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
+  }, [])
+
+  const handleSharedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsShared(event.target.checked)
+    setErrors((prev) => (prev.share ? { ...prev, share: undefined } : prev))
+  }, [])
+
+  const handleOwnSharePartChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setOwnSharePart(event.target.value)
+    setErrors((prev) => (prev.share ? { ...prev, share: undefined } : prev))
+  }, [])
+
+  const handleOwnSharePartBlur = useCallback(() => {
+    setOwnSharePart((prev) => roundMoneyInput(prev))
   }, [])
 
   // Linking a reimbursement takes the purchase's category, so its own
@@ -602,6 +637,24 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         }
       }
 
+      // A shared expense's own part must leave the partner something positive
+      // too (ADR-009's amount > 0 on both rows); the partner's part itself is
+      // never typed, so it can't independently be "too many decimals".
+      const effectiveIsShared = canShareExpense && isShared
+      let parsedOwnShare = 0
+      if (effectiveIsShared) {
+        parsedOwnShare = Number(ownSharePart)
+        if (
+          !ownSharePart ||
+          Number.isNaN(parsedOwnShare) ||
+          parsedOwnShare <= 0 ||
+          parsedOwnShare >= parsedAmount ||
+          roundMoneyInput(ownSharePart) !== ownSharePart
+        ) {
+          nextErrors.share = t('transactions:validation.shareAmountRange')
+        }
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -627,6 +680,13 @@ export function AddTransaction({ mode }: AddTransactionProps) {
               payment_method: payment.paymentMethod,
               amount: Number(payment.amount),
             })),
+        shares:
+          effectiveIsShared && user && partnerMember
+            ? [
+                { user_id: user.id, amount: parsedOwnShare },
+                { user_id: partnerMember.user_id, amount: subtractMoney(parsedAmount, parsedOwnShare) },
+              ]
+            : undefined,
       }
 
       const { error } = await saveTransaction(mode === 'edit' && id ? id : null, input)
@@ -674,6 +734,17 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           })
           return
         }
+        // ADR-009: the household changed (dissolved, or the split itself)
+        // between the UI check above and the database's own, authoritative one.
+        if (
+          moneyError?.code === 'invalid_share_plan' ||
+          moneyError?.code === 'household_required_for_shared_expense' ||
+          moneyError?.code === 'invalid_share_recipient' ||
+          moneyError?.code === 'shares_do_not_match_amount'
+        ) {
+          setErrors({ share: t('transactions:validation.shareNoLongerValid') })
+          return
+        }
         // Saving a purchase (not the refund form) that already has linked
         // reimbursements and would change what they mean.
         if (moneyError?.code === 'purchase_has_linked_refunds') {
@@ -705,6 +776,11 @@ export function AddTransaction({ mode }: AddTransactionProps) {
       isReimbursement,
       refundsTransactionId,
       selectedPurchase,
+      canShareExpense,
+      isShared,
+      ownSharePart,
+      user,
+      partnerMember,
       mode,
       id,
       navigate,
@@ -723,6 +799,12 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     payments.filter((payment) => payment.checked).map((payment) => Number(payment.amount) || 0),
     totalAmount
   )
+
+  // Only the owner's part is ever typed; the partner's is always the exact
+  // remainder (ADR-005: a difference shown as a money figure goes through the
+  // cents helpers, never raw subtraction).
+  const parsedOwnSharePart = roundMoneyInput(ownSharePart) === ownSharePart ? Number(ownSharePart) || 0 : 0
+  const partnerSharePart = subtractMoney(totalAmount, parsedOwnSharePart)
 
   // Computed with the same domain functions the monthly figures use, so the
   // preview always matches what Budgets and Analytics will count.
@@ -1137,6 +1219,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 type="checkbox"
                 checked={isFinanced}
                 onChange={handleFinancedChange}
+                disabled={isShared}
                 data-testid="add-transaction-financed-checkbox"
               />
               {t('transactions:form.financed')}
@@ -1183,6 +1266,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 type="checkbox"
                 checked={isSavingsFunded}
                 onChange={handleSavingsFundedChange}
+                disabled={isShared}
                 aria-describedby="add-transaction-savings-funded-hint"
                 data-testid="add-transaction-savings-funded-checkbox"
               />
@@ -1224,6 +1308,59 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 {errors.savingsGoal && (
                   <p id="add-transaction-savings-goal-error" role="alert" className={s.error}>
                     {errors.savingsGoal}
+                  </p>
+                )}
+              </label>
+            )}
+          </fieldset>
+        )}
+
+        {isExpense && hasAcceptedPartner && (
+          <fieldset className={s.paymentPlan}>
+            <legend className={s.paymentPlanLegend}>{t('transactions:form.sharedExpense')}</legend>
+
+            <label className={s.paymentMethodCheckboxLabel}>
+              <input
+                type="checkbox"
+                checked={isShared}
+                onChange={handleSharedChange}
+                disabled={isFinanced || isSavingsFunded}
+                aria-describedby="add-transaction-shared-hint"
+                data-testid="add-transaction-shared-checkbox"
+              />
+              {t('transactions:form.shareExpense', { partner: partnerName ?? '' })}
+            </label>
+            <p id="add-transaction-shared-hint" className={s.hint}>
+              {isFinanced || isSavingsFunded
+                ? t('transactions:form.sharedDisabledHint')
+                : t('transactions:form.sharedHint')}
+            </p>
+
+            {isShared && (
+              <label className={s.field}>
+                {t('transactions:form.yourSharePart')}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={ownSharePart}
+                  onChange={handleOwnSharePartChange}
+                  onBlur={handleOwnSharePartBlur}
+                  className={s.input}
+                  aria-invalid={!!errors.share}
+                  aria-describedby={errors.share ? 'add-transaction-share-error' : 'add-transaction-partner-share-hint'}
+                  data-testid="add-transaction-own-share-input"
+                />
+                <p id="add-transaction-partner-share-hint" className={s.hint} data-testid="add-transaction-partner-share-hint">
+                  {t('transactions:form.partnerSharePart', {
+                    partner: partnerName ?? '',
+                    amount: formatCurrency(partnerSharePart, currency, locale),
+                  })}
+                </p>
+                {errors.share && (
+                  <p id="add-transaction-share-error" role="alert" className={s.error}>
+                    {errors.share}
                   </p>
                 )}
               </label>

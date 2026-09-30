@@ -9,8 +9,11 @@ import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { allocateInstallments } from '@domain/installments'
 import type { RefundSummary } from '@domain/refund'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
+import { useAuth } from '@context/AuthContext'
+import { useHousehold } from '@context/HouseholdContext'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '@atoms/Icon/Icon'
 import s from './TransactionItem.module.css'
@@ -50,6 +53,8 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
   const navigate = useNavigate()
   const { currency } = useCurrency()
   const { language } = useLanguage()
+  const { user } = useAuth()
+  const { partner } = useHousehold()
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -96,6 +101,17 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
   const refundsSummaryLabel =
     refundsSummary && refundsSummary.count > 0
       ? t('item.refundsSummary', { count: refundsSummary.count, total: formatCurrency(refundsSummary.total, currency, locale) })
+      : null
+
+  // See docs/adr/009-shared-expense-split.md: accounting only, not who can see
+  // this row - ADR-007 already gives the household full visibility either way.
+  const ownSharePart = transaction.is_shared ? transaction.shares.find((share) => share.user_id === user?.id) : null
+  const sharedLabel =
+    transaction.is_shared && ownSharePart
+      ? t('item.sharedWith', {
+          partner: getHouseholdPartnerDisplayName(partner) ?? '',
+          amount: formatCurrency(ownSharePart.amount, currency, locale),
+        })
       : null
 
   const handleEditClick = useCallback(() => {
@@ -209,6 +225,7 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
             {refundOfLabel ? ` · ${refundOfLabel}` : ''}
             {refundGoalLabel ? ` · ${refundGoalLabel}` : ''}
             {refundsSummaryLabel ? ` · ${refundsSummaryLabel}` : ''}
+            {sharedLabel ? ` · ${sharedLabel}` : ''}
           </p>
         </div>
       </div>

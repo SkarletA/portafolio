@@ -11,6 +11,7 @@ import { useCategories } from '@hooks/useCategories'
 import { useTransaction } from '@hooks/useTransaction'
 import { useGoals } from '@hooks/useGoals'
 import { useRefundablePurchases } from '@hooks/useRefundablePurchases'
+import { useHousehold } from '@context/HouseholdContext'
 
 vi.mock('@services/transactionsService', async () => {
   const actual = await vi.importActual<typeof import('@services/transactionsService')>('@services/transactionsService')
@@ -23,6 +24,8 @@ vi.mock('@hooks/useGoals', () => ({ useGoals: vi.fn() }))
 vi.mock('@hooks/useRefundablePurchases', () => ({ useRefundablePurchases: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('@context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@example.com' } }) }))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 
 const food = { id: 'food', name: 'Food', icon: null, color: null, parent_id: null, translationKey: 'food' }
 const travel = { id: 'travel', name: 'Travel', icon: null, color: null, parent_id: null, translationKey: 'travel' }
@@ -49,11 +52,18 @@ const laptopPurchase = {
   remaining: 200,
 }
 
-function mockHooks(purchases = [shoesPurchase, laptopPurchase]) {
+const acceptedPartnerMember = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
+const bel = { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null }
+
+function mockHooks(purchases = [shoesPurchase, laptopPurchase], household: Record<string, unknown> = {}) {
   vi.mocked(useCategories).mockReturnValue({ categories: [food, travel], loading: false, error: null, refetch: vi.fn() } as never)
   vi.mocked(useTransaction).mockReturnValue({ transaction: null, loading: false, error: null } as never)
   vi.mocked(useGoals).mockReturnValue({ goals: [], loading: false } as never)
   vi.mocked(useRefundablePurchases).mockReturnValue({ purchases, loading: false, error: null } as never)
+  // No household by default: most of these tests predate sharing (ADR-009),
+  // so the shared-expense fieldset (gated on an accepted partner) stays
+  // hidden, same as for every user without a household today.
+  vi.mocked(useHousehold).mockReturnValue({ ownMember: null, partnerMember: null, partner: null, ...household } as never)
 }
 
 function renderCreate() {
@@ -268,5 +278,146 @@ describe('AddTransaction refund link', () => {
 
     expect(screen.getByTestId('add-transaction-refund-link-select-trigger')).toHaveTextContent(/Shoes/)
     expect(screen.getByTestId('add-transaction-category-select-trigger')).toBeDisabled()
+  })
+})
+
+function fillBasicExpenseFields(amount: string) {
+  fireEvent.change(screen.getByTestId('add-transaction-amount-input'), { target: { value: amount } })
+  fireEvent.change(screen.getByTestId('add-transaction-description-input'), { target: { value: 'Rent' } })
+  fireEvent.click(screen.getByTestId('add-transaction-category-select-trigger'))
+  fireEvent.click(screen.getByTestId('add-transaction-category-select-option-food'))
+  fireEvent.click(screen.getByTestId('add-transaction-payment-cash-checkbox'))
+  fireEvent.change(screen.getByTestId('add-transaction-payment-cash-amount-input'), { target: { value: amount } })
+}
+
+describe('AddTransaction shared expense', () => {
+  beforeEach(() => {
+    vi.mocked(saveTransaction).mockReset()
+  })
+
+  it('offers no shared-expense section without an accepted household partner', () => {
+    mockHooks(undefined, { partnerMember: null })
+    renderCreate()
+
+    expect(screen.queryByTestId('add-transaction-shared-checkbox')).not.toBeInTheDocument()
+  })
+
+  it('offers no shared-expense section while the partner has only a pending invitation', () => {
+    mockHooks(undefined, { partnerMember: { ...acceptedPartnerMember, status: 'pending' } })
+    renderCreate()
+
+    expect(screen.queryByTestId('add-transaction-shared-checkbox')).not.toBeInTheDocument()
+  })
+
+  it('reveals the split once shared, with the partner amount computed as the exact remainder', () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    renderCreate()
+
+    expect(screen.queryByTestId('add-transaction-own-share-input')).not.toBeInTheDocument()
+
+    fillBasicExpenseFields('100')
+    fireEvent.click(screen.getByTestId('add-transaction-shared-checkbox'))
+    fireEvent.change(screen.getByTestId('add-transaction-own-share-input'), { target: { value: '60' } })
+
+    expect(screen.getByTestId('add-transaction-partner-share-hint')).toHaveTextContent('"amount":"$40.00"')
+  })
+
+  it('rejects an own share of 0 or the full amount, without calling the server', () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    renderCreate()
+    fillBasicExpenseFields('100')
+    fireEvent.click(screen.getByTestId('add-transaction-shared-checkbox'))
+
+    fireEvent.change(screen.getByTestId('add-transaction-own-share-input'), { target: { value: '100' } })
+    fireEvent.click(screen.getByTestId('add-transaction-save-button'))
+
+    expect(screen.getByText('transactions:validation.shareAmountRange')).toBeInTheDocument()
+    expect(saveTransaction).not.toHaveBeenCalled()
+  })
+
+  it('sends the split, exactly the caller and the household partner, summing to the total', async () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    vi.mocked(saveTransaction).mockResolvedValue({ data: 't1', error: null } as never)
+    renderCreate()
+    fillBasicExpenseFields('100')
+    fireEvent.click(screen.getByTestId('add-transaction-shared-checkbox'))
+    fireEvent.change(screen.getByTestId('add-transaction-own-share-input'), { target: { value: '60' } })
+    fireEvent.click(screen.getByTestId('add-transaction-save-button'))
+
+    await waitFor(() => expect(saveTransaction).toHaveBeenCalled())
+    expect(vi.mocked(saveTransaction).mock.calls[0][1].shares).toEqual([
+      { user_id: 'u1', amount: 60 },
+      { user_id: 'u2', amount: 40 },
+    ])
+  })
+
+  it('disables the shared-expense checkbox while financed or savings-funded, and vice versa', () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    renderCreate()
+
+    fireEvent.click(screen.getByTestId('add-transaction-financed-checkbox'))
+    expect(screen.getByTestId('add-transaction-shared-checkbox')).toBeDisabled()
+
+    fireEvent.click(screen.getByTestId('add-transaction-financed-checkbox'))
+    fireEvent.click(screen.getByTestId('add-transaction-shared-checkbox'))
+    expect(screen.getByTestId('add-transaction-financed-checkbox')).toBeDisabled()
+    expect(screen.getByTestId('add-transaction-savings-funded-checkbox')).toBeDisabled()
+  })
+
+  it('maps a rejected household or split to the share field', async () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    vi.mocked(saveTransaction).mockResolvedValue({
+      data: null,
+      error: { code: 'P0001', message: 'household_required_for_shared_expense' },
+    } as never)
+    renderCreate()
+    fillBasicExpenseFields('100')
+    fireEvent.click(screen.getByTestId('add-transaction-shared-checkbox'))
+    fireEvent.change(screen.getByTestId('add-transaction-own-share-input'), { target: { value: '60' } })
+    fireEvent.click(screen.getByTestId('add-transaction-save-button'))
+
+    expect(await screen.findByText('transactions:validation.shareNoLongerValid')).toBeInTheDocument()
+  })
+
+  it('preloads an existing shared transaction with the caller\'s own part', () => {
+    mockHooks(undefined, { partnerMember: acceptedPartnerMember, partner: bel })
+    vi.mocked(useTransaction).mockReturnValue({
+      transaction: {
+        id: 't1',
+        user_id: 'u1',
+        description: 'Rent',
+        amount: 1000,
+        type: 'expense',
+        category_id: 'food',
+        date: '2026-09-05',
+        notes: null,
+        created_at: null,
+        installment_months: 1,
+        funding_source: 'income',
+        refunds_transaction_id: null,
+        last_installment_date: '2026-09-05',
+        goal_transfer: null,
+        category: food,
+        payments: [{ id: 'pay1', transaction_id: 't1', payment_method: 'Cash', amount: 1000 }],
+        is_shared: true,
+        shares: [
+          { id: 's1', transaction_id: 't1', user_id: 'u1', amount: 600 },
+          { id: 's2', transaction_id: 't1', user_id: 'u2', amount: 400 },
+        ],
+      },
+      loading: false,
+      error: null,
+    } as never)
+
+    render(
+      <MemoryRouter initialEntries={['/finora/transactions/t1/edit']}>
+        <Routes>
+          <Route path="/finora/transactions/:id/edit" element={<AddTransaction mode="edit" />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByTestId('add-transaction-shared-checkbox')).toBeChecked()
+    expect(screen.getByTestId('add-transaction-own-share-input')).toHaveValue(600)
   })
 })

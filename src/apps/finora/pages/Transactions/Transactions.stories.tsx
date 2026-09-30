@@ -3,7 +3,15 @@ import { restHandler } from '@storybook-mocks/supabaseRest'
 import { CATEGORIES, TRANSACTIONS } from '@storybook-mocks/fixtures'
 import { Transactions } from './Transactions'
 
-const TRANSACTIONS_HANDLERS = [...authHandlers, restHandler('transactions', TRANSACTIONS), restHandler('categories', CATEGORIES)]
+// household_members empty -> useHousehold resolves to "no household" (see
+// AppShell/Settings.stories.tsx); each row is a TransactionItem, which reads
+// it too now (ADR-009's shared label).
+const TRANSACTIONS_HANDLERS = [
+  ...authHandlers,
+  restHandler('transactions', TRANSACTIONS),
+  restHandler('categories', CATEGORIES),
+  restHandler('household_members', []),
+]
 
 export default {
   title: 'Finora/Pages/Transactions',

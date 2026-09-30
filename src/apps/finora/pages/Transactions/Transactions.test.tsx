@@ -12,6 +12,10 @@ vi.mock('@hooks/useTransactions', () => ({ useTransactions: vi.fn() }))
 vi.mock('@hooks/useCategories', () => ({ useCategories: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: vi.fn() }))
+vi.mock('@context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@example.com' } }) }))
+vi.mock('@context/HouseholdContext', () => ({
+  useHousehold: () => ({ ownMember: null, partnerMember: null, partner: null }),
+}))
 
 const navigateMock = vi.fn()
 vi.mock('react-router-dom', async () => {

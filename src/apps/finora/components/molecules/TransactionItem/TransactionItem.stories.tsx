@@ -218,3 +218,35 @@ export const PurchaseWithRefunds = {
     refundsSummary: { count: 2, total: 45.5 },
   },
 }
+
+// ADR-009: split with the household partner. No signed-in user in Storybook
+// (the norm - see .storybook/preview.tsx), so useHousehold() resolves to no
+// partner name; the label still renders with the caller's own part.
+export const SharedExpense = {
+  args: {
+    transaction: {
+      id: '8',
+      user_id: 'u1',
+      description: 'Rent',
+      amount: 1000,
+      type: 'expense',
+      category_id: 'c6',
+      date: '2026-09-01',
+      notes: null,
+      created_at: null,
+      installment_months: 1,
+      funding_source: 'income',
+      refunds_transaction_id: null,
+      last_installment_date: '2026-09-01',
+      goal_transfer: null,
+      category: { id: 'c6', name: 'Housing', icon: 'home', color: '#7c3aed' },
+      payments: [{ id: 'p8', transaction_id: '8', payment_method: 'Bank Transfer', amount: 1000 }],
+      is_shared: true,
+      shares: [
+        { id: 's1', transaction_id: '8', user_id: 'u1', amount: 600 },
+        { id: 's2', transaction_id: '8', user_id: 'u2', amount: 400 },
+      ],
+    },
+    onDeleted: () => {},
+  },
+}
