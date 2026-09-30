@@ -79,6 +79,21 @@ describe('TransactionItem', () => {
     expect(screen.queryByText(/item\.sharedWith/)).not.toBeInTheDocument()
   })
 
+  it('shows edit and delete for the signed-in user\'s own row', () => {
+    renderItem(baseTransaction)
+
+    expect(screen.getByTestId('transaction-item-1-edit-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('transaction-item-1-delete-icon')).toBeInTheDocument()
+  })
+
+  it("hides edit and delete for a household partner's row, and names them instead", () => {
+    renderItem({ ...baseTransaction, user_id: 'u2' })
+
+    expect(screen.queryByTestId('transaction-item-1-edit-icon')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('transaction-item-1-delete-icon')).not.toBeInTheDocument()
+    expect(screen.getByText(/Bel Suarez · Food/)).toBeInTheDocument()
+  })
+
   it('renders an expense with a negative, danger-colored amount', () => {
     renderItem(baseTransaction)
 

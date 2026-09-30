@@ -22,16 +22,23 @@ export type TransactionWithCategory = Transaction & {
 const TRANSACTION_SELECT =
   '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), goal_transfer:goal_transfers(kind, goal_id, amount, goal:goals(name)), shares:transaction_shares(id, transaction_id, user_id, amount)'
 
-export async function getTransactions() {
+// householdMemberIds: when given (both members accepted - see
+// docs/adr/007-household-foundations.md), widens the list to every member's
+// rows instead of only the caller's own; RLS already allows this, this is
+// only the client choosing to ask for more than itself. Omitted or empty,
+// behaves exactly as before.
+export async function getTransactions(householdMemberIds?: string[]) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
+  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+
   return supabase
     .from('transactions')
     .select(TRANSACTION_SELECT)
-    .eq('user_id', userData.user.id)
+    .in('user_id', userIds)
     .order('date', { ascending: false })
 }
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PurchaseHasLinkedRefundsError } from './moneyMovementErrors'
-import { deleteTransaction, getRefundablePurchases, saveTransaction } from './transactionsService'
+import { deleteTransaction, getRefundablePurchases, getTransactions, saveTransaction } from './transactionsService'
 
 interface Call {
   table: string
@@ -27,6 +27,7 @@ function query(table: string) {
       return builder
     },
     eq: (...args: [string, unknown]) => (call.filters.push(['eq', ...args]), builder),
+    in: (...args: [string, unknown]) => (call.filters.push(['in', ...args]), builder),
     not: (...args: [string, string, unknown]) => (call.filters.push(['not', ...args]), builder),
     order: () => builder,
     then: (resolve: (value: unknown) => void) => {
@@ -66,6 +67,20 @@ const newTransaction = {
   savings_goal_id: null,
   payments: [{ payment_method: 'Cash', amount: 30 }],
 }
+
+describe('getTransactions', () => {
+  it('filters to only the caller when no household ids are given', async () => {
+    await getTransactions()
+
+    expect(calls[0].filters).toContainEqual(['in', 'user_id', ['u1']])
+  })
+
+  it('filters to every given household member instead', async () => {
+    await getTransactions(['u1', 'u2'])
+
+    expect(calls[0].filters).toContainEqual(['in', 'user_id', ['u1', 'u2']])
+  })
+})
 
 describe('saveTransaction', () => {
   it('sends the purchase a reimbursement refunds', async () => {

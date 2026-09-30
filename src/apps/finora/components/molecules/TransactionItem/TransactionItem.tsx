@@ -114,6 +114,12 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
         })
       : null
 
+  // A household view lists both members' rows (PR5, ADR-007); only the owner
+  // may edit or delete their own transaction - forming a household or
+  // appearing in a share never grants write access to anyone else's.
+  const isOwner = transaction.user_id === user?.id
+  const ownerLabel = !isOwner ? getHouseholdPartnerDisplayName(partner) : null
+
   const handleEditClick = useCallback(() => {
     navigate(`/finora/transactions/${transaction.id}/edit`)
   }, [navigate, transaction.id])
@@ -218,6 +224,7 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
         <div className={s.info}>
           <p className={s.description}>{transaction.description}</p>
           <p className={s.meta}>
+            {ownerLabel ? `${ownerLabel} · ` : ''}
             {categoryDisplayName ?? t('item.uncategorized')}
             {paymentMethodsLabel ? ` · ${paymentMethodsLabel}` : ''}
             {installmentsLabel ? ` · ${installmentsLabel}` : ''}
@@ -237,24 +244,28 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
       </p>
 
       <div className={s.actions}>
-        <button
-          type="button"
-          onClick={handleEditClick}
-          aria-label={t('item.editAriaLabel', { description: transaction.description })}
-          className={s.actionIcon}
-          data-testid={`transaction-item-${transaction.id}-edit-icon`}
-        >
-          <Icon name="edit" className={s.actionIconGlyph} />
-        </button>
-        <button
-          type="button"
-          onClick={handleDeleteClick}
-          aria-label={t('item.deleteAriaLabel', { description: transaction.description })}
-          className={s.actionIcon}
-          data-testid={`transaction-item-${transaction.id}-delete-icon`}
-        >
-          <Icon name="trash" className={s.actionIconGlyph} />
-        </button>
+        {isOwner && (
+          <>
+            <button
+              type="button"
+              onClick={handleEditClick}
+              aria-label={t('item.editAriaLabel', { description: transaction.description })}
+              className={s.actionIcon}
+              data-testid={`transaction-item-${transaction.id}-edit-icon`}
+            >
+              <Icon name="edit" className={s.actionIconGlyph} />
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              aria-label={t('item.deleteAriaLabel', { description: transaction.description })}
+              className={s.actionIcon}
+              data-testid={`transaction-item-${transaction.id}-delete-icon`}
+            >
+              <Icon name="trash" className={s.actionIconGlyph} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
