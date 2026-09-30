@@ -40,6 +40,8 @@ function transaction(overrides: Partial<TransactionWithCategory>): TransactionWi
     goal_transfer: null,
     category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null },
     payments: [{ id: 'p1', transaction_id: '1', payment_method: 'Credit Card', amount: 120 }],
+    is_shared: false,
+    shares: [],
     ...overrides,
   }
 }

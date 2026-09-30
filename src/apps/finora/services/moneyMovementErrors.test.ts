@@ -29,6 +29,15 @@ describe('parseMoneyMovementError', () => {
     expect(parseMoneyMovementError({ code: 'P0001', message: code })).toEqual({ code, available: null })
   })
 
+  it.each([
+    'invalid_share_plan',
+    'household_required_for_shared_expense',
+    'invalid_share_recipient',
+    'shares_do_not_match_amount',
+  ])('reads the shared expense code %s', (code) => {
+    expect(parseMoneyMovementError({ code: 'P0001', message: code })).toEqual({ code, available: null })
+  })
+
   it('reads how much can still be refunded from refund_exceeds_purchase', () => {
     expect(parseMoneyMovementError({ code: 'P0001', message: 'refund_exceeds_purchase', details: '70.00' })).toEqual({
       code: 'refund_exceeds_purchase',

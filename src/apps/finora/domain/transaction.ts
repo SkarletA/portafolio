@@ -1,4 +1,5 @@
 import type { TransactionPayment } from './transactionPayment'
+import type { TransactionShare } from './transactionShare'
 import type { GoalTransferKind } from './goal'
 
 export type TransactionType = 'expense' | 'income' | 'reimbursement'
@@ -30,6 +31,14 @@ export interface Transaction {
   /** Present exactly when funding_source is 'savings'. */
   goal_transfer: TransactionGoalTransfer | null
   payments: TransactionPayment[]
+  /**
+   * Whether this expense's amount is split with the owner's household
+   * partner - accounting only, never who can see it (ADR-007 already gives
+   * full visibility). See docs/adr/009-shared-expense-split.md.
+   */
+  is_shared: boolean
+  /** Exactly two rows (the owner and their household partner) when is_shared; empty otherwise. */
+  shares: TransactionShare[]
 }
 
 // The Goal transfer tied to this transaction: a 'withdrawal' for a
