@@ -89,6 +89,12 @@ export interface NewTransactionInput {
    * docs/adr/009-shared-expense-split.md.
    */
   shares?: TransactionShareInput[]
+  /**
+   * The owner's own expense in full, tagged as counting toward the
+   * household - no split. Mutually exclusive with shares. See
+   * docs/adr/010-household-expense-tag-and-household-budget.md.
+   */
+  is_household_expense?: boolean
 }
 
 // Creates (id null) or updates a transaction with its payments and, for a
@@ -109,6 +115,7 @@ export function saveTransaction(id: string | null, data: NewTransactionInput) {
     p_payments: data.payments,
     p_refunds_transaction_id: data.refunds_transaction_id ?? null,
     p_shares: data.shares && data.shares.length > 0 ? data.shares : null,
+    p_is_household_expense: data.is_household_expense ?? false,
   })
 }
 

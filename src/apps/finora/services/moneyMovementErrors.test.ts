@@ -34,6 +34,7 @@ describe('parseMoneyMovementError', () => {
     'household_required_for_shared_expense',
     'invalid_share_recipient',
     'shares_do_not_match_amount',
+    'household_required_for_household_expense',
   ])('reads the shared expense code %s', (code) => {
     expect(parseMoneyMovementError({ code: 'P0001', message: code })).toEqual({ code, available: null })
   })

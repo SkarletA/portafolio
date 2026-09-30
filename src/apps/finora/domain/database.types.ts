@@ -19,6 +19,7 @@ export type Database = {
           category_id: string
           created_at: string | null
           id: string
+          is_household: boolean
           monthly_limit: number
           user_id: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           category_id: string
           created_at?: string | null
           id?: string
+          is_household?: boolean
           monthly_limit: number
           user_id: string
         }
@@ -33,6 +35,7 @@ export type Database = {
           category_id?: string
           created_at?: string | null
           id?: string
+          is_household?: boolean
           monthly_limit?: number
           user_id?: string
         }
@@ -328,6 +331,7 @@ export type Database = {
           funding_source: string
           id: string
           installment_months: number
+          is_household_expense: boolean
           is_shared: boolean
           last_installment_date: string | null
           notes: string | null
@@ -344,6 +348,7 @@ export type Database = {
           funding_source?: string
           id?: string
           installment_months?: number
+          is_household_expense?: boolean
           is_shared?: boolean
           last_installment_date?: string | null
           notes?: string | null
@@ -360,6 +365,7 @@ export type Database = {
           funding_source?: string
           id?: string
           installment_months?: number
+          is_household_expense?: boolean
           is_shared?: boolean
           last_installment_date?: string | null
           notes?: string | null
@@ -422,6 +428,7 @@ export type Database = {
           p_description: string
           p_id: string
           p_installment_months: number
+          p_is_household_expense?: boolean
           p_notes: string
           p_payments: Json
           p_refunds_transaction_id?: string

@@ -6,6 +6,14 @@ export interface Budget {
   category_id: string
   monthly_limit: number
   created_at: string | null
+  /**
+   * Whether both household members' tagged expenses (shared or
+   * household-tagged, ADR-009/ADR-010) in this category count toward
+   * monthly_limit, not just the owner's own. The owner is still the only
+   * one who can edit or delete this budget (ADR-007: visibility, not
+   * ownership). See docs/adr/010-household-expense-tag-and-household-budget.md.
+   */
+  is_household: boolean
 }
 
 export type BudgetStatus = 'on-track' | 'near-limit' | 'exceeded'

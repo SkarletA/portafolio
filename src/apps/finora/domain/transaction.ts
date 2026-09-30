@@ -39,6 +39,12 @@ export interface Transaction {
   is_shared: boolean
   /** Exactly two rows (the owner and their household partner) when is_shared; empty otherwise. */
   shares: TransactionShare[]
+  /**
+   * The owner's own expense in full, simply tagged as counting toward the
+   * household - no split, mutually exclusive with is_shared. See
+   * docs/adr/010-household-expense-tag-and-household-budget.md.
+   */
+  is_household_expense: boolean
 }
 
 // The Goal transfer tied to this transaction: a 'withdrawal' for a

@@ -12,6 +12,7 @@ const baseBudget: BudgetWithProgress = {
   category_id: 'c1',
   monthly_limit: 400,
   created_at: null,
+  is_household: false,
   category: { id: 'c1', name: 'Food', icon: 'utensils', color: '#f59e0b', translationKey: null },
   spent: 120,
   effectiveLimit: 400,

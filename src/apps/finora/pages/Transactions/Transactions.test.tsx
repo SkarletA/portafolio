@@ -48,6 +48,7 @@ function transaction(overrides: Partial<TransactionWithCategory>): TransactionWi
     payments: [{ id: 'p1', transaction_id: '1', payment_method: 'Credit Card', amount: 120 }],
     is_shared: false,
     shares: [],
+    is_household_expense: false,
     ...overrides,
   }
 }

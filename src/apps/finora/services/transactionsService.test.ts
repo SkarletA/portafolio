@@ -117,6 +117,18 @@ describe('saveTransaction', () => {
 
     expect(rpcCalls[0].args.p_shares).toBeNull()
   })
+
+  it('sends is_household_expense when set', async () => {
+    await saveTransaction(null, { ...newTransaction, type: 'expense', is_household_expense: true })
+
+    expect(rpcCalls[0].args.p_is_household_expense).toBe(true)
+  })
+
+  it('sends false for is_household_expense when omitted, exactly as before', async () => {
+    await saveTransaction(null, newTransaction)
+
+    expect(rpcCalls[0].args.p_is_household_expense).toBe(false)
+  })
 })
 
 describe('deleteTransaction', () => {

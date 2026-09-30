@@ -3,9 +3,12 @@
 // supabase/migrations/20260923120000_goal_transfers.sql,
 // supabase/migrations/20260928000000_refund_links.sql,
 // supabase/migrations/20260930150000_shared_expense_split.sql,
+// supabase/migrations/20261001090000_household_expense_tag_and_budget.sql,
 // docs/adr/004-goal-transfers.md,
-// docs/adr/006-reimbursement-purchase-links.md and
-// docs/adr/009-shared-expense-split.md. Callers map them to their own messages.
+// docs/adr/006-reimbursement-purchase-links.md,
+// docs/adr/009-shared-expense-split.md and
+// docs/adr/010-household-expense-tag-and-household-budget.md. Callers map
+// them to their own messages.
 const CODES = [
   'not_authenticated',
   'invalid_amount',
@@ -24,6 +27,7 @@ const CODES = [
   'household_required_for_shared_expense',
   'invalid_share_recipient',
   'shares_do_not_match_amount',
+  'household_required_for_household_expense',
 ] as const
 
 export type MoneyMovementErrorCode = (typeof CODES)[number]
