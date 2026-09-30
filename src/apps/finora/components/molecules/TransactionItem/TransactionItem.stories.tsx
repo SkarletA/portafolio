@@ -1,4 +1,13 @@
+import { authHandlers, MOCK_USER_ID, signInMockUser } from '@storybook-mocks/supabaseAuth'
+import { restHandler } from '@storybook-mocks/supabaseRest'
 import { TransactionItem } from './TransactionItem'
+
+// Signed in (not the Storybook norm - see .storybook/preview.tsx) so
+// useAuth().user.id matches each fixture's user_id below: without it, every
+// row would read as not-the-caller's-own (PR5's ownership guard) and hide
+// edit/delete on every story. household_members empty -> useHousehold
+// resolves to "no household", same as AppShell/Settings.stories.tsx.
+const TRANSACTION_ITEM_HANDLERS = [...authHandlers, restHandler('household_members', [])]
 
 export default {
   title: 'Finora/Molecules/TransactionItem',
@@ -7,10 +16,12 @@ export default {
     docs: {
       description: {
         component:
-          'A single transaction row: description, category, date, signed amount, and edit/delete actions.',
+          'A single transaction row: description, category, date, signed amount, and edit/delete actions (only for the signed-in user\'s own row - ADR-009/PR5).',
       },
     },
+    msw: { handlers: TRANSACTION_ITEM_HANDLERS },
   },
+  loaders: [signInMockUser],
   argTypes: {
     transaction: {
       description: 'The transaction to display, including its category and payment method breakdown.',
@@ -39,7 +50,7 @@ export const Expense = {
   args: {
     transaction: {
       id: '1',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Starbucks',
       amount: 120,
       type: 'expense',
@@ -63,7 +74,7 @@ export const Income = {
   args: {
     transaction: {
       id: '2',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Salary',
       amount: 35000,
       type: 'income',
@@ -87,7 +98,7 @@ export const Reimbursement = {
   args: {
     transaction: {
       id: '3',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Insurance refund',
       amount: 50,
       type: 'reimbursement',
@@ -111,7 +122,7 @@ export const SplitPayment = {
   args: {
     transaction: {
       id: '4',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Groceries',
       amount: 200,
       type: 'expense',
@@ -138,7 +149,7 @@ export const FinancedCoveredBySavings = {
   args: {
     transaction: {
       id: '5',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Flights to Madrid',
       amount: 20000,
       type: 'expense',
@@ -163,7 +174,7 @@ export const ReimbursementLinkedToPurchase = {
   args: {
     transaction: {
       id: '6',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Return - wrong size',
       amount: 40,
       type: 'reimbursement',
@@ -190,7 +201,7 @@ export const ReimbursementReturnedToGoal = {
   args: {
     transaction: {
       id: '7',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Airline refund',
       amount: 3000,
       type: 'reimbursement',
@@ -219,14 +230,14 @@ export const PurchaseWithRefunds = {
   },
 }
 
-// ADR-009: split with the household partner. No signed-in user in Storybook
-// (the norm - see .storybook/preview.tsx), so useHousehold() resolves to no
-// partner name; the label still renders with the caller's own part.
+// ADR-009: split with the household partner. household_members is mocked
+// empty above, so useHousehold() resolves to no partner name; the label
+// still renders with the caller's own part.
 export const SharedExpense = {
   args: {
     transaction: {
       id: '8',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       description: 'Rent',
       amount: 1000,
       type: 'expense',
@@ -243,9 +254,27 @@ export const SharedExpense = {
       payments: [{ id: 'p8', transaction_id: '8', payment_method: 'Bank Transfer', amount: 1000 }],
       is_shared: true,
       shares: [
-        { id: 's1', transaction_id: '8', user_id: 'u1', amount: 600 },
+        { id: 's1', transaction_id: '8', user_id: MOCK_USER_ID, amount: 600 },
         { id: 's2', transaction_id: '8', user_id: 'u2', amount: 400 },
       ],
+    },
+    onDeleted: () => {},
+  },
+}
+
+// PR5: a household view lists the partner's rows too, read-only (no edit or
+// delete icon) - shown here via a row owned by someone other than the
+// signed-in mock user. In the real app the meta line is also prefixed with
+// the partner's name (from get_household_partner, ADR-008); that RPC has no
+// MSW mock yet (see AppShell.stories.tsx's note), so the name is blank here
+// and only the hidden actions demonstrate the guard.
+export const HouseholdPartnerRow = {
+  args: {
+    transaction: {
+      ...Expense.args.transaction,
+      id: '9',
+      user_id: 'u2',
+      description: 'Groceries',
     },
     onDeleted: () => {},
   },

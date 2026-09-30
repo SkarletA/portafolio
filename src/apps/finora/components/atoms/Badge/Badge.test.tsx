@@ -8,4 +8,10 @@ describe('Badge', () => {
 
     expect(screen.getByText('Completed')).toBeInTheDocument()
   })
+
+  it('applies the shared variant styling', () => {
+    render(<Badge variant="shared">You $60.00</Badge>)
+
+    expect(screen.getByText('You $60.00').className).toContain('shared')
+  })
 })

@@ -11,6 +11,11 @@
     "paymentMethodAriaLabel": "Filtrar por método de pago",
     "allPaymentMethods": "Todos los métodos de pago"
   },
+  "tabs": {
+    "ariaLabel": "Mías o compartidas con el hogar",
+    "mine": "Mis transacciones",
+    "household": "Hogar"
+  },
   "table": {
     "transaction": "Transacción",
     "date": "Fecha",
@@ -20,6 +25,7 @@
     "loading": "Cargando transacciones…",
     "error": "No pudimos cargar tus transacciones. Inténtalo de nuevo más tarde.",
     "empty": "Todavía no tienes transacciones.",
+    "emptyHousehold": "Todavía no hay gastos compartidos.",
     "noMatches": "Ninguna transacción coincide con tus filtros."
   },
   "item": {
@@ -39,7 +45,10 @@
     "deleteBlockedByRefunds": "No se puede eliminar: {{count}} reembolso(s) vinculado(s) deben desvincularse o eliminarse primero: {{list}}",
     "refundListItem": "{{description}} ({{amount}})",
     "goalBalanceNegative": "El dinero de este reembolso ya se usó de su meta. Eliminarlo la dejaría en negativo.",
-    "sharedWith": "Compartido con {{partner}} · tu parte {{amount}}"
+    "paidBy": "Pagado por {{who}}",
+    "you": "ti",
+    "chipYou": "Tú {{amount}}",
+    "chipOther": "{{name}} {{amount}}"
   },
   "form": {
     "addTitle": "Agregar transacción",
