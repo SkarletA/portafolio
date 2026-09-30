@@ -38,7 +38,8 @@
     "refundsSummary": "{{count}} refunds · {{total}} refunded",
     "deleteBlockedByRefunds": "Can't delete: {{count}} linked refund(s) must be unlinked or deleted first: {{list}}",
     "refundListItem": "{{description}} ({{amount}})",
-    "goalBalanceNegative": "This refund's money was already used from its goal. Deleting it would leave the goal negative."
+    "goalBalanceNegative": "This refund's money was already used from its goal. Deleting it would leave the goal negative.",
+    "sharedWith": "Shared with {{partner}} · your part {{amount}}"
   },
   "form": {
     "addTitle": "Add transaction",
@@ -106,7 +107,13 @@
     "refundPurchaseOption": "{{description}} · {{date}} · {{remaining}} refundable",
     "loadingRefundablePurchases": "Loading purchases…",
     "refundCategoryLockedHint": "Set from the linked purchase.",
-    "refundGoalNotice": "This purchase was paid from the {{goal}} goal. The {{amount}} refunded will go back to it and will not raise the budget limit or the savings rate."
+    "refundGoalNotice": "This purchase was paid from the {{goal}} goal. The {{amount}} refunded will go back to it and will not raise the budget limit or the savings rate.",
+    "sharedExpense": "Shared expense",
+    "shareExpense": "Share this expense with {{partner}}",
+    "sharedHint": "The full amount still counts against your own budget. This only records who put in how much.",
+    "sharedDisabledHint": "Can't share a financed or savings-funded expense yet.",
+    "yourSharePart": "Your part",
+    "partnerSharePart": "{{partner}}'s part: {{amount}}"
   },
   "validation": {
     "selectCategory": "Select a category",
@@ -125,6 +132,8 @@
     "refundCategoryMismatch": "This refund must use the same category as the purchase.",
     "refundBeforePurchase": "The refund date can't be before the purchase date.",
     "refundExceedsPurchase": "Only {{remaining}} of this purchase can still be refunded.",
-    "purchaseHasLinkedRefunds": "This purchase can't be changed this way while it has linked refunds. Unlink or delete them first."
+    "purchaseHasLinkedRefunds": "This purchase can't be changed this way while it has linked refunds. Unlink or delete them first.",
+    "shareAmountRange": "Enter an amount greater than 0 and less than the total",
+    "shareNoLongerValid": "This split is no longer valid - check your household in Settings and try again."
   }
 }

@@ -8,6 +8,10 @@ const ADD_TRANSACTION_HANDLERS = [
   restHandler('transactions', TRANSACTIONS),
   restHandler('categories', CATEGORIES),
   restHandler('goals', GOALS),
+  // household_members empty -> useHousehold resolves to "no household", so
+  // the shared-expense fieldset (gated on an accepted partner) stays hidden,
+  // same as AppShell/Settings.stories.tsx.
+  restHandler('household_members', []),
 ]
 
 export default {

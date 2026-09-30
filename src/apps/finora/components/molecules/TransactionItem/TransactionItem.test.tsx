@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionItem } from './TransactionItem'
 import { deleteTransaction } from '@services/transactionsService'
+import { useHousehold } from '@context/HouseholdContext'
 import type { TransactionWithCategory } from '@services/transactionsService'
 import { PurchaseHasLinkedRefundsError } from '@services/moneyMovementErrors'
 
@@ -15,6 +16,8 @@ vi.mock('../../../services/transactionsService', async () => {
 
 vi.mock('../../../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
 vi.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@example.com' } }) }))
+vi.mock('../../../context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 
 const baseTransaction: TransactionWithCategory = {
   id: '1',
@@ -52,6 +55,28 @@ function renderItem(
 describe('TransactionItem', () => {
   beforeEach(() => {
     vi.mocked(deleteTransaction).mockReset()
+    vi.mocked(useHousehold).mockReturnValue({
+      partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+    } as never)
+  })
+
+  it('shows who a shared expense is split with and the caller\'s own part, in text', () => {
+    renderItem({
+      ...baseTransaction,
+      is_shared: true,
+      shares: [
+        { id: 's1', transaction_id: '1', user_id: 'u1', amount: 72 },
+        { id: 's2', transaction_id: '1', user_id: 'u2', amount: 48 },
+      ],
+    })
+
+    expect(screen.getByText(/item\.sharedWith:\{"partner":"Bel Suarez","amount":"\$72\.00"\}/)).toBeInTheDocument()
+  })
+
+  it('shows no shared label for a personal expense', () => {
+    renderItem(baseTransaction)
+
+    expect(screen.queryByText(/item\.sharedWith/)).not.toBeInTheDocument()
   })
 
   it('renders an expense with a negative, danger-colored amount', () => {
