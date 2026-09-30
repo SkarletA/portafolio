@@ -8,6 +8,18 @@
   @apply mb-7 flex flex-wrap items-start justify-between gap-5;
 }
 
+.tabToggle {
+  @apply mb-5 flex gap-2;
+}
+
+.tabButton {
+  @apply rounded-lg border border-finora-border px-3 py-2 text-sm font-medium text-finora-ink-muted;
+}
+
+.tabButtonActive {
+  @apply border-finora-primary bg-finora-primary/10 text-finora-primary;
+}
+
 .title {
   @apply text-xl font-bold tracking-tight text-finora-ink sm:text-2xl;
 }

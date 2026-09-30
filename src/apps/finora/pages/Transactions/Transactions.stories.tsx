@@ -1,4 +1,4 @@
-import { authHandlers, signInMockUser } from '@storybook-mocks/supabaseAuth'
+import { authHandlers, MOCK_USER_ID, signInMockUser } from '@storybook-mocks/supabaseAuth'
 import { restHandler } from '@storybook-mocks/supabaseRest'
 import { CATEGORIES, TRANSACTIONS } from '@storybook-mocks/fixtures'
 import { Transactions } from './Transactions'
@@ -29,3 +29,29 @@ export default {
 }
 
 export const Default = {}
+
+const PARTNER_ID = '00000000-0000-4000-8000-000000000002'
+
+// PR5: the owner tab, once a household is active. Two accepted
+// household_members rows turn it on; a transaction owned by PARTNER_ID shows
+// on the "Household" tab, prefixed with their name - though that name comes
+// from get_household_partner (ADR-008), which still has no MSW mock (see
+// AppShell.stories.tsx's note), so the prefix is blank here.
+export const WithHousehold = {
+  parameters: {
+    msw: {
+      handlers: [
+        ...authHandlers,
+        restHandler('transactions', [
+          ...TRANSACTIONS,
+          { ...TRANSACTIONS[0], id: 't-partner', user_id: PARTNER_ID, description: 'Groceries', amount: 60 },
+        ]),
+        restHandler('categories', CATEGORIES),
+        restHandler('household_members', [
+          { id: 'm1', household_id: 'h1', user_id: MOCK_USER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
+          { id: 'm2', household_id: 'h1', user_id: PARTNER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
+        ]),
+      ],
+    },
+  },
+}

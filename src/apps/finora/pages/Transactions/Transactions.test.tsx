@@ -5,6 +5,7 @@ import { useTransactions } from '@hooks/useTransactions'
 import { useCategories } from '@hooks/useCategories'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
+import { useHousehold } from '@context/HouseholdContext'
 import type { TransactionWithCategory } from '@services/transactionsService'
 import { Transactions } from './Transactions'
 
@@ -13,9 +14,10 @@ vi.mock('@hooks/useCategories', () => ({ useCategories: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: vi.fn() }))
 vi.mock('@context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@example.com' } }) }))
-vi.mock('@context/HouseholdContext', () => ({
-  useHousehold: () => ({ ownMember: null, partnerMember: null, partner: null }),
-}))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
+
+const acceptedOwn = { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted' as const, invited_by: 'u1' }
+const acceptedPartner = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
 
 const navigateMock = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -60,6 +62,9 @@ function mockDefaults() {
   vi.mocked(useCategories).mockReturnValue({ categories: [CATEGORY_FOOD, CATEGORY_TRANSPORT], loading: false, error: null, refetch: vi.fn() })
   vi.mocked(useCurrency).mockReturnValue({ currency: 'USD', setCurrency: vi.fn() })
   vi.mocked(useLanguage).mockReturnValue({ language: 'en', setLanguage: vi.fn() })
+  // No household by default: most of these tests predate PR5's owner tab, so
+  // it stays hidden, same as for every user without a household today.
+  vi.mocked(useHousehold).mockReturnValue({ ownMember: null, partnerMember: null, partner: null } as never)
 }
 
 function renderPage() {
@@ -133,5 +138,65 @@ describe('Transactions', () => {
     renderPage()
     fireEvent.click(screen.getByTestId('transactions-add-button'))
     expect(navigateMock).toHaveBeenCalledWith('/finora/add-transaction')
+  })
+
+  describe('owner tabs', () => {
+    const partnerTransactions: TransactionWithCategory[] = [
+      ...TRANSACTIONS,
+      transaction({
+        id: 't3',
+        user_id: 'u2',
+        description: 'Groceries',
+        category_id: 'c1',
+        category: CATEGORY_FOOD,
+        payments: [{ id: 'p3', transaction_id: 't3', payment_method: 'Cash', amount: 60 }],
+      }),
+    ]
+
+    it('shows no tab toggle without an active household', () => {
+      renderPage()
+      expect(screen.queryByTestId('transactions-tab-mine-button')).not.toBeInTheDocument()
+    })
+
+    it('shows no tab toggle while the partner has only a pending invitation', () => {
+      vi.mocked(useHousehold).mockReturnValue({
+        ownMember: acceptedOwn,
+        partnerMember: { ...acceptedPartner, status: 'pending' },
+      } as never)
+      renderPage()
+      expect(screen.queryByTestId('transactions-tab-mine-button')).not.toBeInTheDocument()
+    })
+
+    it('defaults to "my transactions", excluding the partner\'s rows', () => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+      vi.mocked(useTransactions).mockReturnValue({ transactions: partnerTransactions, loading: false, error: null, refetch: vi.fn() })
+      renderPage()
+
+      expect(screen.getByTestId('transactions-tab-mine-button')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByText('Starbucks')).toBeInTheDocument()
+      expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
+    })
+
+    it('shows only the partner\'s rows on the household tab', () => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+      vi.mocked(useTransactions).mockReturnValue({ transactions: partnerTransactions, loading: false, error: null, refetch: vi.fn() })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('transactions-tab-household-button'))
+
+      expect(screen.getByText('Groceries')).toBeInTheDocument()
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+      expect(screen.queryByText('Uber ride')).not.toBeInTheDocument()
+    })
+
+    it('shows a household-specific empty message when the partner has no transactions', () => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+      vi.mocked(useTransactions).mockReturnValue({ transactions: TRANSACTIONS, loading: false, error: null, refetch: vi.fn() })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('transactions-tab-household-button'))
+
+      expect(screen.getByText('transactions:list.emptyHousehold')).toBeInTheDocument()
+    })
   })
 })

@@ -11,6 +11,11 @@
     "paymentMethodAriaLabel": "Filtrar por método de pago",
     "allPaymentMethods": "Todos los métodos de pago"
   },
+  "tabs": {
+    "ariaLabel": "De quién son las transacciones",
+    "mine": "Mis transacciones",
+    "household": "Hogar"
+  },
   "table": {
     "transaction": "Transacción",
     "date": "Fecha",
@@ -20,6 +25,7 @@
     "loading": "Cargando transacciones…",
     "error": "No pudimos cargar tus transacciones. Inténtalo de nuevo más tarde.",
     "empty": "Todavía no tienes transacciones.",
+    "emptyHousehold": "Tu pareja todavía no tiene transacciones.",
     "noMatches": "Ninguna transacción coincide con tus filtros."
   },
   "item": {

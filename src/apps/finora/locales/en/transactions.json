@@ -11,6 +11,11 @@
     "paymentMethodAriaLabel": "Filter by payment method",
     "allPaymentMethods": "All payment methods"
   },
+  "tabs": {
+    "ariaLabel": "Whose transactions",
+    "mine": "My transactions",
+    "household": "Household"
+  },
   "table": {
     "transaction": "Transaction",
     "date": "Date",
@@ -20,6 +25,7 @@
     "loading": "Loading transactions…",
     "error": "We couldn't load your transactions. Please try again later.",
     "empty": "You don't have any transactions yet.",
+    "emptyHousehold": "Your partner doesn't have any transactions yet.",
     "noMatches": "No transactions match your filters."
   },
   "item": {
