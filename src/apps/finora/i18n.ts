@@ -11,6 +11,7 @@ import enBudgets from './locales/en/budgets.json'
 import enAnalytics from './locales/en/analytics.json'
 import enGoals from './locales/en/goals.json'
 import enSettings from './locales/en/settings.json'
+import enHousehold from './locales/en/household.json'
 
 import esCommon from './locales/es/common.json'
 import esAuth from './locales/es/auth.json'
@@ -21,6 +22,7 @@ import esBudgets from './locales/es/budgets.json'
 import esAnalytics from './locales/es/analytics.json'
 import esGoals from './locales/es/goals.json'
 import esSettings from './locales/es/settings.json'
+import esHousehold from './locales/es/household.json'
 
 export const LANGUAGE_STORAGE_KEY = 'finora-language'
 
@@ -43,6 +45,7 @@ i18n
         analytics: enAnalytics,
         goals: enGoals,
         settings: enSettings,
+        household: enHousehold,
       },
       es: {
         common: esCommon,
@@ -54,12 +57,24 @@ i18n
         analytics: esAnalytics,
         goals: esGoals,
         settings: esSettings,
+        household: esHousehold,
       },
     },
     fallbackLng: 'en',
     supportedLngs: ['en', 'es'],
     defaultNS: 'common',
-    ns: ['common', 'auth', 'categories', 'dashboard', 'transactions', 'budgets', 'analytics', 'goals', 'settings'],
+    ns: [
+      'common',
+      'auth',
+      'categories',
+      'dashboard',
+      'transactions',
+      'budgets',
+      'analytics',
+      'goals',
+      'settings',
+      'household',
+    ],
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

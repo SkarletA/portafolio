@@ -1,0 +1,37 @@
+{
+  "banner": {
+    "invitedBy": "{{name}} invited you to share a household in Finora.",
+    "invitedByUnknown": "You have a pending household invitation.",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
+  "settings": {
+    "title": "Household",
+    "subtitle": "Share your account with a partner: see each other's transactions in full, and split shared expenses later.",
+    "inviteDescription": "Invite your partner by the email they use to sign in to Finora.",
+    "emailLabel": "Partner's email",
+    "emailPlaceholder": "partner@example.com",
+    "inviteButton": "Send invitation",
+    "invitedWaiting": "Invitation sent to {{name}}. Waiting for them to accept.",
+    "invitedWaitingUnknown": "Invitation sent. Waiting for them to accept.",
+    "pendingForMe": "{{name}} invited you to share a household.",
+    "pendingForMeUnknown": "You have a pending household invitation.",
+    "accepted": "You and {{name}} share a household. You can see each other's transactions in full.",
+    "acceptedUnknown": "You share a household. You can see each other's transactions in full.",
+    "acceptButton": "Accept invitation",
+    "declineButton": "Decline invitation",
+    "cancelInviteButton": "Cancel invitation",
+    "leaveButton": "Leave household",
+    "inviteSuccess": "Invitation sent."
+  },
+  "errors": {
+    "user_not_found": "There's no Finora account with that email.",
+    "cannot_invite_self": "You can't invite yourself.",
+    "already_in_household": "You're already in a household. Leave it first to invite someone else.",
+    "invitee_already_in_household": "That person is already in a household.",
+    "invite_not_found": "That invitation no longer exists.",
+    "not_in_household": "You're not in a household.",
+    "not_authenticated": "Please sign in again.",
+    "generic": "Something went wrong. Please try again."
+  }
+}

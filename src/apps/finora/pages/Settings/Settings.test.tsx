@@ -7,6 +7,7 @@ import { useTheme } from '@context/ThemeContext'
 import { useLanguage } from '@context/LanguageContext'
 import { useCurrency } from '@context/CurrencyContext'
 import { useProfile } from '@hooks/useProfile'
+import { useHousehold } from '@context/HouseholdContext'
 import { updateProfile } from '@services/profilesService'
 
 vi.mock('@context/AuthContext', () => ({ useAuth: vi.fn() }))
@@ -14,6 +15,7 @@ vi.mock('@context/ThemeContext', () => ({ useTheme: vi.fn() }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
 vi.mock('@hooks/useProfile', () => ({ useProfile: vi.fn() }))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 vi.mock('@services/profilesService', () => ({
   updateProfile: vi.fn(),
   uploadAvatar: vi.fn(),
@@ -38,6 +40,7 @@ function mockHooks(overrides: {
   language?: Record<string, unknown>
   currency?: Record<string, unknown>
   profile?: Record<string, unknown> | null
+  household?: Record<string, unknown>
 } = {}) {
   vi.mocked(useAuth).mockReturnValue({
     user: { id: 'u1', email: 'ada@example.com' },
@@ -54,6 +57,21 @@ function mockHooks(overrides: {
     loading: false,
     error: null,
     refetch: vi.fn(),
+  } as never)
+  vi.mocked(useHousehold).mockReturnValue({
+    ownMember: null,
+    partnerMember: null,
+    partner: null,
+    loading: false,
+    error: null,
+    actionPending: false,
+    actionError: null,
+    invite: vi.fn().mockResolvedValue(true),
+    accept: vi.fn().mockResolvedValue(true),
+    decline: vi.fn().mockResolvedValue(true),
+    leave: vi.fn().mockResolvedValue(true),
+    refetch: vi.fn(),
+    ...overrides.household,
   } as never)
 }
 
@@ -210,6 +228,94 @@ describe('Settings', () => {
       await waitFor(() => expect(deleteAccount).toHaveBeenCalled())
       expect(signOut).toHaveBeenCalled()
       expect(await screen.findByText('login page')).toBeInTheDocument()
+    })
+  })
+
+  describe('household', () => {
+    it('sends an invitation by email and shows a success message', async () => {
+      const invite = vi.fn().mockResolvedValue(true)
+      mockHooks({ household: { invite } })
+      renderSettings()
+
+      fireEvent.change(screen.getByTestId('settings-household-invite-email-input'), {
+        target: { value: 'partner@example.com' },
+      })
+      fireEvent.click(screen.getByTestId('settings-household-invite-button'))
+
+      await waitFor(() => expect(invite).toHaveBeenCalledWith('partner@example.com'))
+      expect(await screen.findByText('household:settings.inviteSuccess')).toBeInTheDocument()
+    })
+
+    it('shows the mapped error message when the invite fails', async () => {
+      const invite = vi.fn().mockResolvedValue(false)
+      mockHooks({ household: { invite, actionError: 'user_not_found' } })
+      renderSettings()
+
+      fireEvent.change(screen.getByTestId('settings-household-invite-email-input'), {
+        target: { value: 'nobody@example.com' },
+      })
+      fireEvent.click(screen.getByTestId('settings-household-invite-button'))
+
+      expect(await screen.findByText('household:errors.user_not_found')).toBeInTheDocument()
+    })
+
+    it('shows accept/decline actions for a pending invite and wires them to the hook', () => {
+      const accept = vi.fn()
+      const decline = vi.fn()
+      mockHooks({
+        household: {
+          ownMember: { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'pending', invited_by: 'u2' },
+          partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+          accept,
+          decline,
+        },
+      })
+      renderSettings()
+
+      expect(screen.getByText('household:settings.pendingForMe:{"name":"Bel Suarez"}')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('settings-household-accept-button'))
+      expect(accept).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByTestId('settings-household-decline-button'))
+      expect(decline).toHaveBeenCalled()
+    })
+
+    it('shows the accepted state with a leave action once both members have accepted', () => {
+      const leave = vi.fn()
+      mockHooks({
+        household: {
+          ownMember: { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted', invited_by: 'u1' },
+          partnerMember: { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted', invited_by: 'u1' },
+          partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+          leave,
+        },
+      })
+      renderSettings()
+
+      expect(screen.getByText('household:settings.accepted:{"name":"Bel Suarez"}')).toBeInTheDocument()
+      expect(screen.queryByTestId('settings-household-invite-email-input')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('settings-household-leave-button'))
+      expect(leave).toHaveBeenCalled()
+    })
+
+    it('shows a waiting state with a cancel action while the invitee has not accepted yet', () => {
+      const leave = vi.fn()
+      mockHooks({
+        household: {
+          ownMember: { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted', invited_by: 'u1' },
+          partnerMember: { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'pending', invited_by: 'u1' },
+          partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+          leave,
+        },
+      })
+      renderSettings()
+
+      expect(screen.getByText('household:settings.invitedWaiting:{"name":"Bel Suarez"}')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('settings-household-cancel-invite-button'))
+      expect(leave).toHaveBeenCalled()
     })
   })
 })

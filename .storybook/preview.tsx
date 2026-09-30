@@ -6,6 +6,7 @@ import { AuthProvider } from '@context/AuthContext'
 import { ThemeProvider } from '@context/ThemeContext'
 import { LanguageProvider } from '@context/LanguageContext'
 import { CurrencyProvider } from '@context/CurrencyContext'
+import { HouseholdProvider } from '@context/HouseholdContext'
 import '../src/apps/finora/styles/theme.css'
 
 const preview: Preview = {
@@ -30,7 +31,9 @@ const preview: Preview = {
           <ThemeProvider>
             <LanguageProvider>
               <CurrencyProvider>
-                <Story />
+                <HouseholdProvider>
+                  <Story />
+                </HouseholdProvider>
               </CurrencyProvider>
             </LanguageProvider>
           </ThemeProvider>

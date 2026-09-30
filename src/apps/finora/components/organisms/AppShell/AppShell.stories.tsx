@@ -1,9 +1,16 @@
 import { authHandlers, signInMockUser } from '@storybook-mocks/supabaseAuth'
-import { restSingleHandler } from '@storybook-mocks/supabaseRest'
+import { restHandler, restSingleHandler } from '@storybook-mocks/supabaseRest'
 import { PROFILE_ROW } from '@storybook-mocks/fixtures'
 import { AppShell } from './AppShell'
 
-const APP_SHELL_HANDLERS = [...authHandlers, restSingleHandler('profiles', PROFILE_ROW)]
+// household_members empty -> useHousehold resolves to "no household", so the
+// pending-invite banner stays hidden (today's behavior for every existing
+// user). get_household_partner is an RPC (POST /rest/v1/rpc/...), which this
+// mocks file has no handler for yet - same as AddGoal.stories.tsx defers
+// create_goal; it needs its own mocking pass. The banner's own states (with
+// a name, unknown name, pending, error) are covered in
+// HouseholdInviteBanner.stories.tsx instead, without needing Supabase at all.
+const APP_SHELL_HANDLERS = [...authHandlers, restSingleHandler('profiles', PROFILE_ROW), restHandler('household_members', [])]
 
 export default {
   title: 'Finora/Organisms/AppShell',

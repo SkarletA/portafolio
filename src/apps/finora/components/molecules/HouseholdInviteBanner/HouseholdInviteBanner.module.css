@@ -1,0 +1,17 @@
+@reference '../../../styles/theme.css';
+
+.banner {
+  @apply flex flex-col gap-3 rounded-lg border border-finora-warning bg-finora-warning-bg px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between;
+}
+
+.message {
+  @apply text-finora-ink;
+}
+
+.actions {
+  @apply flex shrink-0 items-start gap-2;
+}
+
+.error {
+  @apply text-finora-danger;
+}
