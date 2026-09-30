@@ -122,6 +122,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   const [refundsTransactionId, setRefundsTransactionId] = useState('')
   const [isShared, setIsShared] = useState(false)
   const [ownSharePart, setOwnSharePart] = useState('')
+  const [isHouseholdExpense, setIsHouseholdExpense] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -172,10 +173,13 @@ export function AddTransaction({ mode }: AddTransactionProps) {
   // a pending invitation either way is not enough to share with yet.
   const hasAcceptedPartner = partnerMember?.status === 'accepted'
   const partnerName = getHouseholdPartnerDisplayName(partner)
-  // v1: a shared expense is a plain income-funded, single-installment expense
-  // (the same constraint the database enforces) - the checkbox is disabled
-  // rather than left to fail at submit time.
+  // v1: a shared expense (Case A, ADR-009) is a plain income-funded,
+  // single-installment expense (the same constraint the database enforces)
+  // - the checkbox is disabled rather than left to fail at submit time.
   const canShareExpense = isExpense && !isFinanced && !isSavingsFunded && hasAcceptedPartner
+  // Case B (ADR-010) splits nothing, so unlike Case A it is never disabled by
+  // financing or savings - only by already being a split (mutual exclusion).
+  const canTagHouseholdExpense = isExpense && hasAcceptedPartner
 
   const isReimbursement = type === 'reimbursement'
   // The reimbursement's own stored amount, excluded from what counts as
@@ -280,6 +284,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     setIsShared(transaction.is_shared)
     const ownShare = transaction.is_shared ? transaction.shares.find((share) => share.user_id === user?.id) : undefined
     setOwnSharePart(ownShare ? String(ownShare.amount) : '')
+    setIsHouseholdExpense(transaction.is_household_expense)
     setHasPreloaded(true)
   }, [mode, transaction, hasPreloaded, user])
 
@@ -437,6 +442,10 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
   const handleOwnSharePartBlur = useCallback(() => {
     setOwnSharePart((prev) => roundMoneyInput(prev))
+  }, [])
+
+  const handleHouseholdExpenseChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsHouseholdExpense(event.target.checked)
   }, [])
 
   // Linking a reimbursement takes the purchase's category, so its own
@@ -655,6 +664,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         }
       }
 
+      const effectiveIsHouseholdExpense = canTagHouseholdExpense && isHouseholdExpense && !effectiveIsShared
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -687,6 +698,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 { user_id: partnerMember.user_id, amount: subtractMoney(parsedAmount, parsedOwnShare) },
               ]
             : undefined,
+        is_household_expense: effectiveIsHouseholdExpense,
       }
 
       const { error } = await saveTransaction(mode === 'edit' && id ? id : null, input)
@@ -734,13 +746,15 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           })
           return
         }
-        // ADR-009: the household changed (dissolved, or the split itself)
-        // between the UI check above and the database's own, authoritative one.
+        // ADR-009/ADR-010: the household changed (dissolved, or the split or
+        // tag itself) between the UI check above and the database's own,
+        // authoritative one.
         if (
           moneyError?.code === 'invalid_share_plan' ||
           moneyError?.code === 'household_required_for_shared_expense' ||
           moneyError?.code === 'invalid_share_recipient' ||
-          moneyError?.code === 'shares_do_not_match_amount'
+          moneyError?.code === 'shares_do_not_match_amount' ||
+          moneyError?.code === 'household_required_for_household_expense'
         ) {
           setErrors({ share: t('transactions:validation.shareNoLongerValid') })
           return
@@ -779,6 +793,8 @@ export function AddTransaction({ mode }: AddTransactionProps) {
       canShareExpense,
       isShared,
       ownSharePart,
+      canTagHouseholdExpense,
+      isHouseholdExpense,
       user,
       partnerMember,
       mode,
@@ -1324,7 +1340,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                 type="checkbox"
                 checked={isShared}
                 onChange={handleSharedChange}
-                disabled={isFinanced || isSavingsFunded}
+                disabled={isFinanced || isSavingsFunded || isHouseholdExpense}
                 aria-describedby="add-transaction-shared-hint"
                 data-testid="add-transaction-shared-checkbox"
               />
@@ -1358,12 +1374,28 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                     amount: formatCurrency(partnerSharePart, currency, locale),
                   })}
                 </p>
-                {errors.share && (
-                  <p id="add-transaction-share-error" role="alert" className={s.error}>
-                    {errors.share}
-                  </p>
-                )}
               </label>
+            )}
+
+            <label className={s.paymentMethodCheckboxLabel}>
+              <input
+                type="checkbox"
+                checked={isHouseholdExpense}
+                onChange={handleHouseholdExpenseChange}
+                disabled={isShared}
+                aria-describedby="add-transaction-household-expense-hint"
+                data-testid="add-transaction-household-expense-checkbox"
+              />
+              {t('transactions:form.householdExpense')}
+            </label>
+            <p id="add-transaction-household-expense-hint" className={s.hint}>
+              {isShared ? t('transactions:form.householdExpenseDisabledHint') : t('transactions:form.householdExpenseHint')}
+            </p>
+
+            {errors.share && (
+              <p id="add-transaction-share-error" role="alert" className={s.error}>
+                {errors.share}
+              </p>
             )}
           </fieldset>
         )}

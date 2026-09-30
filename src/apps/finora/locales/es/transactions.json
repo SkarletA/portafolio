@@ -48,7 +48,8 @@
     "paidBy": "Pagado por {{who}}",
     "you": "ti",
     "chipYou": "Tú {{amount}}",
-    "chipOther": "{{name}} {{amount}}"
+    "chipOther": "{{name}} {{amount}}",
+    "householdExpenseTag": "Gasto del hogar"
   },
   "form": {
     "addTitle": "Agregar transacción",
@@ -117,12 +118,15 @@
     "loadingRefundablePurchases": "Cargando compras…",
     "refundCategoryLockedHint": "Determinada por la compra vinculada.",
     "refundGoalNotice": "Esta compra se pagó con la meta {{goal}}. Los {{amount}} reembolsados volverán a ella y no aumentarán el límite del presupuesto ni la tasa de ahorro.",
-    "sharedExpense": "Gasto compartido",
-    "shareExpense": "Compartir este gasto con {{partner}}",
+    "sharedExpense": "Gasto del hogar",
+    "shareExpense": "Dividir el monto con {{partner}}",
     "sharedHint": "El monto completo sigue contando contra tu propio presupuesto. Esto solo registra quién puso cuánto.",
     "sharedDisabledHint": "Todavía no se puede compartir un gasto a meses o cubierto con ahorros.",
     "yourSharePart": "Tu parte",
-    "partnerSharePart": "Parte de {{partner}}: {{amount}}"
+    "partnerSharePart": "Parte de {{partner}}: {{amount}}",
+    "householdExpense": "Es 100% mío, pero cuenta para el hogar",
+    "householdExpenseHint": "El monto completo sigue contando contra tu propio presupuesto. Esto solo lo marca como gasto del hogar — no se reparte nada.",
+    "householdExpenseDisabledHint": "No se puede combinar con dividir el monto."
   },
   "validation": {
     "selectCategory": "Selecciona una categoría",

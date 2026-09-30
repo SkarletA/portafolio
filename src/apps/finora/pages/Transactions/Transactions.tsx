@@ -65,16 +65,20 @@ export function Transactions() {
     [categories, t]
   )
 
-  // "Household" is every shared expense (transaction.is_shared, ADR-009),
-  // regardless of which member registered it - not "the partner's rows" (that
+  // "Household" is every expense explicitly tagged as the household's - a
+  // split (transaction.is_shared, ADR-009) or a household-tagged expense
+  // with nothing split (transaction.is_household_expense, ADR-010) -
+  // regardless of which member registered it. Not "the partner's rows" (that
   // was this tab's original, wrong reading: it hid a shared expense the
   // caller registered, and showed the partner's unrelated personal ones).
-  // "Mine" is unaffected - still every one of the caller's own rows, shared
+  // "Mine" is unaffected - still every one of the caller's own rows, tagged
   // or not. Ungrouped when there is no active household: transactions
   // already holds only the caller's rows.
   const ownerTransactions = useMemo(() => {
     if (!isHouseholdActive) return transactions
-    return transactions.filter((transaction) => (ownerTab === 'mine' ? transaction.user_id === user?.id : transaction.is_shared))
+    return transactions.filter((transaction) =>
+      ownerTab === 'mine' ? transaction.user_id === user?.id : transaction.is_shared || transaction.is_household_expense
+    )
   }, [transactions, isHouseholdActive, ownerTab, user])
 
   const filteredTransactions = useMemo(() => {

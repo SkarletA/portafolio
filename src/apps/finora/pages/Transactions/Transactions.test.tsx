@@ -175,7 +175,20 @@ describe('Transactions', () => {
         { id: 's4', transaction_id: 't5', user_id: 'u2', amount: 20 },
       ],
     })
-    const householdTransactions: TransactionWithCategory[] = [...TRANSACTIONS, sharedByMe, partnerPersonal, partnerShared]
+    // Case B (ADR-010): no split, just tagged - must also show on the
+    // household tab, same as a Case A split.
+    const myHouseholdTagged = transaction({
+      id: 't6',
+      description: 'Medicine',
+      is_household_expense: true,
+    })
+    const householdTransactions: TransactionWithCategory[] = [
+      ...TRANSACTIONS,
+      sharedByMe,
+      partnerPersonal,
+      partnerShared,
+      myHouseholdTagged,
+    ]
 
     it('shows no tab toggle without an active household', () => {
       renderPage()
@@ -199,11 +212,12 @@ describe('Transactions', () => {
       expect(screen.getByTestId('transactions-tab-mine-button')).toHaveAttribute('aria-pressed', 'true')
       expect(screen.getByText('Starbucks')).toBeInTheDocument()
       expect(screen.getByText('Rent')).toBeInTheDocument()
+      expect(screen.getByText('Medicine')).toBeInTheDocument()
       expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
       expect(screen.queryByText('Gas')).not.toBeInTheDocument()
     })
 
-    it('shows every shared expense on the household tab, regardless of who registered it', () => {
+    it('shows every household-tagged expense on the household tab (split or not), regardless of who registered it', () => {
       vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
       vi.mocked(useTransactions).mockReturnValue({ transactions: householdTransactions, loading: false, error: null, refetch: vi.fn() })
       renderPage()
@@ -214,8 +228,10 @@ describe('Transactions', () => {
       // still show here, not just the partner's.
       expect(screen.getByText('Rent')).toBeInTheDocument()
       expect(screen.getByText('Gas')).toBeInTheDocument()
+      // Case B (ADR-010): no split, just tagged - also shows here.
+      expect(screen.getByText('Medicine')).toBeInTheDocument()
       // Not the partner's unrelated personal expense, and not the caller's
-      // own non-shared ones.
+      // own non-tagged ones.
       expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
       expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
       expect(screen.queryByText('Uber ride')).not.toBeInTheDocument()
