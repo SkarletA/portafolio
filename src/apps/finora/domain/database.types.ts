@@ -370,6 +370,15 @@ export type Database = {
       }
       current_household_id: { Args: never; Returns: string }
       decline_household_invite: { Args: never; Returns: undefined }
+      get_household_partner: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          first_name: string
+          last_name: string
+          user_id: string
+        }[]
+      }
       household_member_ids: { Args: never; Returns: string[] }
       invite_household_member: { Args: { p_email: string }; Returns: string }
       leave_household: { Args: never; Returns: undefined }

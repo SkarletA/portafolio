@@ -16,6 +16,7 @@ import { useTheme } from '@context/ThemeContext'
 import { useLanguage } from '@context/LanguageContext'
 import { useCurrency } from '@context/CurrencyContext'
 import { useProfile } from '@hooks/useProfile'
+import { useHousehold } from '@hooks/useHousehold'
 import { updateProfile, uploadAvatar } from '@services/profilesService'
 import { Avatar } from '@atoms/Avatar/Avatar'
 import { Button } from '@atoms/Button/Button'
@@ -24,6 +25,7 @@ import { PasswordInput } from '@molecules/PasswordInput/PasswordInput'
 import { PhoneInput } from '@molecules/PhoneInput/PhoneInput'
 import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '@domain/profile'
 import type { Currency, Language } from '@domain/profile'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
 import s from './Settings.module.css'
 
 const DELETE_CONFIRMATION_KEYWORD = 'DELETE'
@@ -58,12 +60,23 @@ const CURRENCY_OPTIONS: { value: Currency; labelKey: string }[] = [
 ]
 
 export function Settings() {
-  const { t } = useTranslation(['settings', 'common'])
+  const { t } = useTranslation(['settings', 'common', 'household'])
   const { user, changePassword, deleteAccount, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
   const { language, setLanguage } = useLanguage()
   const { currency, setCurrency } = useCurrency()
   const { profile, refetch: refetchProfile } = useProfile()
+  const {
+    ownMember: householdOwnMember,
+    partnerMember: householdPartnerMember,
+    partner: householdPartner,
+    actionPending: householdActionPending,
+    actionError: householdActionError,
+    invite: inviteHouseholdPartner,
+    accept: acceptHouseholdInvite,
+    decline: declineHouseholdInvite,
+    leave: leaveHousehold,
+  } = useHousehold()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const deleteInputRef = useRef<HTMLInputElement>(null)
@@ -88,6 +101,9 @@ export function Settings() {
   const [changingPassword, setChangingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
+
+  const [householdInviteEmail, setHouseholdInviteEmail] = useState('')
+  const [householdInviteSuccess, setHouseholdInviteSuccess] = useState(false)
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('')
@@ -324,6 +340,38 @@ export function Settings() {
     navigate('/finora/login')
   }, [deleteAccount, signOut, navigate])
 
+  const handleHouseholdInviteEmailChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setHouseholdInviteEmail(event.target.value)
+    setHouseholdInviteSuccess(false)
+  }, [])
+
+  const handleHouseholdInviteSubmit = useCallback(
+    async (event: FormEvent) => {
+      event.preventDefault()
+      const success = await inviteHouseholdPartner(householdInviteEmail.trim())
+      if (success) {
+        setHouseholdInviteEmail('')
+        setHouseholdInviteSuccess(true)
+      }
+    },
+    [inviteHouseholdPartner, householdInviteEmail]
+  )
+
+  const handleAcceptHouseholdInvite = useCallback(() => {
+    acceptHouseholdInvite()
+  }, [acceptHouseholdInvite])
+
+  const handleDeclineHouseholdInvite = useCallback(() => {
+    declineHouseholdInvite()
+  }, [declineHouseholdInvite])
+
+  const handleLeaveHousehold = useCallback(() => {
+    leaveHousehold()
+  }, [leaveHousehold])
+
+  const householdPartnerName = getHouseholdPartnerDisplayName(householdPartner)
+  const householdErrorMessage = householdActionError ? t(`household:errors.${householdActionError}`) : null
+
   return (
     <section className={s.section}>
       <div className={s.header}>
@@ -462,6 +510,132 @@ export function Settings() {
               {savingProfile ? t('common:buttons.saving') : t('common:buttons.saveChanges')}
             </Button>
           </form>
+        </div>
+
+        <div className={s.block}>
+          <h2 className={s.blockTitle}>{t('household:settings.title')}</h2>
+          <p className={s.rowSub}>{t('household:settings.subtitle')}</p>
+
+          {!householdOwnMember && (
+            <form onSubmit={handleHouseholdInviteSubmit} className={s.form}>
+              <p className={s.rowSub}>{t('household:settings.inviteDescription')}</p>
+              <label className={s.field}>
+                {t('household:settings.emailLabel')}
+                <input
+                  type="email"
+                  value={householdInviteEmail}
+                  onChange={handleHouseholdInviteEmailChange}
+                  placeholder={t('household:settings.emailPlaceholder')}
+                  required
+                  className={s.input}
+                  data-testid="settings-household-invite-email-input"
+                />
+              </label>
+              {householdErrorMessage && (
+                <p role="alert" className={s.error}>
+                  {householdErrorMessage}
+                </p>
+              )}
+              {householdInviteSuccess && <p className={s.success}>{t('household:settings.inviteSuccess')}</p>}
+              <Button
+                id="settings-household-invite-button"
+                data-testid="settings-household-invite-button"
+                type="submit"
+                disabled={householdActionPending}
+              >
+                {householdActionPending ? t('common:buttons.saving') : t('household:settings.inviteButton')}
+              </Button>
+            </form>
+          )}
+
+          {householdOwnMember?.status === 'pending' && (
+            <div className={s.row}>
+              <div>
+                <p className={s.rowLabel}>
+                  {householdPartnerName
+                    ? t('household:settings.pendingForMe', { name: householdPartnerName })
+                    : t('household:settings.pendingForMeUnknown')}
+                </p>
+                {householdErrorMessage && (
+                  <p role="alert" className={s.error}>
+                    {householdErrorMessage}
+                  </p>
+                )}
+              </div>
+              <div className={s.fieldRow}>
+                <Button
+                  id="settings-household-decline-button"
+                  data-testid="settings-household-decline-button"
+                  variant="secondary"
+                  onClick={handleDeclineHouseholdInvite}
+                  disabled={householdActionPending}
+                >
+                  {t('household:settings.declineButton')}
+                </Button>
+                <Button
+                  id="settings-household-accept-button"
+                  data-testid="settings-household-accept-button"
+                  onClick={handleAcceptHouseholdInvite}
+                  disabled={householdActionPending}
+                >
+                  {t('household:settings.acceptButton')}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {householdOwnMember?.status === 'accepted' && householdPartnerMember?.status === 'pending' && (
+            <div className={s.row}>
+              <div>
+                <p className={s.rowLabel}>
+                  {householdPartnerName
+                    ? t('household:settings.invitedWaiting', { name: householdPartnerName })
+                    : t('household:settings.invitedWaitingUnknown')}
+                </p>
+                {householdErrorMessage && (
+                  <p role="alert" className={s.error}>
+                    {householdErrorMessage}
+                  </p>
+                )}
+              </div>
+              <Button
+                id="settings-household-cancel-invite-button"
+                data-testid="settings-household-cancel-invite-button"
+                variant="secondary"
+                onClick={handleLeaveHousehold}
+                disabled={householdActionPending}
+              >
+                {t('household:settings.cancelInviteButton')}
+              </Button>
+            </div>
+          )}
+
+          {householdOwnMember?.status === 'accepted' && householdPartnerMember?.status === 'accepted' && (
+            <div className={s.row}>
+              <div>
+                <p className={s.rowLabel}>
+                  {householdPartnerName
+                    ? t('household:settings.accepted', { name: householdPartnerName })
+                    : t('household:settings.acceptedUnknown')}
+                </p>
+                {householdErrorMessage && (
+                  <p role="alert" className={s.error}>
+                    {householdErrorMessage}
+                  </p>
+                )}
+              </div>
+              <Button
+                id="settings-household-leave-button"
+                data-testid="settings-household-leave-button"
+                variant="secondary"
+                className={s.dangerButton}
+                onClick={handleLeaveHousehold}
+                disabled={householdActionPending}
+              >
+                {t('household:settings.leaveButton')}
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className={s.block}>

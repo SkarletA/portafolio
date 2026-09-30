@@ -4,8 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { Sidebar } from './Sidebar'
 import { NavItem } from '@molecules/NavItem/NavItem'
 import { LocaleBadge } from '@molecules/LocaleBadge/LocaleBadge'
+import { HouseholdInviteBanner } from '@molecules/HouseholdInviteBanner/HouseholdInviteBanner'
 import { Icon } from '@atoms/Icon/Icon'
 import { useTheme } from '@context/ThemeContext'
+import { useHousehold } from '@hooks/useHousehold'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
 import s from './AppShell.module.css'
 
 const BOTTOM_NAV_LEFT_DEFS = [
@@ -26,13 +29,25 @@ interface AppShellProps {
 
 /** The app-wide frame around every Finora page: desktop sidebar or mobile header/tab bar, and the page content between them. */
 export function AppShell({ children }: AppShellProps) {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation(['common', 'household'])
   const navigate = useNavigate()
   const { theme } = useTheme()
+  const { ownMember, partner, actionPending, actionError, accept, decline } = useHousehold()
 
   const handleAddTransactionClick = useCallback(() => {
     navigate('/finora/add-transaction')
   }, [navigate])
+
+  const handleAcceptInvite = useCallback(() => {
+    accept()
+  }, [accept])
+
+  const handleDeclineInvite = useCallback(() => {
+    decline()
+  }, [decline])
+
+  const pendingInvite = ownMember?.status === 'pending'
+  const inviteError = actionError ? t(`household:errors.${actionError}`) : null
 
   return (
     <div className={s.shell} data-theme={theme}>
@@ -46,7 +61,20 @@ export function AppShell({ children }: AppShellProps) {
         <LocaleBadge />
       </header>
 
-      <main className={s.main}>{children}</main>
+      <main className={s.main}>
+        {pendingInvite && (
+          <div className={s.bannerWrapper}>
+            <HouseholdInviteBanner
+              inviterName={getHouseholdPartnerDisplayName(partner)}
+              onAccept={handleAcceptInvite}
+              onDecline={handleDeclineInvite}
+              pending={actionPending}
+              error={inviteError}
+            />
+          </div>
+        )}
+        {children}
+      </main>
 
       <nav className={s.bottomNav}>
         {BOTTOM_NAV_LEFT_DEFS.map((item) => (

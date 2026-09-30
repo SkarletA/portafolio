@@ -1,0 +1,37 @@
+{
+  "banner": {
+    "invitedBy": "{{name}} te invitó a compartir un hogar en Finora.",
+    "invitedByUnknown": "Tienes una invitación de hogar pendiente.",
+    "accept": "Aceptar",
+    "decline": "Rechazar"
+  },
+  "settings": {
+    "title": "Hogar",
+    "subtitle": "Comparte tu cuenta con tu pareja: vean sus transacciones en detalle, y repartan gastos compartidos más adelante.",
+    "inviteDescription": "Invita a tu pareja con el correo que usa para iniciar sesión en Finora.",
+    "emailLabel": "Correo de tu pareja",
+    "emailPlaceholder": "pareja@ejemplo.com",
+    "inviteButton": "Enviar invitación",
+    "invitedWaiting": "Invitación enviada a {{name}}. Esperando a que acepte.",
+    "invitedWaitingUnknown": "Invitación enviada. Esperando a que acepte.",
+    "pendingForMe": "{{name}} te invitó a compartir un hogar.",
+    "pendingForMeUnknown": "Tienes una invitación de hogar pendiente.",
+    "accepted": "Tú y {{name}} comparten un hogar. Pueden ver sus transacciones en detalle.",
+    "acceptedUnknown": "Comparten un hogar. Pueden ver sus transacciones en detalle.",
+    "acceptButton": "Aceptar invitación",
+    "declineButton": "Rechazar invitación",
+    "cancelInviteButton": "Cancelar invitación",
+    "leaveButton": "Salir del hogar",
+    "inviteSuccess": "Invitación enviada."
+  },
+  "errors": {
+    "user_not_found": "No hay ninguna cuenta de Finora con ese correo.",
+    "cannot_invite_self": "No puedes invitarte a ti mismo.",
+    "already_in_household": "Ya perteneces a un hogar. Sal de él primero para invitar a alguien más.",
+    "invitee_already_in_household": "Esa persona ya pertenece a un hogar.",
+    "invite_not_found": "Esa invitación ya no existe.",
+    "not_in_household": "No perteneces a ningún hogar.",
+    "not_authenticated": "Por favor inicia sesión de nuevo.",
+    "generic": "Algo salió mal. Intenta de nuevo."
+  }
+}

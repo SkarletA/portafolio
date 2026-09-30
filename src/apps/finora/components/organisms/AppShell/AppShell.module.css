@@ -32,6 +32,10 @@
   @apply min-w-0 flex-1 pb-24 sm:pb-10;
 }
 
+.bannerWrapper {
+  @apply mx-auto max-w-5xl px-4 pt-4 sm:px-10;
+}
+
 .bottomNav {
   @apply fixed inset-x-0 bottom-0 z-50 flex items-center border-t border-finora-border bg-finora-surface px-2 py-2 sm:hidden;
 }
