@@ -159,6 +159,62 @@ export type Database = {
         }
         Relationships: []
       }
+      household_members: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          household_id: string
+          id: string
+          invited_by: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          household_id: string
+          id?: string
+          invited_by: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          household_id?: string
+          id?: string
+          invited_by?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_members_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      households: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -301,6 +357,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_household_invite: { Args: never; Returns: string }
       create_goal: {
         Args: {
           p_name: string
@@ -311,6 +368,11 @@ export type Database = {
         }
         Returns: string
       }
+      current_household_id: { Args: never; Returns: string }
+      decline_household_invite: { Args: never; Returns: undefined }
+      household_member_ids: { Args: never; Returns: string[] }
+      invite_household_member: { Args: { p_email: string }; Returns: string }
+      leave_household: { Args: never; Returns: undefined }
       save_transaction: {
         Args: {
           p_amount: number
