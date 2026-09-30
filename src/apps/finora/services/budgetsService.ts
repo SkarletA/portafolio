@@ -22,6 +22,8 @@ export async function getBudgets() {
 export interface NewBudgetInput {
   category_id: string
   monthly_limit: number
+  /** See docs/adr/010-household-expense-tag-and-household-budget.md. */
+  is_household?: boolean
 }
 
 export async function createBudget(data: NewBudgetInput) {
