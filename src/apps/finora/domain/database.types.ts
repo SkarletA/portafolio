@@ -289,6 +289,35 @@ export type Database = {
           },
         ]
       }
+      transaction_shares: {
+        Row: {
+          amount: number
+          id: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_shares_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -299,6 +328,7 @@ export type Database = {
           funding_source: string
           id: string
           installment_months: number
+          is_shared: boolean
           last_installment_date: string | null
           notes: string | null
           refunds_transaction_id: string | null
@@ -314,6 +344,7 @@ export type Database = {
           funding_source?: string
           id?: string
           installment_months?: number
+          is_shared?: boolean
           last_installment_date?: string | null
           notes?: string | null
           refunds_transaction_id?: string | null
@@ -329,6 +360,7 @@ export type Database = {
           funding_source?: string
           id?: string
           installment_months?: number
+          is_shared?: boolean
           last_installment_date?: string | null
           notes?: string | null
           refunds_transaction_id?: string | null
@@ -394,6 +426,7 @@ export type Database = {
           p_payments: Json
           p_refunds_transaction_id?: string
           p_savings_goal_id: string
+          p_shares?: Json
           p_type: string
         }
         Returns: string

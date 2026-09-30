@@ -2,8 +2,10 @@
 // (and update_goal) functions and the Goal balance constraint - see
 // supabase/migrations/20260923120000_goal_transfers.sql,
 // supabase/migrations/20260928000000_refund_links.sql,
-// docs/adr/004-goal-transfers.md and
-// docs/adr/006-reimbursement-purchase-links.md. Callers map them to their own messages.
+// supabase/migrations/20260930150000_shared_expense_split.sql,
+// docs/adr/004-goal-transfers.md,
+// docs/adr/006-reimbursement-purchase-links.md and
+// docs/adr/009-shared-expense-split.md. Callers map them to their own messages.
 const CODES = [
   'not_authenticated',
   'invalid_amount',
@@ -18,6 +20,10 @@ const CODES = [
   'refund_before_purchase',
   'refund_exceeds_purchase',
   'purchase_has_linked_refunds',
+  'invalid_share_plan',
+  'household_required_for_shared_expense',
+  'invalid_share_recipient',
+  'shares_do_not_match_amount',
 ] as const
 
 export type MoneyMovementErrorCode = (typeof CODES)[number]

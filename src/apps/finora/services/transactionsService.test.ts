@@ -80,6 +80,28 @@ describe('saveTransaction', () => {
 
     expect(rpcCalls[0].args.p_refunds_transaction_id).toBeNull()
   })
+
+  it('sends the shares for a shared expense', async () => {
+    const shares = [
+      { user_id: 'u1', amount: 20 },
+      { user_id: 'u2', amount: 10 },
+    ]
+    await saveTransaction(null, { ...newTransaction, type: 'expense', shares })
+
+    expect(rpcCalls[0].args.p_shares).toEqual(shares)
+  })
+
+  it('sends null shares when omitted, exactly as before', async () => {
+    await saveTransaction(null, newTransaction)
+
+    expect(rpcCalls[0].args.p_shares).toBeNull()
+  })
+
+  it('sends null shares for an empty shares array', async () => {
+    await saveTransaction(null, { ...newTransaction, shares: [] })
+
+    expect(rpcCalls[0].args.p_shares).toBeNull()
+  })
 })
 
 describe('deleteTransaction', () => {

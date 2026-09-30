@@ -20,7 +20,7 @@ export type TransactionWithCategory = Transaction & {
 }
 
 const TRANSACTION_SELECT =
-  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), goal_transfer:goal_transfers(kind, goal_id, amount, goal:goals(name))'
+  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), goal_transfer:goal_transfers(kind, goal_id, amount, goal:goals(name)), shares:transaction_shares(id, transaction_id, user_id, amount)'
 
 export async function getTransactions() {
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -54,6 +54,11 @@ export interface TransactionPaymentInput {
   amount: number
 }
 
+export interface TransactionShareInput {
+  user_id: string
+  amount: number
+}
+
 export interface NewTransactionInput {
   description: string
   amount: number
@@ -71,6 +76,12 @@ export interface NewTransactionInput {
    */
   refunds_transaction_id?: string | null
   payments: TransactionPaymentInput[]
+  /**
+   * Exactly two entries (the owner and their household partner) to share
+   * this expense; omitted or empty for a personal one. See
+   * docs/adr/009-shared-expense-split.md.
+   */
+  shares?: TransactionShareInput[]
 }
 
 // Creates (id null) or updates a transaction with its payments and, for a
@@ -90,6 +101,7 @@ export function saveTransaction(id: string | null, data: NewTransactionInput) {
     p_savings_goal_id: data.savings_goal_id,
     p_payments: data.payments,
     p_refunds_transaction_id: data.refunds_transaction_id ?? null,
+    p_shares: data.shares && data.shares.length > 0 ? data.shares : null,
   })
 }
 
