@@ -141,17 +141,40 @@ describe('Transactions', () => {
   })
 
   describe('owner tabs', () => {
-    const partnerTransactions: TransactionWithCategory[] = [
-      ...TRANSACTIONS,
-      transaction({
-        id: 't3',
-        user_id: 'u2',
-        description: 'Groceries',
-        category_id: 'c1',
-        category: CATEGORY_FOOD,
-        payments: [{ id: 'p3', transaction_id: 't3', payment_method: 'Cash', amount: 60 }],
-      }),
-    ]
+    // A shared expense the signed-in user registered themselves - the exact
+    // bug this filter fix covers: it must show on BOTH tabs, not get hidden
+    // from Household just because its user_id is the caller's own.
+    const sharedByMe = transaction({
+      id: 't3',
+      description: 'Rent',
+      is_shared: true,
+      shares: [
+        { id: 's1', transaction_id: 't3', user_id: 'u1', amount: 30 },
+        { id: 's2', transaction_id: 't3', user_id: 'u2', amount: 30 },
+      ],
+    })
+    // The partner's personal (non-shared) expense - visible to the household
+    // via RLS, but must NOT appear on the Household tab (that tab is "shared
+    // expenses", not "the partner's rows" - see Transactions.tsx).
+    const partnerPersonal = transaction({
+      id: 't4',
+      user_id: 'u2',
+      description: 'Groceries',
+      category_id: 'c1',
+      category: CATEGORY_FOOD,
+      payments: [{ id: 'p4', transaction_id: 't4', payment_method: 'Cash', amount: 60 }],
+    })
+    const partnerShared = transaction({
+      id: 't5',
+      user_id: 'u2',
+      description: 'Gas',
+      is_shared: true,
+      shares: [
+        { id: 's3', transaction_id: 't5', user_id: 'u1', amount: 20 },
+        { id: 's4', transaction_id: 't5', user_id: 'u2', amount: 20 },
+      ],
+    })
+    const householdTransactions: TransactionWithCategory[] = [...TRANSACTIONS, sharedByMe, partnerPersonal, partnerShared]
 
     it('shows no tab toggle without an active household', () => {
       renderPage()
@@ -167,29 +190,37 @@ describe('Transactions', () => {
       expect(screen.queryByTestId('transactions-tab-mine-button')).not.toBeInTheDocument()
     })
 
-    it('defaults to "my transactions", excluding the partner\'s rows', () => {
+    it('defaults to "my transactions": everything of mine, shared or not, never the partner\'s', () => {
       vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
-      vi.mocked(useTransactions).mockReturnValue({ transactions: partnerTransactions, loading: false, error: null, refetch: vi.fn() })
+      vi.mocked(useTransactions).mockReturnValue({ transactions: householdTransactions, loading: false, error: null, refetch: vi.fn() })
       renderPage()
 
       expect(screen.getByTestId('transactions-tab-mine-button')).toHaveAttribute('aria-pressed', 'true')
       expect(screen.getByText('Starbucks')).toBeInTheDocument()
+      expect(screen.getByText('Rent')).toBeInTheDocument()
       expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
+      expect(screen.queryByText('Gas')).not.toBeInTheDocument()
     })
 
-    it('shows only the partner\'s rows on the household tab', () => {
+    it('shows every shared expense on the household tab, regardless of who registered it', () => {
       vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
-      vi.mocked(useTransactions).mockReturnValue({ transactions: partnerTransactions, loading: false, error: null, refetch: vi.fn() })
+      vi.mocked(useTransactions).mockReturnValue({ transactions: householdTransactions, loading: false, error: null, refetch: vi.fn() })
       renderPage()
 
       fireEvent.click(screen.getByTestId('transactions-tab-household-button'))
 
-      expect(screen.getByText('Groceries')).toBeInTheDocument()
+      // The bug: a shared expense the caller registered themselves must
+      // still show here, not just the partner's.
+      expect(screen.getByText('Rent')).toBeInTheDocument()
+      expect(screen.getByText('Gas')).toBeInTheDocument()
+      // Not the partner's unrelated personal expense, and not the caller's
+      // own non-shared ones.
+      expect(screen.queryByText('Groceries')).not.toBeInTheDocument()
       expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
       expect(screen.queryByText('Uber ride')).not.toBeInTheDocument()
     })
 
-    it('shows a household-specific empty message when the partner has no transactions', () => {
+    it('shows a household-specific empty message when there are no shared expenses', () => {
       vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
       vi.mocked(useTransactions).mockReturnValue({ transactions: TRANSACTIONS, loading: false, error: null, refetch: vi.fn() })
       renderPage()

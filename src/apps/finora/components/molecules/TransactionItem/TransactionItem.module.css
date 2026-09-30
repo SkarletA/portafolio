@@ -28,6 +28,10 @@
   @apply truncate text-xs text-finora-ink-muted;
 }
 
+.sharedChips {
+  @apply mt-1 flex flex-wrap gap-1.5;
+}
+
 .date {
   @apply hidden text-sm text-finora-ink-muted sm:block;
 }

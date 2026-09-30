@@ -11,3 +11,7 @@
 .neutral {
   @apply bg-finora-surface-muted text-finora-ink-muted;
 }
+
+.shared {
+  @apply bg-finora-shared-bg text-finora-shared;
+}

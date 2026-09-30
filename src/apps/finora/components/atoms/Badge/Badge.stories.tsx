@@ -15,9 +15,10 @@ export default {
       table: { type: { summary: 'ReactNode' } },
     },
     variant: {
-      description: 'A positive status (`success`) or a plain informational tag (`neutral`).',
+      description:
+        'A positive status (`success`), a plain informational tag (`neutral`), or a household expense split\'s per-person amount (`shared`, docs/adr/009-shared-expense-split.md).',
       control: 'select',
-      options: ['success', 'neutral'],
+      options: ['success', 'neutral', 'shared'],
       table: { type: { summary: 'string' }, defaultValue: { summary: 'neutral' } },
     },
   },
@@ -29,4 +30,8 @@ export const Success = {
 
 export const Neutral = {
   args: { children: 'Pending', variant: 'neutral' },
+}
+
+export const Shared = {
+  args: { children: 'You $600.00', variant: 'shared' },
 }

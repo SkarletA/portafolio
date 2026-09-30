@@ -60,7 +60,7 @@ describe('TransactionItem', () => {
     } as never)
   })
 
-  it('shows who a shared expense is split with and the caller\'s own part, in text', () => {
+  it('shows a split chip for each person, never truncated inline text', () => {
     renderItem({
       ...baseTransaction,
       is_shared: true,
@@ -70,13 +70,15 @@ describe('TransactionItem', () => {
       ],
     })
 
-    expect(screen.getByText(/item\.sharedWith:\{"partner":"Bel Suarez","amount":"\$72\.00"\}/)).toBeInTheDocument()
+    expect(screen.getByText('item.chipYou:{"amount":"$72.00"}')).toBeInTheDocument()
+    expect(screen.getByText('item.chipOther:{"name":"Bel Suarez","amount":"$48.00"}')).toBeInTheDocument()
   })
 
-  it('shows no shared label for a personal expense', () => {
+  it('shows no split chips for a personal expense', () => {
     renderItem(baseTransaction)
 
-    expect(screen.queryByText(/item\.sharedWith/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/item\.chipYou/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/item\.chipOther/)).not.toBeInTheDocument()
   })
 
   it('shows edit and delete for the signed-in user\'s own row', () => {
@@ -91,7 +93,7 @@ describe('TransactionItem', () => {
 
     expect(screen.queryByTestId('transaction-item-1-edit-icon')).not.toBeInTheDocument()
     expect(screen.queryByTestId('transaction-item-1-delete-icon')).not.toBeInTheDocument()
-    expect(screen.getByText(/Bel Suarez · Food/)).toBeInTheDocument()
+    expect(screen.getByText(/item\.paidBy:\{"who":"Bel Suarez"\}/)).toBeInTheDocument()
   })
 
   it('renders an expense with a negative, danger-colored amount', () => {
@@ -124,7 +126,7 @@ describe('TransactionItem', () => {
   it('shows the payment method breakdown for a single payment', () => {
     renderItem(baseTransaction)
 
-    expect(screen.getByText('Food · Credit Card')).toBeInTheDocument()
+    expect(screen.getByText('Food · item.paidBy:{"who":"item.you"} · Credit Card')).toBeInTheDocument()
   })
 
   it('shows the payment method breakdown for multiple payments without amounts', () => {
@@ -136,7 +138,9 @@ describe('TransactionItem', () => {
       ],
     })
 
-    expect(screen.getByText('Food · Credit Card + Grocery Vouchers')).toBeInTheDocument()
+    expect(
+      screen.getByText('Food · item.paidBy:{"who":"item.you"} · Credit Card + Grocery Vouchers')
+    ).toBeInTheDocument()
   })
 
   it('confirms and deletes a transaction, calling onDeleted on success', async () => {

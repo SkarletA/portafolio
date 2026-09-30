@@ -16,6 +16,7 @@ import { useAuth } from '@context/AuthContext'
 import { useHousehold } from '@context/HouseholdContext'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '@atoms/Icon/Icon'
+import { Badge } from '@atoms/Badge/Badge'
 import s from './TransactionItem.module.css'
 
 interface TransactionItemProps {
@@ -103,22 +104,20 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
       ? t('item.refundsSummary', { count: refundsSummary.count, total: formatCurrency(refundsSummary.total, currency, locale) })
       : null
 
-  // See docs/adr/009-shared-expense-split.md: accounting only, not who can see
-  // this row - ADR-007 already gives the household full visibility either way.
-  const ownSharePart = transaction.is_shared ? transaction.shares.find((share) => share.user_id === user?.id) : null
-  const sharedLabel =
-    transaction.is_shared && ownSharePart
-      ? t('item.sharedWith', {
-          partner: getHouseholdPartnerDisplayName(partner) ?? '',
-          amount: formatCurrency(ownSharePart.amount, currency, locale),
-        })
-      : null
-
   // A household view lists both members' rows (PR5, ADR-007); only the owner
   // may edit or delete their own transaction - forming a household or
   // appearing in a share never grants write access to anyone else's.
   const isOwner = transaction.user_id === user?.id
-  const ownerLabel = !isOwner ? getHouseholdPartnerDisplayName(partner) : null
+  const partnerName = getHouseholdPartnerDisplayName(partner)
+  const paidByLabel = t('item.paidBy', { who: isOwner ? t('item.you') : (partnerName ?? '') })
+
+  // See docs/adr/009-shared-expense-split.md: accounting only, not who can see
+  // this row - ADR-007 already gives the household full visibility either
+  // way. Always "your part" first, regardless of who owns the row, so the
+  // chips read the same whether it's your own shared expense or your
+  // partner's.
+  const myShare = transaction.is_shared ? transaction.shares.find((share) => share.user_id === user?.id) : null
+  const partnerShare = transaction.is_shared ? transaction.shares.find((share) => share.user_id !== user?.id) : null
 
   const handleEditClick = useCallback(() => {
     navigate(`/finora/transactions/${transaction.id}/edit`)
@@ -224,16 +223,23 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
         <div className={s.info}>
           <p className={s.description}>{transaction.description}</p>
           <p className={s.meta}>
-            {ownerLabel ? `${ownerLabel} · ` : ''}
             {categoryDisplayName ?? t('item.uncategorized')}
+            {` · ${paidByLabel}`}
             {paymentMethodsLabel ? ` · ${paymentMethodsLabel}` : ''}
             {installmentsLabel ? ` · ${installmentsLabel}` : ''}
             {savingsLabel ? ` · ${savingsLabel}` : ''}
             {refundOfLabel ? ` · ${refundOfLabel}` : ''}
             {refundGoalLabel ? ` · ${refundGoalLabel}` : ''}
             {refundsSummaryLabel ? ` · ${refundsSummaryLabel}` : ''}
-            {sharedLabel ? ` · ${sharedLabel}` : ''}
           </p>
+          {transaction.is_shared && myShare && partnerShare && (
+            <div className={s.sharedChips}>
+              <Badge variant="shared">{t('item.chipYou', { amount: formatCurrency(myShare.amount, currency, locale) })}</Badge>
+              <Badge variant="shared">
+                {t('item.chipOther', { name: partnerName ?? '', amount: formatCurrency(partnerShare.amount, currency, locale) })}
+              </Badge>
+            </div>
+          )}
         </div>
       </div>
 

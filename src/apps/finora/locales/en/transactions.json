@@ -12,7 +12,7 @@
     "allPaymentMethods": "All payment methods"
   },
   "tabs": {
-    "ariaLabel": "Whose transactions",
+    "ariaLabel": "Mine or shared with the household",
     "mine": "My transactions",
     "household": "Household"
   },
@@ -25,7 +25,7 @@
     "loading": "Loading transactions…",
     "error": "We couldn't load your transactions. Please try again later.",
     "empty": "You don't have any transactions yet.",
-    "emptyHousehold": "Your partner doesn't have any transactions yet.",
+    "emptyHousehold": "No shared expenses yet.",
     "noMatches": "No transactions match your filters."
   },
   "item": {
@@ -45,7 +45,10 @@
     "deleteBlockedByRefunds": "Can't delete: {{count}} linked refund(s) must be unlinked or deleted first: {{list}}",
     "refundListItem": "{{description}} ({{amount}})",
     "goalBalanceNegative": "This refund's money was already used from its goal. Deleting it would leave the goal negative.",
-    "sharedWith": "Shared with {{partner}} · your part {{amount}}"
+    "paidBy": "Paid by {{who}}",
+    "you": "You",
+    "chipYou": "You {{amount}}",
+    "chipOther": "{{name}} {{amount}}"
   },
   "form": {
     "addTitle": "Add transaction",

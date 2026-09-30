@@ -21,6 +21,9 @@
   --color-finora-danger-bg: #fef2f2;
   --color-finora-warning: #f59e0b;
   --color-finora-warning-bg: #fffbeb;
+  /* A shared expense's per-person split chip (docs/adr/009-shared-expense-split.md). */
+  --color-finora-shared: #1e3a8a;
+  --color-finora-shared-bg: #e6f1fb;
 
   --tracking-finora-eyebrow: 0.2em;
 }
@@ -46,4 +49,6 @@
   --color-finora-danger-bg: rgb(239 68 68 / 0.15);
   --color-finora-warning: #fbbf24;
   --color-finora-warning-bg: rgb(251 191 36 / 0.15);
+  --color-finora-shared: #93c5fd;
+  --color-finora-shared-bg: rgb(59 130 246 / 0.15);
 }
