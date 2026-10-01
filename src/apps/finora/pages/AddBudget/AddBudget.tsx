@@ -1,34 +1,65 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
 import { GroupedSelect } from '@atoms/Select/GroupedSelect'
+import { useAuth } from '@context/AuthContext'
+import { useHousehold } from '@context/HouseholdContext'
 import { useCategories } from '@hooks/useCategories'
 import { useBudgets } from '@hooks/useBudgets'
 import { BackLink } from '@molecules/BackLink/BackLink'
 import { createBudget, type NewBudgetInput } from '@services/budgetsService'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
 import { roundMoneyInput } from '@domain/money'
 import s from './AddBudget.module.css'
 
 interface FormErrors {
   category_id?: string
   monthly_limit?: string
+  household?: string
 }
 
 export function AddBudget() {
   const { t } = useTranslation(['budgets', 'common', 'categories'])
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { partnerMember, partner } = useHousehold()
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories()
   const { budgets, loading: budgetsLoading } = useBudgets()
 
+  const hasAcceptedPartner = partnerMember?.status === 'accepted'
+  const partnerName = getHouseholdPartnerDisplayName(partner)
+
   const [categoryId, setCategoryId] = useState('')
   const [monthlyLimit, setMonthlyLimit] = useState('')
+  const [isHousehold, setIsHousehold] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const budgetedCategoryIds = useMemo(() => new Set(budgets.map((budget) => budget.category_id)), [budgets])
+  // Categories I've already budgeted myself, personal or household - a
+  // household budget of my partner's doesn't take a category away from me,
+  // it's handled by the duplicate guard below instead. getBudgets() already
+  // widens to include my partner's household budgets (ADR-010), so this list
+  // can hold rows that aren't mine.
+  const budgetedCategoryIds = useMemo(
+    () => new Set(budgets.filter((budget) => budget.user_id === user?.id).map((budget) => budget.category_id)),
+    [budgets, user?.id]
+  )
+
+  // Every household budget already in play (mine or my partner's), keyed by
+  // category - the competing-household-budget guard (ADR-010, PR8).
+  const householdBudgetByCategory = useMemo(() => {
+    const map = new Map<string, (typeof budgets)[number]>()
+    for (const budget of budgets) {
+      if (budget.is_household) map.set(budget.category_id, budget)
+    }
+    return map
+  }, [budgets])
+
+  const competingHouseholdBudget =
+    isHousehold && categoryId ? householdBudgetByCategory.get(categoryId) : undefined
 
   const categoryTree = useMemo(() => buildCategoryTree(categories), [categories])
 
@@ -55,12 +86,17 @@ export function AddBudget() {
 
   const handleCategoryChange = useCallback((nextCategoryId: string) => {
     setCategoryId(nextCategoryId)
-    setErrors((prev) => (prev.category_id ? { ...prev, category_id: undefined } : prev))
+    setErrors((prev) => (prev.category_id || prev.household ? { ...prev, category_id: undefined, household: undefined } : prev))
   }, [])
 
   const handleMonthlyLimitChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setMonthlyLimit(event.target.value)
     setErrors((prev) => (prev.monthly_limit ? { ...prev, monthly_limit: undefined } : prev))
+  }, [])
+
+  const handleHouseholdChange = useCallback(() => {
+    setIsHousehold((prev) => !prev)
+    setErrors((prev) => (prev.household ? { ...prev, household: undefined } : prev))
   }, [])
 
   // Visible rounding to 2 decimals, so the user sees what will be saved (ADR-004).
@@ -85,6 +121,13 @@ export function AddBudget() {
         nextErrors.monthly_limit = t('budgets:validation.amountMaxDecimals')
       }
 
+      // Nothing stops both members from independently creating a competing
+      // household budget in the same category - a UI guard, not a database
+      // constraint. See docs/adr/010-household-expense-tag-and-household-budget.md.
+      if (isHousehold && competingHouseholdBudget) {
+        nextErrors.household = t('budgets:validation.householdDuplicate', { partner: partnerName ?? '' })
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -95,6 +138,7 @@ export function AddBudget() {
       const input: NewBudgetInput = {
         category_id: categoryId,
         monthly_limit: parsedLimit,
+        is_household: isHousehold,
       }
 
       const { error } = await createBudget(input)
@@ -108,7 +152,7 @@ export function AddBudget() {
 
       navigate('/finora/budgets')
     },
-    [categoryId, monthlyLimit, navigate, t]
+    [categoryId, monthlyLimit, isHousehold, competingHouseholdBudget, partnerName, navigate, t]
   )
 
   return (
@@ -174,6 +218,32 @@ export function AddBudget() {
             </p>
           )}
         </label>
+
+        <fieldset className={s.householdFieldset}>
+          <label className={s.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={isHousehold}
+              onChange={handleHouseholdChange}
+              disabled={!hasAcceptedPartner}
+              aria-describedby="add-budget-household-hint"
+              data-testid="add-budget-household-checkbox"
+            />
+            {t('budgets:form.householdBudget')}
+          </label>
+          <p id="add-budget-household-hint" className={s.hint}>
+            {hasAcceptedPartner ? t('budgets:form.householdBudgetHint') : t('budgets:form.householdBudgetDisabledHint')}
+          </p>
+
+          {errors.household && (
+            <p role="alert" className={s.error} data-testid="add-budget-household-duplicate-warning">
+              {errors.household}{' '}
+              <Link to="/finora/budgets" data-testid="add-budget-household-duplicate-link">
+                {t('budgets:form.viewExistingHouseholdBudget')}
+              </Link>
+            </p>
+          )}
+        </fieldset>
 
         {submitError && (
           <p role="alert" className={s.error}>

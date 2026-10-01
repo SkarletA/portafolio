@@ -27,3 +27,11 @@
 .hint {
   @apply text-sm text-finora-ink-muted;
 }
+
+.householdFieldset {
+  @apply flex flex-col gap-2 rounded-lg border border-finora-border p-4;
+}
+
+.checkboxLabel {
+  @apply flex items-center gap-2 text-sm font-normal text-finora-ink;
+}
