@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   buildCategoryComparison,
+  buildCategorySpending,
+  getHouseholdSpendingByCategory,
+  getHouseholdTrendData,
   getMonthlyStats,
   getPeriodComparison,
-  getSpendingByCategory,
   getTrendData,
   type CategorySpending,
   type MonthlyStats,
@@ -11,22 +13,23 @@ import {
   type PeriodComparisonCategory,
   type TrendPoint,
 } from '@services/analyticsService'
+import { getExpensesByCategory } from '@services/transactionsService'
+import { getCategories } from '@services/categoriesService'
 import { getPeriodRange, type PeriodType } from '@domain/analytics'
+import type { Category } from '@domain/category'
 import { useHousehold } from '@context/HouseholdContext'
-import { addMoney } from '@domain/money'
 
 export type AnalyticsViewMode = 'mine' | 'household'
 
-/** Spending by category, Top categories: one list per member, never blind-merged (ADR-011). */
+/** Spending by category, Top categories: one list per member, never blind-merged - only what each tagged (ADR-010/011). */
 export interface HouseholdCategoryColumns {
   own: CategorySpending[]
   partner: CategorySpending[]
 }
 
-/** One trend bucket: `amount` (own + partner) is the stacked bar's height, `own`/`partner` its two segments. */
+/** One trend bucket: `own`/`partner` are the stacked bar's two segments. */
 export interface HouseholdTrendPoint {
   date: string
-  amount: number
   own: number
   partner: number
 }
@@ -41,28 +44,27 @@ export interface HouseholdComparison {
   partner: PeriodComparisonCategory[]
 }
 
-function mergeHouseholdTrend(own: TrendPoint[], partner: TrendPoint[]): HouseholdTrendPoint[] {
-  return own.map((point, index) => {
-    const partnerAmount = partner[index]?.amount ?? 0
-    return { date: point.date, own: point.amount, partner: partnerAmount, amount: addMoney(point.amount, partnerAmount) }
-  })
-}
-
 // viewMode: 'household' combines both household members' numbers, only once
 // the household is accepted; 'mine' (the default) behaves exactly as before.
 // In 'household', the top summary (stats) and the comparison's headline total
-// stay one fused figure, but the category breakdown, trend chart and
-// comparison table split per member instead of merging into one blind total
-// - a household overview that hides who spent what defeats its own purpose.
-// See docs/adr/011-household-combined-analytics.md. The toggle itself lives
-// in Analytics.tsx, same Mine/Household pattern Transactions already uses.
+// stay one fused figure (full visibility, ADR-011), but the category
+// breakdown, trend chart and comparison table are each member's *tagged*
+// spend only (ADR-010's attribution) split into two columns - the same rule
+// the household budget already uses, not a separate blind merge. See
+// docs/adr/011-household-combined-analytics.md. The toggle itself lives in
+// Analytics.tsx, same Mine/Household pattern Transactions already uses.
 export function useAnalytics(periodType: PeriodType = 'month', viewMode: AnalyticsViewMode = 'mine') {
   const { ownMember, partnerMember } = useHousehold()
   const [stats, setStats] = useState<MonthlyStats | null>(null)
   const [spendingByCategory, setSpendingByCategory] = useState<CategorySpending[]>([])
   const [trendData, setTrendData] = useState<TrendPoint[]>([])
   const [comparison, setComparison] = useState<PeriodComparison | null>(null)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [rawByCategory, setRawByCategory] = useState<Record<string, number>>({})
   const [householdBreakdown, setHouseholdBreakdown] = useState<HouseholdCategoryColumns | null>(null)
+  const [householdRaw, setHouseholdRaw] = useState<{ own: Record<string, number>; partner: Record<string, number> } | null>(
+    null
+  )
   const [householdTrend, setHouseholdTrend] = useState<HouseholdTrendPoint[]>([])
   const [householdComparison, setHouseholdComparison] = useState<HouseholdComparison | null>(null)
   const [loading, setLoading] = useState(true)
@@ -82,33 +84,41 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
     if (!householdMemberKey) {
       const [
         { data: statsData, error: statsError },
-        { data: categoryData, error: categoryError },
+        { data: expensesData, error: expensesError },
+        { data: categoriesData, error: categoriesError },
         { data: trendPoints, error: trendError },
         { data: comparisonData, error: comparisonError },
       ] = await Promise.all([
         getMonthlyStats(current, undefined),
-        getSpendingByCategory(current, undefined),
+        getExpensesByCategory(current, undefined),
+        getCategories(),
         getTrendData(periodType, undefined),
         getPeriodComparison(periodType, undefined),
       ])
 
       if (!mountedRef.current) return
 
-      const fetchError = statsError || categoryError || trendError || comparisonError
+      const fetchError = statsError || expensesError || categoriesError || trendError || comparisonError
 
       if (fetchError) {
         setError(fetchError.message)
         setStats(null)
         setSpendingByCategory([])
+        setCategories([])
+        setRawByCategory({})
         setTrendData([])
         setComparison(null)
       } else {
+        const loadedCategories = (categoriesData ?? []) as Category[]
         setStats(statsData)
-        setSpendingByCategory(categoryData ?? [])
+        setSpendingByCategory(buildCategorySpending(expensesData?.totals ?? {}, loadedCategories))
+        setCategories(loadedCategories)
+        setRawByCategory(expensesData?.raw ?? {})
         setTrendData(trendPoints ?? [])
         setComparison(comparisonData)
       }
       setHouseholdBreakdown(null)
+      setHouseholdRaw(null)
       setHouseholdTrend([])
       setHouseholdComparison(null)
 
@@ -118,49 +128,43 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
 
     const [ownId, partnerId] = householdMemberKey.split(',')
     const householdMemberIds = [ownId, partnerId]
+    const members = { ownId, partnerId }
 
     const [
       { data: statsData, error: statsError },
-      { data: ownCurrentCategories, error: ownCurrentError },
-      { data: partnerCurrentCategories, error: partnerCurrentError },
-      { data: ownPreviousCategories, error: ownPreviousError },
-      { data: partnerPreviousCategories, error: partnerPreviousError },
-      { data: ownTrendPoints, error: ownTrendError },
-      { data: partnerTrendPoints, error: partnerTrendError },
+      { data: currentSpending, error: currentSpendingError },
+      { data: previousSpending, error: previousSpendingError },
+      { data: trendPoints, error: trendError },
       { data: headlineComparison, error: headlineError },
+      { data: categoriesData, error: categoriesError },
     ] = await Promise.all([
       getMonthlyStats(current, householdMemberIds),
-      getSpendingByCategory(current, [ownId]),
-      getSpendingByCategory(current, [partnerId]),
-      getSpendingByCategory(previous, [ownId]),
-      getSpendingByCategory(previous, [partnerId]),
-      getTrendData(periodType, [ownId]),
-      getTrendData(periodType, [partnerId]),
+      getHouseholdSpendingByCategory(current, members),
+      getHouseholdSpendingByCategory(previous, members),
+      getHouseholdTrendData(periodType, members),
       getPeriodComparison(periodType, householdMemberIds),
+      getCategories(),
     ])
 
     if (!mountedRef.current) return
 
     const fetchError =
-      statsError ||
-      ownCurrentError ||
-      partnerCurrentError ||
-      ownPreviousError ||
-      partnerPreviousError ||
-      ownTrendError ||
-      partnerTrendError ||
-      headlineError
+      statsError || currentSpendingError || previousSpendingError || trendError || headlineError || categoriesError
 
     if (fetchError) {
       setError(fetchError.message)
       setStats(null)
+      setCategories([])
       setHouseholdBreakdown(null)
+      setHouseholdRaw(null)
       setHouseholdTrend([])
       setHouseholdComparison(null)
     } else {
       setStats(statsData)
-      setHouseholdBreakdown({ own: ownCurrentCategories ?? [], partner: partnerCurrentCategories ?? [] })
-      setHouseholdTrend(mergeHouseholdTrend(ownTrendPoints ?? [], partnerTrendPoints ?? []))
+      setCategories((categoriesData ?? []) as Category[])
+      setHouseholdBreakdown({ own: currentSpending?.own ?? [], partner: currentSpending?.partner ?? [] })
+      setHouseholdRaw({ own: currentSpending?.ownRaw ?? {}, partner: currentSpending?.partnerRaw ?? {} })
+      setHouseholdTrend(trendPoints ?? [])
       setHouseholdComparison(
         headlineComparison
           ? {
@@ -168,13 +172,14 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
               previousTotal: headlineComparison.previousTotal,
               totalPercentChange: headlineComparison.totalPercentChange,
               hasPreviousData: headlineComparison.hasPreviousData,
-              own: buildCategoryComparison(ownCurrentCategories ?? [], ownPreviousCategories ?? []),
-              partner: buildCategoryComparison(partnerCurrentCategories ?? [], partnerPreviousCategories ?? []),
+              own: buildCategoryComparison(currentSpending?.own ?? [], previousSpending?.own ?? []),
+              partner: buildCategoryComparison(currentSpending?.partner ?? [], previousSpending?.partner ?? []),
             }
           : null
       )
     }
     setSpendingByCategory([])
+    setRawByCategory({})
     setTrendData([])
     setComparison(null)
 
@@ -195,7 +200,10 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
     spendingByCategory,
     trendData,
     comparison,
+    categories,
+    rawByCategory,
     householdBreakdown,
+    householdRaw,
     householdTrend,
     householdComparison,
     isHouseholdView,
