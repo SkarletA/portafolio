@@ -358,6 +358,53 @@ export interface PeriodComparison {
   hasPreviousData: boolean
 }
 
+// Matches each current-period category to its previous-period amount (0 when
+// new) and vice versa (a category dropped to 0 still shows its previous
+// amount, not disappears). Exported so a household-combined view (ADR-011)
+// can build the same comparison per member instead of only once for a
+// single merged list - same function, different (pre-filtered) inputs, the
+// same reuse pattern ADR-010/011 already established for getGrossSpendByCategory.
+export function buildCategoryComparison(
+  currentCategories: CategorySpending[],
+  previousCategories: CategorySpending[]
+): PeriodComparisonCategory[] {
+  const previousByCategoryId = new Map(previousCategories.map((category) => [category.category_id, category]))
+  const seenCategoryIds = new Set<string>()
+
+  const categories: PeriodComparisonCategory[] = currentCategories.map((category) => {
+    seenCategoryIds.add(category.category_id)
+    const previousAmount = previousByCategoryId.get(category.category_id)?.amount ?? 0
+
+    return {
+      category_id: category.category_id,
+      name: category.name,
+      icon: category.icon,
+      color: category.color,
+      translationKey: category.translationKey,
+      currentAmount: category.amount,
+      previousAmount,
+      percentChange: getPercentChange(category.amount, previousAmount),
+    }
+  })
+
+  for (const category of previousCategories) {
+    if (seenCategoryIds.has(category.category_id)) continue
+
+    categories.push({
+      category_id: category.category_id,
+      name: category.name,
+      icon: category.icon,
+      color: category.color,
+      translationKey: category.translationKey,
+      currentAmount: 0,
+      previousAmount: category.amount,
+      percentChange: getPercentChange(0, category.amount),
+    })
+  }
+
+  return categories
+}
+
 export async function getPeriodComparison(periodType: PeriodType, householdMemberIds?: string[]) {
   const { current, previous } = getPeriodRange(periodType, new Date())
 
@@ -377,39 +424,7 @@ export async function getPeriodComparison(periodType: PeriodType, householdMembe
   if (error) return { data: null, error }
 
   const hasPreviousData = !!previousStats && (previousStats.totalSpent > 0 || previousStats.totalIncome > 0)
-  const previousByCategoryId = new Map((previousCategories ?? []).map((category) => [category.category_id, category]))
-  const seenCategoryIds = new Set<string>()
-
-  const categories: PeriodComparisonCategory[] = (currentCategories ?? []).map((category) => {
-    seenCategoryIds.add(category.category_id)
-    const previousAmount = previousByCategoryId.get(category.category_id)?.amount ?? 0
-
-    return {
-      category_id: category.category_id,
-      name: category.name,
-      icon: category.icon,
-      color: category.color,
-      translationKey: category.translationKey,
-      currentAmount: category.amount,
-      previousAmount,
-      percentChange: getPercentChange(category.amount, previousAmount),
-    }
-  })
-
-  for (const category of previousCategories ?? []) {
-    if (seenCategoryIds.has(category.category_id)) continue
-
-    categories.push({
-      category_id: category.category_id,
-      name: category.name,
-      icon: category.icon,
-      color: category.color,
-      translationKey: category.translationKey,
-      currentAmount: 0,
-      previousAmount: category.amount,
-      percentChange: getPercentChange(0, category.amount),
-    })
-  }
+  const categories = buildCategoryComparison(currentCategories ?? [], previousCategories ?? [])
 
   const currentTotal = currentStats?.totalSpent ?? 0
   const previousTotal = previousStats?.totalSpent ?? 0
