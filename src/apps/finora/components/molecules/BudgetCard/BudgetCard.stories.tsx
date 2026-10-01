@@ -101,6 +101,27 @@ export const WithReimbursement = {
   },
 }
 
+export const HouseholdBudget = {
+  args: {
+    budget: {
+      id: '6',
+      user_id: 'u1',
+      category_id: 'c6',
+      monthly_limit: 1000,
+      created_at: null,
+      is_household: true,
+      category: { id: 'c6', name: 'Rent', icon: 'home', color: '#7c3aed' },
+      spent: 1000,
+      effectiveLimit: 1000,
+      coveredBySavings: 0,
+      percentage: 100,
+      status: 'exceeded',
+      breakdown: [],
+      householdContributions: { own: 400, partner: 600 },
+    },
+  },
+}
+
 export const WithSpendingCoveredBySavings = {
   args: {
     budget: {
