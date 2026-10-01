@@ -86,17 +86,20 @@ differ.
 - **A personal/"Mine" view must remain available**, not just the combined
   one - matching the precedent `Transactions`' Mine/Household tabs already
   set (PR5).
-- **Presentation: two columns, side by side, not a selector.** Spending by
-  category, Top spending categories and the comparison table render as two
-  labeled columns ("Tú" / the partner's name) simultaneously, the same data
-  `Transactions`' Mine/Household tabs already split but shown at once
+- **Presentation: two full-width panels, stacked, not a selector.** Spending
+  by category, Top spending categories and the comparison table each render
+  two labeled panels ("Tú" / the partner's name) simultaneously, the same
+  data `Transactions`' Mine/Household tabs already split but shown at once
   instead of behind a toggle, because this is a monthly report read at a
-  glance, not a navigable list. A category with subcategories (e.g. Housing)
-  gets a collapsible breakdown identical to a budget's
-  (`BudgetCardBreakdown`, reused as-is - the same component, fed
-  `buildCategoryBreakdown`'s output and the row's own amount as its `limit`)
-  - only for Spending by category, not Top spending categories, which stays
-  a plain glance-able list.
+  glance, not a navigable list. They stack one above the other rather than
+  side by side - a two-up grid tried first left each panel too narrow once
+  an icon, a name, an amount and (for Spending by category) a subcategory
+  breakdown all had to fit in it, confirmed visually as a name/amount
+  overlap bug. A category with subcategories (e.g. Housing) gets a
+  collapsible breakdown identical to a budget's (`BudgetCardBreakdown`,
+  reused as-is - the same component, fed `buildCategoryBreakdown`'s output
+  and the row's own amount as its `limit`) - only for Spending by category,
+  not Top spending categories, which stays a plain glance-able list.
 - **The trend chart is a stacked bar chart, not a line**, each bar one
   bucket (day/month/year), its two segments each member's attributed spend
   for that bucket, with a legend. Follows market precedent (Monarch Money's
@@ -153,9 +156,16 @@ differ.
   - *A second, Analytics-specific attribution function instead of reusing
     PR8's*: would reintroduce exactly the risk that caused the bug - two
     implementations of the same rule that can silently diverge.
-  - *A dropdown/selector for the category breakdown instead of two columns*:
+  - *A dropdown/selector for the category breakdown instead of two panels*:
     rejected for the same reason the Mine/Household tabs stay a toggle
-    elsewhere but not here - a monthly report is read once, side by side.
+    elsewhere but not here - a monthly report is read once, not navigated.
+  - *A side-by-side two-column grid for the two panels (tried first)*: CSS
+    confirmed correct (`sm:grid-cols-2` did produce two columns at desktop
+    widths), but each column ended up too narrow for an icon, a name, an
+    amount and a subcategory breakdown to coexist legibly - visually
+    confirmed as a name/amount overlap, not a CSS bug to patch further.
+    Stacking full-width fixes the room problem directly instead of chasing
+    truncation/wrapping fixes in an inherently too-narrow column.
   - *Keeping the trend chart as a line, one line per member*: two
     overlapping lines are harder to read as "what did we spend total" than
     one stacked bar whose segments show composition.

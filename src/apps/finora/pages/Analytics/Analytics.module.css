@@ -61,15 +61,20 @@
 }
 
 .categoryName {
-  @apply flex-1 truncate font-medium text-finora-ink;
+  /* min-w-0 overrides a flex item's default min-width: auto, which would
+     otherwise keep it sized to its text content and ignore `truncate` - a
+     long name would overlap the amount instead of ellipsizing, worst in a
+     narrow container like Analytics' Household columns. Same fix as
+     BudgetCardBreakdown.module.css's .name. */
+  @apply min-w-0 flex-1 truncate font-medium text-finora-ink;
 }
 
 .categoryPercentage {
-  @apply w-10 text-right text-xs text-finora-ink-muted;
+  @apply w-10 shrink-0 text-right text-xs text-finora-ink-muted;
 }
 
 .categoryAmount {
-  @apply text-right font-semibold text-finora-ink;
+  @apply shrink-0 text-right font-semibold text-finora-ink;
 }
 
 .topCategoryList {
@@ -161,11 +166,14 @@
   @apply -mt-2 mb-4 text-sm text-finora-ink-muted;
 }
 
-/* Two member columns, side by side on desktop (ADR-011) - a monthly report
-   read at a glance, not a navigable list, so both show at once rather than
-   behind a selector. */
+/* Two member panels, stacked full-width rather than side by side (ADR-011)
+   - a two-up grid left each panel too narrow once an icon, a name, an
+   amount and (in Spending by category) a subcategory breakdown all have to
+   fit in it, which is what caused the name/amount overlap bug. Both panels
+   still show at once rather than behind a selector - this is a monthly
+   report read at a glance, not a navigable list. */
 .columns {
-  @apply grid grid-cols-1 gap-6 sm:grid-cols-2;
+  @apply flex flex-col gap-6;
 }
 
 .columnLabel {
