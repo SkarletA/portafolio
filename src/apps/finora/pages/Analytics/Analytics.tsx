@@ -71,6 +71,30 @@ function formatTrendLabel(date: string, periodType: PeriodType): string {
   return monthLabelFormatter.format(parsed)
 }
 
+/**
+ * The clicked bucket's own `date`, from a recharts click event's
+ * `activeIndex`. recharts' own `MouseHandlerDataParam` type says
+ * `activeIndex` can be a `number`, but at runtime
+ * (combineActiveTooltipIndex in recharts' source) it is always a numeric
+ * *string*, e.g. `"2"` - a bare `typeof activeIndex === 'number'` check
+ * rejects every real click, which is why clicking a bar previously did
+ * nothing. `Number()` converts either case; exported so this parsing is
+ * directly testable without recharts actually rendering a chart, which it
+ * doesn't in this project's jsdom setup (no ResizeObserver polyfill).
+ */
+export function resolveClickedBucketDate(
+  activeIndex: MouseHandlerDataParam['activeIndex'],
+  data: { date: string }[]
+): string | null {
+  // Number(null) is 0, not NaN - without this guard, "no active tooltip"
+  // (null) would resolve to the first bucket instead of no selection.
+  if (activeIndex === null || activeIndex === undefined) return null
+
+  const index = Number(activeIndex)
+  if (!Number.isFinite(index)) return null
+  return data[index]?.date ?? null
+}
+
 interface CategorySpendListProps {
   categories: CategorySpending[]
   t: TFunction
@@ -255,11 +279,8 @@ export function Analytics() {
   // chartData's x-axis label is a formatted display string, not the date.
   const handleChartClick = useCallback(
     (chartState?: MouseHandlerDataParam) => {
-      const index = chartState?.activeIndex
-      if (typeof index !== 'number') return
-
-      const point = isHouseholdView ? householdChartData[index] : chartData[index]
-      if (point) selectBucket(point.date)
+      const date = resolveClickedBucketDate(chartState?.activeIndex, isHouseholdView ? householdChartData : chartData)
+      if (date) selectBucket(date)
     },
     [isHouseholdView, householdChartData, chartData, selectBucket]
   )

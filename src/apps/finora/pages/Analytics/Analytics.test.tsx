@@ -6,7 +6,7 @@ import { useHousehold } from '@context/HouseholdContext'
 import { useLanguage } from '@context/LanguageContext'
 import type { MonthlyStats, CategorySpending, TrendPoint, PeriodComparison } from '@services/analyticsService'
 import type { Category } from '@domain/category'
-import { Analytics } from './Analytics'
+import { Analytics, resolveClickedBucketDate } from './Analytics'
 
 vi.mock('@hooks/useAnalytics', () => ({ useAnalytics: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
@@ -84,6 +84,35 @@ function mockAnalytics(overrides: Partial<ReturnType<typeof useAnalytics>> = {})
 function renderPage() {
   return render(<Analytics />)
 }
+
+describe('resolveClickedBucketDate', () => {
+  const data = [{ date: '2026-08-01' }, { date: '2026-09-01' }, { date: '2026-10-01' }]
+
+  it("resolves the clicked bucket's date from a numeric-string activeIndex - what recharts actually sends at runtime", () => {
+    expect(resolveClickedBucketDate('1', data)).toBe('2026-09-01')
+  })
+
+  it('also accepts a plain number, in case a future recharts version sends one', () => {
+    expect(resolveClickedBucketDate(1, data)).toBe('2026-09-01')
+  })
+
+  it('resolves index "0" correctly - falsy numeric values must not be mistaken for "no selection"', () => {
+    expect(resolveClickedBucketDate('0', data)).toBe('2026-08-01')
+  })
+
+  it('returns null for an out-of-range index', () => {
+    expect(resolveClickedBucketDate('5', data)).toBeNull()
+  })
+
+  it('returns null when there is no active index (click missed every bucket)', () => {
+    expect(resolveClickedBucketDate(undefined, data)).toBeNull()
+    expect(resolveClickedBucketDate(null, data)).toBeNull()
+  })
+
+  it('returns null for a non-numeric index (e.g. Sankey/Treemap-style ids recharts can also send)', () => {
+    expect(resolveClickedBucketDate('some-node-id', data)).toBeNull()
+  })
+})
 
 describe('Analytics', () => {
   beforeEach(() => {
