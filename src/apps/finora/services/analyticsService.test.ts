@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getMonthlyStats, grossSpendByBucketKey, sumLedgerTotals } from './analyticsService'
+import {
+  getHouseholdSpendingByCategory,
+  getHouseholdTrendData,
+  getMonthlyStats,
+  grossSpendByBucketKey,
+  sumLedgerTotals,
+} from './analyticsService'
 
 const tables: Record<string, unknown[]> = {}
 const filterCalls: [string, ...unknown[]][] = []
@@ -11,6 +17,8 @@ function query(table: string) {
     select: () => builder,
     eq: (...args: [string, unknown]) => (filterCalls.push(['eq', ...args]), builder),
     in: (...args: [string, unknown]) => (filterCalls.push(['in', ...args]), builder),
+    or: (...args: [string]) => (filterCalls.push(['or', ...args]), builder),
+    order: () => builder,
     lte: () => builder,
     gte: () => builder,
     then: (resolve: (value: { data: unknown[]; error: null }) => void) => resolve({ data: tables[table] ?? [], error: null }),
@@ -167,5 +175,129 @@ describe('getMonthlyStats', () => {
     await getMonthlyStats(range, ['u1', 'u2'])
 
     expect(filterCalls).toContainEqual(['in', 'user_id', ['u1', 'u2']])
+  })
+})
+
+const housingCategory = { id: 'housing', name: 'Housing', icon: null, color: null, parent_id: null, translationKey: null }
+
+describe('getHouseholdSpendingByCategory (ADR-010/011 attribution)', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(tables)) delete tables[key]
+    filterCalls.length = 0
+  })
+
+  const range = { start: '2026-09-01', end: '2026-09-30' }
+
+  // The reported bug: a Case A split lives in one row with one user_id, so a
+  // query merely filtered to "rows I own" gives the full amount to whoever
+  // recorded it and nothing to the other member. The fix attributes by
+  // transaction_shares.amount instead, same as the household budget (PR8).
+  it("splits a Case A shared transaction (rent $14,700, $5,200/$9,500) by each member's own share", async () => {
+    tables.transactions = [
+      {
+        category_id: 'housing',
+        amount: 14700,
+        type: 'expense',
+        date: '2026-09-05',
+        installment_months: 1,
+        funding_source: 'income',
+        user_id: 'u1',
+        is_shared: true,
+        is_household_expense: false,
+        shares: [
+          { user_id: 'u1', amount: 5200 },
+          { user_id: 'u2', amount: 9500 },
+        ],
+      },
+    ]
+    tables.categories = [housingCategory]
+
+    const { data, error } = await getHouseholdSpendingByCategory(range, { ownId: 'u1', partnerId: 'u2' })
+
+    expect(error).toBeNull()
+    expect(data?.own.find((category) => category.category_id === 'housing')?.amount).toBe(5200)
+    expect(data?.partner.find((category) => category.category_id === 'housing')?.amount).toBe(9500)
+  })
+
+  it('splits an even 50/50 share correctly too', async () => {
+    tables.transactions = [
+      {
+        category_id: 'housing',
+        amount: 2000,
+        type: 'expense',
+        date: '2026-09-05',
+        installment_months: 1,
+        funding_source: 'income',
+        user_id: 'u2',
+        is_shared: true,
+        is_household_expense: false,
+        shares: [
+          { user_id: 'u1', amount: 1000 },
+          { user_id: 'u2', amount: 1000 },
+        ],
+      },
+    ]
+    tables.categories = [housingCategory]
+
+    const { data } = await getHouseholdSpendingByCategory(range, { ownId: 'u1', partnerId: 'u2' })
+
+    expect(data?.own.find((category) => category.category_id === 'housing')?.amount).toBe(1000)
+    expect(data?.partner.find((category) => category.category_id === 'housing')?.amount).toBe(1000)
+  })
+
+  it('attributes a Case B household-tagged expense in full to whoever recorded it, nothing to the other', async () => {
+    tables.transactions = [
+      {
+        category_id: 'housing',
+        amount: 250,
+        type: 'expense',
+        date: '2026-09-02',
+        installment_months: 1,
+        funding_source: 'income',
+        user_id: 'u2',
+        is_shared: false,
+        is_household_expense: true,
+        shares: [],
+      },
+    ]
+    tables.categories = [housingCategory]
+
+    const { data } = await getHouseholdSpendingByCategory(range, { ownId: 'u1', partnerId: 'u2' })
+
+    expect(data?.own.find((category) => category.category_id === 'housing')).toBeUndefined()
+    expect(data?.partner.find((category) => category.category_id === 'housing')?.amount).toBe(250)
+  })
+})
+
+describe('getHouseholdTrendData (ADR-010/011 attribution)', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(tables)) delete tables[key]
+    filterCalls.length = 0
+  })
+
+  it("splits a Case A transaction's amount into the right trend bucket for each member", async () => {
+    const todayIso = new Date().toISOString().slice(0, 10)
+    tables.transactions = [
+      {
+        category_id: 'housing',
+        amount: 14700,
+        type: 'expense',
+        date: todayIso,
+        installment_months: 1,
+        funding_source: 'income',
+        user_id: 'u1',
+        is_shared: true,
+        is_household_expense: false,
+        shares: [
+          { user_id: 'u1', amount: 5200 },
+          { user_id: 'u2', amount: 9500 },
+        ],
+      },
+    ]
+
+    const { data, error } = await getHouseholdTrendData('day', { ownId: 'u1', partnerId: 'u2' })
+
+    expect(error).toBeNull()
+    expect(data?.find((point) => point.date === todayIso)).toEqual({ date: todayIso, own: 5200, partner: 9500 })
   })
 })
