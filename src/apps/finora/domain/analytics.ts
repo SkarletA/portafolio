@@ -54,6 +54,29 @@ export function getPeriodRange(
   }
 }
 
+// The full date range covered by one trend bucket (getTrendWindow's
+// day/month/year bucket dates) - used to drill into a clicked bucket's own
+// Spending by category, separate from the chart's own "current period"
+// range. `date` is the bucket's own date as the trend window produces it
+// (an exact day, the first of a month, or January 1 of a year).
+export function getBucketRange(date: string, periodType: PeriodType): DateRange {
+  if (periodType === 'day') {
+    return { start: date, end: date }
+  }
+
+  const year = Number(date.slice(0, 4))
+
+  if (periodType === 'year') {
+    return { start: toIsoDate(new Date(Date.UTC(year, 0, 1))), end: toIsoDate(new Date(Date.UTC(year, 11, 31))) }
+  }
+
+  const month = Number(date.slice(5, 7)) - 1
+  return {
+    start: toIsoDate(new Date(Date.UTC(year, month, 1))),
+    end: toIsoDate(new Date(Date.UTC(year, month + 1, 0))),
+  }
+}
+
 // null signals "no baseline to compare against" (previous period had zero
 // activity), which callers use to render an empty comparison state instead
 // of a fabricated percentage. Never returns NaN or Infinity.

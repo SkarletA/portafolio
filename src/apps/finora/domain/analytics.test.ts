@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { getAveragePerDay, getCategoryPercentage, getPercentChange, getPeriodRange, getSavingsRate } from './analytics'
+import {
+  getAveragePerDay,
+  getBucketRange,
+  getCategoryPercentage,
+  getPercentChange,
+  getPeriodRange,
+  getSavingsRate,
+} from './analytics'
 
 describe('getSavingsRate', () => {
   it('computes the percentage of income not spent', () => {
@@ -62,6 +69,24 @@ describe('getPeriodRange', () => {
     const { current, previous } = getPeriodRange('year', new Date(Date.UTC(2026, 8, 15)))
     expect(current).toEqual({ start: '2026-01-01', end: '2026-12-31' })
     expect(previous).toEqual({ start: '2025-01-01', end: '2025-12-31' })
+  })
+})
+
+describe('getBucketRange', () => {
+  it('returns the exact same day for periodType day', () => {
+    expect(getBucketRange('2026-09-11', 'day')).toEqual({ start: '2026-09-11', end: '2026-09-11' })
+  })
+
+  it('returns the full calendar month a bucket date falls in, for periodType month', () => {
+    expect(getBucketRange('2026-09-01', 'month')).toEqual({ start: '2026-09-01', end: '2026-09-30' })
+  })
+
+  it('returns a 31-day month fully, for periodType month', () => {
+    expect(getBucketRange('2026-01-01', 'month')).toEqual({ start: '2026-01-01', end: '2026-01-31' })
+  })
+
+  it('returns the full calendar year a bucket date falls in, for periodType year', () => {
+    expect(getBucketRange('2026-01-01', 'year')).toEqual({ start: '2026-01-01', end: '2026-12-31' })
   })
 })
 
