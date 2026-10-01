@@ -44,6 +44,10 @@
   @apply truncate text-xs text-finora-ink-muted;
 }
 
+.householdChips {
+  @apply mt-1 flex flex-wrap gap-1.5;
+}
+
 .statusBadge {
   @apply inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold;
 }

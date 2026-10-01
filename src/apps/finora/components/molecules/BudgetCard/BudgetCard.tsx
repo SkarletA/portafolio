@@ -3,9 +3,12 @@ import cn from 'clsx'
 import type { BudgetWithProgress } from '@hooks/useBudgets'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
 import { subtractMoney } from '@domain/money'
 import { useCurrency } from '@context/CurrencyContext'
+import { useHousehold } from '@context/HouseholdContext'
 import { useLanguage } from '@context/LanguageContext'
+import { Badge } from '@atoms/Badge/Badge'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import s from './BudgetCard.module.css'
 
@@ -26,8 +29,19 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
   const { t } = useTranslation(['budgets', 'categories'])
   const { currency } = useCurrency()
   const { language } = useLanguage()
+  const { partner } = useHousehold()
   const locale = getLocaleForLanguage(language)
-  const { category, monthly_limit: monthlyLimit, effectiveLimit, coveredBySavings, spent, percentage, status } = budget
+  const partnerName = getHouseholdPartnerDisplayName(partner)
+  const {
+    category,
+    monthly_limit: monthlyLimit,
+    effectiveLimit,
+    coveredBySavings,
+    spent,
+    percentage,
+    status,
+    householdContributions,
+  } = budget
   const categoryName = category ? getCategoryDisplayName(category, t) : t('card.uncategorized')
   const fallbackIcon = categoryName[0] || '•'
   const cappedPercentage = Math.min(Math.max(percentage, 0), 100)
@@ -63,6 +77,21 @@ export function BudgetCard({ budget, flush = false }: BudgetCardProps) {
                 amount: formatCurrency(coveredBySavings, currency, locale),
               })}
             </p>
+          )}
+          {householdContributions && (
+            <div className={s.householdChips}>
+              <Badge variant="shared">
+                {t('card.contributionYou', {
+                  amount: formatCurrency(householdContributions.own, currency, locale),
+                })}
+              </Badge>
+              <Badge variant="shared">
+                {t('card.contributionOther', {
+                  name: partnerName ?? '',
+                  amount: formatCurrency(householdContributions.partner, currency, locale),
+                })}
+              </Badge>
+            </div>
           )}
         </div>
         <span

@@ -16,6 +16,8 @@
     },
     "reimbursedHint": "Includes {{amount}} in reimbursements",
     "coveredBySavingsHint": "Excludes {{amount}} covered by savings",
+    "contributionYou": "You {{amount}}",
+    "contributionOther": "{{name}} {{amount}}",
     "percentageLabel": "{{percent}}% of available limit",
     "progressAriaLabel": "{{category}} budget: {{status}}"
   },
@@ -34,11 +36,16 @@
     "allCategoriesBudgeted": "All your categories already have a budget.",
     "monthlyLimit": "Monthly limit",
     "saveBudget": "Save budget",
-    "backToBudgets": "Back to budgets"
+    "backToBudgets": "Back to budgets",
+    "householdBudget": "Is this a household budget?",
+    "householdBudgetHint": "Both of you contribute toward this budget's single limit - only what each of you explicitly tags as shared or household counts.",
+    "householdBudgetDisabledHint": "Invite a household partner to create a household budget.",
+    "viewExistingHouseholdBudget": "View it in Budgets"
   },
   "validation": {
     "selectCategory": "Select a category",
     "limitGreaterThanZero": "Enter a limit greater than 0",
-    "amountMaxDecimals": "Amounts can have at most 2 decimals"
+    "amountMaxDecimals": "Amounts can have at most 2 decimals",
+    "householdDuplicate": "{{partner}} already has a household budget for this category."
   }
 }

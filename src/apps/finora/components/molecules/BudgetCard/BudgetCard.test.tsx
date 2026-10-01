@@ -5,6 +5,9 @@ import type { BudgetWithProgress } from '@hooks/useBudgets'
 
 vi.mock('../../../context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
 vi.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('../../../context/HouseholdContext', () => ({
+  useHousehold: () => ({ partner: { user_id: 'u2', first_name: 'Dana', last_name: null, avatar_url: null } }),
+}))
 
 const baseBudget: BudgetWithProgress = {
   id: '1',
@@ -97,5 +100,26 @@ describe('BudgetCard', () => {
     render(<BudgetCard budget={baseBudget} />)
 
     expect(screen.queryByText(/card\.coveredBySavingsHint/)).not.toBeInTheDocument()
+  })
+
+  it('does not show contribution chips for a personal budget', () => {
+    render(<BudgetCard budget={baseBudget} />)
+
+    expect(screen.queryByText(/card\.contributionYou/)).not.toBeInTheDocument()
+  })
+
+  it('shows each member\'s contribution as chips for a household budget', () => {
+    render(
+      <BudgetCard
+        budget={{
+          ...baseBudget,
+          is_household: true,
+          householdContributions: { own: 400, partner: 600 },
+        }}
+      />
+    )
+
+    expect(screen.getByText('card.contributionYou:{"amount":"$400.00"}')).toBeInTheDocument()
+    expect(screen.getByText('card.contributionOther:{"name":"Dana","amount":"$600.00"}')).toBeInTheDocument()
   })
 })

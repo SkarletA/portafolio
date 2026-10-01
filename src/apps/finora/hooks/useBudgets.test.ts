@@ -2,8 +2,9 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBudgets } from './useBudgets'
 import { getBudgets } from '@services/budgetsService'
-import { getExpensesByCategory } from '@services/transactionsService'
+import { getExpensesByCategory, getHouseholdContributionsByCategory } from '@services/transactionsService'
 import { getCategories } from '@services/categoriesService'
+import { useHousehold } from '@context/HouseholdContext'
 
 vi.mock('../services/budgetsService', () => ({
   getBudgets: vi.fn(),
@@ -11,6 +12,7 @@ vi.mock('../services/budgetsService', () => ({
 
 vi.mock('../services/transactionsService', () => ({
   getExpensesByCategory: vi.fn(),
+  getHouseholdContributionsByCategory: vi.fn(),
   getCurrentMonthRange: vi.fn(() => ({ start: '2026-09-01', end: '2026-09-30', dayOfMonth: 11 })),
 }))
 
@@ -18,12 +20,21 @@ vi.mock('../services/categoriesService', () => ({
   getCategories: vi.fn(),
 }))
 
+vi.mock('../context/HouseholdContext', () => ({
+  useHousehold: vi.fn(),
+}))
+
+const acceptedOwn = { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted' as const, invited_by: 'u1' }
+const acceptedPartner = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
+
 describe('useBudgets', () => {
   beforeEach(() => {
     vi.mocked(getBudgets).mockReset()
     vi.mocked(getExpensesByCategory).mockReset()
+    vi.mocked(getHouseholdContributionsByCategory).mockReset()
     vi.mocked(getCategories).mockReset()
     vi.mocked(getCategories).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: null, partnerMember: null } as never)
   })
 
   it('loads budgets successfully', async () => {
@@ -316,5 +327,91 @@ describe('useBudgets', () => {
 
     expect(result.current.error).toMatch(/2 decimals/)
     expect(result.current.budgets).toEqual([])
+  })
+
+  it('fetches only the caller\'s own budgets and skips the household contributions call without an accepted household', async () => {
+    vi.mocked(getBudgets).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: {}, raw: {}, reimbursements: {} },
+      error: null,
+    } as never)
+
+    renderHook(() => useBudgets())
+
+    await waitFor(() => expect(getBudgets).toHaveBeenCalledWith(undefined))
+    expect(getHouseholdContributionsByCategory).not.toHaveBeenCalled()
+  })
+
+  it('widens getBudgets and fetches household contributions once both members have accepted', async () => {
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+    vi.mocked(getBudgets).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: {}, raw: {}, reimbursements: {} },
+      error: null,
+    } as never)
+    vi.mocked(getHouseholdContributionsByCategory).mockResolvedValue({
+      data: { own: {}, partner: {} },
+      error: null,
+    } as never)
+
+    renderHook(() => useBudgets())
+
+    await waitFor(() => expect(getBudgets).toHaveBeenCalledWith(['u1', 'u2']))
+    expect(getHouseholdContributionsByCategory).toHaveBeenCalledWith(
+      { start: '2026-09-01', end: '2026-09-30', dayOfMonth: 11 },
+      { ownId: 'u1', partnerId: 'u2' }
+    )
+  })
+
+  it('computes a household budget\'s spend from both members\' tagged contributions, not the blanket category total', async () => {
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+    vi.mocked(getBudgets).mockResolvedValue({
+      data: [{ id: '1', category_id: 'rent', monthly_limit: 1000, is_household: true }],
+      error: null,
+    } as never)
+    // An untagged personal expense inflates the blanket category total, but
+    // must never count toward a household budget (ADR-010).
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: { rent: 9999 }, raw: { rent: 9999 }, reimbursements: {} },
+      error: null,
+    } as never)
+    vi.mocked(getHouseholdContributionsByCategory).mockResolvedValue({
+      data: { own: { rent: 400 }, partner: { rent: 600 } },
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useBudgets())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const budget = result.current.budgets[0]
+    expect(budget.spent).toBe(1000)
+    expect(budget.householdContributions).toEqual({ own: 400, partner: 600 })
+    expect(budget.percentage).toBe(100)
+    expect(budget.status).toBe('exceeded')
+  })
+
+  it('leaves a personal budget unaffected by an active household', async () => {
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+    vi.mocked(getBudgets).mockResolvedValue({
+      data: [{ id: '1', category_id: 'c1', monthly_limit: 200, is_household: false }],
+      error: null,
+    } as never)
+    vi.mocked(getExpensesByCategory).mockResolvedValue({
+      data: { totals: { c1: 180 }, raw: { c1: 180 }, reimbursements: {} },
+      error: null,
+    } as never)
+    vi.mocked(getHouseholdContributionsByCategory).mockResolvedValue({
+      data: { own: { c1: 5000 }, partner: { c1: 5000 } },
+      error: null,
+    } as never)
+
+    const { result } = renderHook(() => useBudgets())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    const budget = result.current.budgets[0]
+    expect(budget.spent).toBe(180)
+    expect(budget.householdContributions).toBeUndefined()
   })
 })

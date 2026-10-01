@@ -16,6 +16,8 @@
     },
     "reimbursedHint": "Incluye {{amount}} en reembolsos",
     "coveredBySavingsHint": "Excluye {{amount}} cubiertos con ahorros",
+    "contributionYou": "Tú {{amount}}",
+    "contributionOther": "{{name}} {{amount}}",
     "percentageLabel": "{{percent}}% del límite disponible",
     "progressAriaLabel": "Presupuesto de {{category}}: {{status}}"
   },
@@ -34,11 +36,16 @@
     "allCategoriesBudgeted": "Todas tus categorías ya tienen un presupuesto.",
     "monthlyLimit": "Límite mensual",
     "saveBudget": "Guardar presupuesto",
-    "backToBudgets": "Volver a presupuestos"
+    "backToBudgets": "Volver a presupuestos",
+    "householdBudget": "¿Es un presupuesto de hogar?",
+    "householdBudgetHint": "Entre los dos cubren el límite único de este presupuesto - solo cuenta lo que cada quien marque explícitamente como compartido o de hogar.",
+    "householdBudgetDisabledHint": "Invita a tu pareja de hogar para crear un presupuesto de hogar.",
+    "viewExistingHouseholdBudget": "Verlo en Presupuestos"
   },
   "validation": {
     "selectCategory": "Selecciona una categoría",
     "limitGreaterThanZero": "Ingresa un límite mayor a 0",
-    "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales"
+    "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales",
+    "householdDuplicate": "{{partner}} ya tiene un presupuesto de hogar para esta categoría."
   }
 }

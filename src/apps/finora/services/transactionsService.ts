@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '@domain/transaction'
+import { getHouseholdAttributedAmount } from '@domain/transaction'
 import type { Category } from '@domain/category'
 import {
   getGrossSpendByCategory,
@@ -7,7 +8,9 @@ import {
   getReimbursementsByCategory,
   getSavingsCoveredByCategory,
 } from '@domain/category'
+import type { CategoryLedgerEntry } from '@domain/category'
 import { expandLedgerRowsInRange } from '@domain/installments'
+import type { ScheduledRow } from '@domain/installments'
 import { selectRefundablePurchases, summarizeRefundsByPurchase } from '@domain/refund'
 import type { RefundablePurchaseOptions } from '@domain/refund'
 import { getCategories } from './categoriesService'
@@ -256,4 +259,75 @@ async function loadExpensesByCategory({ start, end }: { start: string; end: stri
   }
 
   return { data, error: null }
+}
+
+interface HouseholdLedgerRow extends ScheduledRow {
+  category_id: string | null
+  type: TransactionType
+  funding_source: Transaction['funding_source']
+  user_id: string
+  is_shared: boolean
+  is_household_expense: boolean
+  shares: { user_id: string; amount: number }[]
+}
+
+export interface HouseholdContributionsByCategory {
+  /** The caller's own tagged (Case A share or Case B) spend, rolled up per category. */
+  own: Record<string, number>
+  /** The household partner's tagged spend, same rollup. */
+  partner: Record<string, number>
+}
+
+// A household budget's spend is the two members' explicitly tagged entries
+// only - never an untagged personal expense in the same category, even by
+// the budget's own creator. Built from two ordinary calls to the unchanged
+// getGrossSpendByCategory, each fed a pre-filtered, pre-attributed entry
+// list - that function stays completely unaware households exist. See
+// docs/adr/010-household-expense-tag-and-household-budget.md.
+export function getHouseholdContributionsByCategory(
+  range: { start: string; end: string },
+  members: { ownId: string; partnerId: string }
+) {
+  return catchServiceErrors(() => loadHouseholdContributionsByCategory(range, members))
+}
+
+async function loadHouseholdContributionsByCategory(
+  { start, end }: { start: string; end: string },
+  { ownId, partnerId }: { ownId: string; partnerId: string }
+) {
+  const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select(
+        'category_id, amount, type, date, installment_months, funding_source, user_id, is_shared, is_household_expense, shares:transaction_shares(user_id, amount)'
+      )
+      .in('user_id', [ownId, partnerId])
+      .eq('type', 'expense')
+      .or('is_shared.eq.true,is_household_expense.eq.true')
+      .lte('date', end)
+      .gte('last_installment_date', start),
+    getCategories(),
+  ])
+
+  if (rowsError) return { data: null, error: rowsError }
+  if (categoriesError) return { data: null, error: categoriesError }
+
+  const categories = (categoriesData ?? []) as Category[]
+  const entries = expandLedgerRowsInRange((rows ?? []) as unknown as HouseholdLedgerRow[], { start, end })
+
+  const data: HouseholdContributionsByCategory = {
+    own: getGrossSpendByCategory(attributeEntries(entries, ownId), categories),
+    partner: getGrossSpendByCategory(attributeEntries(entries, partnerId), categories),
+  }
+
+  return { data, error: null }
+}
+
+function attributeEntries(rows: HouseholdLedgerRow[], memberId: string): CategoryLedgerEntry[] {
+  return rows.map((row) => ({
+    category_id: row.category_id,
+    type: row.type,
+    funding_source: row.funding_source,
+    amount: getHouseholdAttributedAmount(row, memberId),
+  }))
 }

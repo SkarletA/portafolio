@@ -8,6 +8,9 @@ const ADD_BUDGET_HANDLERS = [
   restHandler('transactions', TRANSACTIONS),
   restHandler('categories', CATEGORIES),
   restHandler('budgets', BUDGETS),
+  // household_members empty -> useHousehold resolves to "no household", so
+  // the household-budget toggle stays disabled, same as AddTransaction.stories.tsx.
+  restHandler('household_members', []),
 ]
 
 export default {

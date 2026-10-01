@@ -76,3 +76,26 @@ export function getPrimaryPaymentMethod(payments: Pick<TransactionPayment, 'paym
 
   return primary?.payment_method ?? ''
 }
+
+/**
+ * This transaction's amount attributed to `memberId` for a household
+ * budget's "two entries" (ADR-010): the member's own share for a split
+ * (Case A), the full amount when this is the member's own household-tagged
+ * expense (Case B), or 0 when the transaction isn't tagged at all, isn't
+ * this member's, or (is_shared and is_household_expense are mutually
+ * exclusive by construction) matches neither case.
+ */
+export function getHouseholdAttributedAmount(
+  transaction: Pick<Transaction, 'user_id' | 'amount' | 'is_shared' | 'is_household_expense'> & {
+    shares: Pick<TransactionShare, 'user_id' | 'amount'>[]
+  },
+  memberId: string
+): number {
+  if (transaction.is_shared) {
+    return transaction.shares.find((share) => share.user_id === memberId)?.amount ?? 0
+  }
+  if (transaction.is_household_expense) {
+    return transaction.user_id === memberId ? transaction.amount : 0
+  }
+  return 0
+}

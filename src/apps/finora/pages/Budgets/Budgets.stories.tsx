@@ -8,6 +8,9 @@ const BUDGETS_HANDLERS = [
   restHandler('transactions', TRANSACTIONS),
   restHandler('categories', CATEGORIES),
   restHandler('budgets', BUDGETS),
+  // household_members empty -> useHousehold resolves to "no household", so
+  // BudgetCard renders no contribution chips, same as AddTransaction.stories.tsx.
+  restHandler('household_members', []),
 ]
 
 export default {
