@@ -431,7 +431,12 @@ export function Analytics() {
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_COLOR} />
                           <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
                           <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={formatChartValue} />
-                          <Tooltip formatter={formatChartValue} />
+                          {/* cursor={false}: recharts' default Tooltip cursor draws a
+                              background rectangle/line behind the active bar - with this
+                              chart's narrow bars it rendered wide enough to visually cover
+                              more than one bucket. The tooltip box itself (the data) is
+                              unaffected; this only removes that background highlight. */}
+                          <Tooltip formatter={formatChartValue} cursor={false} />
                           <Legend wrapperStyle={{ fontSize: 12 }} />
                           <Bar dataKey="own" stackId="household" fill={OWN_COLOR} name={t('columns.own')} />
                           <Bar dataKey="partner" stackId="household" fill={PARTNER_COLOR} name={partnerName} />
@@ -448,7 +453,9 @@ export function Analytics() {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_COLOR} />
                         <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
                         <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={formatChartValue} />
-                        <Tooltip formatter={formatChartValue} />
+                        {/* cursor={false}: see the Household bar chart's Tooltip above - same
+                            default cursor artifact, here a vertical line across the chart. */}
+                        <Tooltip formatter={formatChartValue} cursor={false} />
                         <Line
                           type="monotone"
                           dataKey="amount"
