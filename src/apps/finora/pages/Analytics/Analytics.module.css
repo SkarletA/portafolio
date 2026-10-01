@@ -160,3 +160,14 @@
 .savingsNote {
   @apply -mt-2 mb-4 text-sm text-finora-ink-muted;
 }
+
+/* Two member columns, side by side on desktop (ADR-011) - a monthly report
+   read at a glance, not a navigable list, so both show at once rather than
+   behind a selector. */
+.columns {
+  @apply grid grid-cols-1 gap-6 sm:grid-cols-2;
+}
+
+.columnLabel {
+  @apply mb-3 text-sm font-semibold text-finora-ink;
+}

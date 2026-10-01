@@ -14,6 +14,7 @@ vi.mock('@context/LanguageContext', () => ({ useLanguage: vi.fn() }))
 
 const acceptedOwn = { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted' as const, invited_by: 'u1' }
 const acceptedPartner = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
+const partnerProfile = { user_id: 'u2', first_name: 'Dana', last_name: null, avatar_url: null }
 
 const STATS: MonthlyStats = {
   totalSpent: 1250,
@@ -58,6 +59,10 @@ function mockAnalytics(overrides: Partial<ReturnType<typeof useAnalytics>> = {})
     spendingByCategory: SPENDING_BY_CATEGORY,
     trendData: TREND_DATA,
     comparison: COMPARISON_NO_PREVIOUS,
+    householdBreakdown: null,
+    householdTrend: [],
+    householdComparison: null,
+    isHouseholdView: false,
     loading: false,
     error: null,
     refetch: vi.fn(),
@@ -73,7 +78,7 @@ describe('Analytics', () => {
   beforeEach(() => {
     vi.mocked(useCurrency).mockReturnValue({ currency: 'USD', setCurrency: vi.fn() })
     vi.mocked(useLanguage).mockReturnValue({ language: 'en', setLanguage: vi.fn() })
-    vi.mocked(useHousehold).mockReturnValue({ ownMember: null, partnerMember: null } as never)
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: null, partnerMember: null, partner: null } as never)
     mockAnalytics()
   })
 
@@ -131,7 +136,7 @@ describe('Analytics', () => {
   })
 
   it('shows the toggle and switches viewMode when a household is accepted (ADR-011)', () => {
-    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner, partner: partnerProfile } as never)
     renderPage()
 
     expect(useAnalytics).toHaveBeenLastCalledWith('month', 'mine')
@@ -152,5 +157,89 @@ describe('Analytics', () => {
     renderPage()
     expect(screen.queryByText('comparison.noPreviousData')).not.toBeInTheDocument()
     expect(screen.getByText('$400.00 → $500.00')).toBeInTheDocument()
+  })
+
+  describe('household view', () => {
+    const HOUSEHOLD_BREAKDOWN = {
+      own: [{ category_id: 'c1', name: 'Food', icon: null, color: '#f59e0b', translationKey: null, amount: 400, percentage: 50 }],
+      partner: [{ category_id: 'c1', name: 'Food', icon: null, color: '#f59e0b', translationKey: null, amount: 600, percentage: 50 }],
+    }
+
+    beforeEach(() => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner, partner: partnerProfile } as never)
+    })
+
+    it('never blind-merges the category breakdown - shows two labeled columns instead (ADR-011)', () => {
+      mockAnalytics({ isHouseholdView: true, householdBreakdown: HOUSEHOLD_BREAKDOWN })
+      renderPage()
+
+      expect(within(screen.getByTestId('analytics-breakdown-own-column')).getByText('$400.00')).toBeInTheDocument()
+      expect(within(screen.getByTestId('analytics-breakdown-partner-column')).getByText('$600.00')).toBeInTheDocument()
+      expect(within(screen.getByTestId('analytics-breakdown-partner-column')).getByText('Dana')).toBeInTheDocument()
+    })
+
+    it('renders each column independently empty when only one member has spending', () => {
+      mockAnalytics({
+        isHouseholdView: true,
+        householdBreakdown: { own: HOUSEHOLD_BREAKDOWN.own, partner: [] },
+      })
+      renderPage()
+
+      expect(within(screen.getByTestId('analytics-breakdown-partner-column')).getByText('categoryBreakdown.empty')).toBeInTheDocument()
+      expect(within(screen.getByTestId('analytics-breakdown-own-column')).getByText('$400.00')).toBeInTheDocument()
+    })
+
+    it('splits the comparison table into per-member columns, keeping the headline total combined', () => {
+      mockAnalytics({
+        isHouseholdView: true,
+        householdComparison: {
+          currentTotal: 1000,
+          previousTotal: 800,
+          totalPercentChange: 25,
+          hasPreviousData: true,
+          own: [
+            { category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, currentAmount: 400, previousAmount: 300, percentChange: 33.33 },
+          ],
+          partner: [
+            { category_id: 'c2', name: 'Rent', icon: null, color: null, translationKey: null, currentAmount: 600, previousAmount: 500, percentChange: 20 },
+          ],
+        },
+      })
+      renderPage()
+
+      expect(within(screen.getByTestId('analytics-comparison-own-column')).getByText('$300.00 → $400.00')).toBeInTheDocument()
+      expect(within(screen.getByTestId('analytics-comparison-partner-column')).getByText('$500.00 → $600.00')).toBeInTheDocument()
+    })
+
+    it('generates insights per member plus one combined household total insight', () => {
+      mockAnalytics({
+        isHouseholdView: true,
+        householdComparison: {
+          currentTotal: 1000,
+          previousTotal: 800,
+          totalPercentChange: 25,
+          hasPreviousData: true,
+          own: [
+            { category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, currentAmount: 400, previousAmount: 300, percentChange: 33 },
+          ],
+          partner: [
+            { category_id: 'c2', name: 'Rent', icon: null, color: null, translationKey: null, currentAmount: 600, previousAmount: 750, percentChange: -20 },
+          ],
+        },
+      })
+      renderPage()
+
+      // The global react-i18next mock returns "key:JSON(options)" instead of
+      // real copy, so these assert the right key/variant was picked for each
+      // subject (own vs. the partner vs. the combined household total) -
+      // analyticsInsights.test.ts covers the real EN/ES wording.
+      expect(
+        screen.getByText('comparison.insights.categoryMore:{"percent":33,"category":"Food"}')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('comparison.insights.categoryLessOther:{"percent":20,"category":"Rent","name":"Dana"}')
+      ).toBeInTheDocument()
+      expect(screen.getByText('comparison.insights.totalMoreHousehold:{"percent":25}')).toBeInTheDocument()
+    })
   })
 })

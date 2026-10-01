@@ -1,17 +1,21 @@
 import { useCallback, useMemo, useState, type MouseEvent } from 'react'
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import cn from 'clsx'
-import { useAnalytics, type AnalyticsViewMode } from '@hooks/useAnalytics'
+import { useAnalytics, type AnalyticsViewMode, type HouseholdTrendPoint } from '@hooks/useAnalytics'
 import { getPeriodRange, type DateRange, type PeriodType } from '@domain/analytics'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
+import type { Currency } from '@domain/profile'
 import { useCurrency } from '@context/CurrencyContext'
 import { useHousehold } from '@context/HouseholdContext'
 import { useLanguage } from '@context/LanguageContext'
 import { StatCard } from '@molecules/StatCard/StatCard'
 import { AsyncState } from '@molecules/AsyncState/AsyncState'
-import { buildInsights } from './analyticsInsights'
+import type { CategorySpending, PeriodComparisonCategory } from '@services/analyticsService'
+import { buildCategoryInsights, buildHouseholdTotalInsight, buildInsights } from './analyticsInsights'
 import s from './Analytics.module.css'
 
 const TOP_CATEGORIES_LIMIT = 3
@@ -21,6 +25,11 @@ const TOP_CATEGORIES_LIMIT = 3
 const NEUTRAL_CATEGORY_COLOR = 'var(--color-finora-icon-fallback-bg)'
 const LINE_COLOR = 'var(--color-finora-primary)'
 const GRID_COLOR = 'var(--color-finora-surface-muted)'
+// The household view's two per-member colors, reused for the stacked trend
+// bar's segments and (via ownerButtonActive's own token) kept consistent
+// with the rest of the app - no new color tokens (ADR-011).
+const OWN_COLOR = 'var(--color-finora-primary-dark)'
+const PARTNER_COLOR = 'var(--color-finora-primary)'
 
 const PERIOD_OPTIONS: { value: PeriodType; labelKey: string }[] = [
   { value: 'day', labelKey: 'period.daily' },
@@ -59,15 +68,109 @@ function formatTrendLabel(date: string, periodType: PeriodType): string {
   return monthLabelFormatter.format(parsed)
 }
 
+interface CategorySpendListProps {
+  categories: CategorySpending[]
+  t: TFunction
+  currency: Currency
+  locale: string
+  showRank?: boolean
+}
+
+/** The Spending-by-category / Top-categories row shape, reused for the Mine view and for each member's column in the Household view (ADR-011). */
+function CategorySpendList({ categories, t, currency, locale, showRank = false }: CategorySpendListProps) {
+  return (
+    <ul className={showRank ? s.topCategoryList : s.categoryList}>
+      {categories.map((category, index) => (
+        <li key={category.category_id} className={showRank ? s.topCategoryRow : s.categoryRow}>
+          {showRank && <span className={s.topCategoryRank}>{index + 1}</span>}
+          <span className={s.categoryDot} style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }} />
+          <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
+          {!showRank && <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>}
+          <span className={s.categoryAmount}>{formatCurrency(category.amount, currency, locale)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+interface CategoryColumnProps extends Omit<CategorySpendListProps, 'categories'> {
+  label: string
+  categories: CategorySpending[]
+  emptyMessage: string
+  testId: string
+}
+
+/** One member's labeled column of CategorySpendList, or its own empty state - never blind-merged with the other member's (ADR-011). */
+function CategoryColumn({ label, categories, emptyMessage, testId, ...listProps }: CategoryColumnProps) {
+  return (
+    <div data-testid={testId}>
+      <h3 className={s.columnLabel}>{label}</h3>
+      {categories.length === 0 ? (
+        <p className={s.stateMessage}>{emptyMessage}</p>
+      ) : (
+        <CategorySpendList categories={categories} {...listProps} />
+      )}
+    </div>
+  )
+}
+
+interface ComparisonCategoryListProps {
+  categories: PeriodComparisonCategory[]
+  t: TFunction
+  currency: Currency
+  locale: string
+}
+
+/** The comparison table's rows (previous → current, % change), reused for the Mine view and for each member's column in the Household view. */
+function ComparisonCategoryList({ categories, t, currency, locale }: ComparisonCategoryListProps) {
+  return (
+    <ul className={s.comparisonList}>
+      {categories.map((category) => (
+        <li key={category.category_id} className={s.comparisonRow}>
+          <span className={s.categoryDot} style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }} />
+          <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
+          <span className={s.comparisonAmounts}>
+            {formatCurrency(category.previousAmount, currency, locale)} → {formatCurrency(category.currentAmount, currency, locale)}
+          </span>
+          <span
+            className={cn(
+              s.comparisonChange,
+              category.percentChange === null && s.comparisonChangeNew,
+              category.percentChange !== null && category.percentChange > 0 && s.comparisonChangeUp,
+              category.percentChange !== null && category.percentChange < 0 && s.comparisonChangeDown
+            )}
+          >
+            {category.percentChange === null
+              ? t('comparison.new')
+              : `${category.percentChange > 0 ? '+' : ''}${Math.round(category.percentChange)}%`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function Analytics() {
   const { t } = useTranslation(['analytics', 'categories'])
   const { currency } = useCurrency()
   const { language } = useLanguage()
   const locale = getLocaleForLanguage(language)
-  const { ownMember, partnerMember } = useHousehold()
+  const { ownMember, partnerMember, partner } = useHousehold()
+  const partnerName = getHouseholdPartnerDisplayName(partner) ?? ''
   const [periodType, setPeriodType] = useState<PeriodType>('month')
   const [viewMode, setViewMode] = useState<AnalyticsViewMode>('mine')
-  const { stats, spendingByCategory, trendData, comparison, loading, error } = useAnalytics(periodType, viewMode)
+  const {
+    stats,
+    spendingByCategory,
+    trendData,
+    comparison,
+    householdBreakdown,
+    householdTrend,
+    householdComparison,
+    isHouseholdView,
+    loading,
+    error,
+  } = useAnalytics(periodType, viewMode)
 
   // Both sides accepted (ADR-007), same condition Transactions uses for its
   // own Mine/Household tabs - otherwise there is nothing to combine a toggle
@@ -102,11 +205,26 @@ export function Analytics() {
     ...point,
     label: formatTrendLabel(point.date, periodType),
   }))
+  const householdChartData = householdTrend.map((point: HouseholdTrendPoint) => ({
+    ...point,
+    label: formatTrendLabel(point.date, periodType),
+  }))
   const periodLabel = useMemo(
     () => formatPeriodPillLabel(periodType, getPeriodRange(periodType, new Date()).current),
     [periodType]
   )
+
   const insights = comparison && comparison.hasPreviousData ? buildInsights(t, comparison) : []
+  const householdInsights =
+    householdComparison && householdComparison.hasPreviousData
+      ? [
+          ...buildCategoryInsights(t, householdComparison.own, 'own'),
+          ...buildCategoryInsights(t, householdComparison.partner, 'other', partnerName),
+          ...(buildHouseholdTotalInsight(t, householdComparison.totalPercentChange)
+            ? [buildHouseholdTotalInsight(t, householdComparison.totalPercentChange) as string]
+            : []),
+        ]
+      : []
 
   return (
     <section className={s.section}>
@@ -207,7 +325,25 @@ export function Analytics() {
             <div className={s.analyticsRow}>
               <div className={cn(s.card, s.chartCard)}>
                 <h2 className={s.cardTitle}>{t('chart.title')}</h2>
-                {chartData.length === 0 ? (
+                {isHouseholdView ? (
+                  householdChartData.length === 0 ? (
+                    <p className={s.stateMessage}>{t('chart.empty')}</p>
+                  ) : (
+                    <div className={s.chartWrap}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={householdChartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_COLOR} />
+                          <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
+                          <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={formatChartValue} />
+                          <Tooltip formatter={formatChartValue} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          <Bar dataKey="own" stackId="household" fill={OWN_COLOR} name={t('columns.own')} />
+                          <Bar dataKey="partner" stackId="household" fill={PARTNER_COLOR} name={partnerName} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )
+                ) : chartData.length === 0 ? (
                   <p className={s.stateMessage}>{t('chart.empty')}</p>
                 ) : (
                   <div className={s.chartWrap}>
@@ -232,54 +368,102 @@ export function Analytics() {
 
               <div className={cn(s.card, s.sideCard)}>
                 <h2 className={s.cardTitle}>{t('categoryBreakdown.title')}</h2>
-                {spendingByCategory.length === 0 ? (
+                {isHouseholdView ? (
+                  <div className={s.columns}>
+                    <CategoryColumn
+                      label={t('columns.own')}
+                      categories={householdBreakdown?.own ?? []}
+                      emptyMessage={t('categoryBreakdown.empty')}
+                      testId="analytics-breakdown-own-column"
+                      t={t}
+                      currency={currency}
+                      locale={locale}
+                    />
+                    <CategoryColumn
+                      label={partnerName}
+                      categories={householdBreakdown?.partner ?? []}
+                      emptyMessage={t('categoryBreakdown.empty')}
+                      testId="analytics-breakdown-partner-column"
+                      t={t}
+                      currency={currency}
+                      locale={locale}
+                    />
+                  </div>
+                ) : spendingByCategory.length === 0 ? (
                   <p className={s.stateMessage}>{t('categoryBreakdown.empty')}</p>
                 ) : (
-                  <ul className={s.categoryList}>
-                    {spendingByCategory.map((category) => (
-                      <li key={category.category_id} className={s.categoryRow}>
-                        <span
-                          className={s.categoryDot}
-                          style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
-                        />
-                        <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
-                        <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>
-                        <span className={s.categoryAmount}>
-                          {formatCurrency(category.amount, currency, locale)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <CategorySpendList categories={spendingByCategory} t={t} currency={currency} locale={locale} />
                 )}
               </div>
             </div>
 
             <div className={s.card}>
               <h2 className={s.cardTitle}>{t('topCategories.title')}</h2>
-              {topCategories.length === 0 ? (
+              {isHouseholdView ? (
+                <div className={s.columns}>
+                  <CategoryColumn
+                    label={t('columns.own')}
+                    categories={(householdBreakdown?.own ?? []).slice(0, TOP_CATEGORIES_LIMIT)}
+                    emptyMessage={t('topCategories.empty')}
+                    testId="analytics-top-own-column"
+                    showRank
+                    t={t}
+                    currency={currency}
+                    locale={locale}
+                  />
+                  <CategoryColumn
+                    label={partnerName}
+                    categories={(householdBreakdown?.partner ?? []).slice(0, TOP_CATEGORIES_LIMIT)}
+                    emptyMessage={t('topCategories.empty')}
+                    testId="analytics-top-partner-column"
+                    showRank
+                    t={t}
+                    currency={currency}
+                    locale={locale}
+                  />
+                </div>
+              ) : topCategories.length === 0 ? (
                 <p className={s.stateMessage}>{t('topCategories.empty')}</p>
               ) : (
-                <ul className={s.topCategoryList}>
-                  {topCategories.map((category, index) => (
-                    <li key={category.category_id} className={s.topCategoryRow}>
-                      <span className={s.topCategoryRank}>{index + 1}</span>
-                      <span
-                        className={s.categoryDot}
-                        style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
-                      />
-                      <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
-                      <span className={s.categoryAmount}>
-                        {formatCurrency(category.amount, currency, locale)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <CategorySpendList categories={topCategories} t={t} currency={currency} locale={locale} showRank />
               )}
             </div>
 
             <div className={s.card}>
               <h2 className={s.cardTitle}>{t('comparison.title')}</h2>
-              {!comparison?.hasPreviousData ? (
+              {isHouseholdView ? (
+                !householdComparison?.hasPreviousData ? (
+                  <p className={s.stateMessage}>{t('comparison.noPreviousData')}</p>
+                ) : (
+                  <>
+                    {householdInsights.length > 0 && (
+                      <ul className={s.insightList}>
+                        {householdInsights.map((insight) => (
+                          <li key={insight} className={s.insightRow}>
+                            {insight}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <div className={s.columns}>
+                      <div data-testid="analytics-comparison-own-column">
+                        <h3 className={s.columnLabel}>{t('columns.own')}</h3>
+                        <ComparisonCategoryList categories={householdComparison.own} t={t} currency={currency} locale={locale} />
+                      </div>
+                      <div data-testid="analytics-comparison-partner-column">
+                        <h3 className={s.columnLabel}>{partnerName}</h3>
+                        <ComparisonCategoryList
+                          categories={householdComparison.partner}
+                          t={t}
+                          currency={currency}
+                          locale={locale}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )
+              ) : !comparison?.hasPreviousData ? (
                 <p className={s.stateMessage}>{t('comparison.noPreviousData')}</p>
               ) : (
                 <>
@@ -293,33 +477,7 @@ export function Analytics() {
                     </ul>
                   )}
 
-                  <ul className={s.comparisonList}>
-                    {comparison.categories.map((category) => (
-                      <li key={category.category_id} className={s.comparisonRow}>
-                        <span
-                          className={s.categoryDot}
-                          style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }}
-                        />
-                        <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
-                        <span className={s.comparisonAmounts}>
-                          {formatCurrency(category.previousAmount, currency, locale)} →{' '}
-                          {formatCurrency(category.currentAmount, currency, locale)}
-                        </span>
-                        <span
-                          className={cn(
-                            s.comparisonChange,
-                            category.percentChange === null && s.comparisonChangeNew,
-                            category.percentChange !== null && category.percentChange > 0 && s.comparisonChangeUp,
-                            category.percentChange !== null && category.percentChange < 0 && s.comparisonChangeDown
-                          )}
-                        >
-                          {category.percentChange === null
-                            ? t('comparison.new')
-                            : `${category.percentChange > 0 ? '+' : ''}${Math.round(category.percentChange)}%`}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <ComparisonCategoryList categories={comparison.categories} t={t} currency={currency} locale={locale} />
                 </>
               )}
             </div>
