@@ -397,7 +397,7 @@ export function Analytics() {
               <div className={cn(s.card, s.sideCard)}>
                 <h2 className={s.cardTitle}>{t('categoryBreakdown.title')}</h2>
                 {isHouseholdView ? (
-                  <div className={s.columns}>
+                  <div className={s.stackedColumns}>
                     <CategoryColumn
                       label={t('columns.own')}
                       categories={householdBreakdown?.own ?? []}

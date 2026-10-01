@@ -86,14 +86,15 @@ differ.
 - **A personal/"Mine" view must remain available**, not just the combined
   one - matching the precedent `Transactions`' Mine/Household tabs already
   set (PR5).
-- **Presentation: two full-width panels, stacked, not a selector.** Spending
-  by category, Top spending categories and the comparison table each render
-  two labeled panels ("Tú" / the partner's name) simultaneously, the same
-  data `Transactions`' Mine/Household tabs already split but shown at once
-  instead of behind a toggle, because this is a monthly report read at a
-  glance, not a navigable list. They stack one above the other rather than
-  side by side - a two-up grid tried first left each panel too narrow once
-  an icon, a name, an amount and (for Spending by category) a subcategory
+- **Presentation: two labeled panels ("Tú" / the partner's name), always
+  shown at once, never behind a selector** - the same data `Transactions`'
+  Mine/Household tabs already split, but simultaneous because this is a
+  monthly report read at a glance, not a navigable list. Whether they sit
+  side by side or stacked depends on how much each row needs: Top spending
+  categories and the comparison table keep a two-up grid - their rows (icon,
+  name, one or two amounts, a % change) fit two-up without crowding. Spending
+  by category stacks full-width instead - a two-up grid there left each
+  panel too narrow once an icon, a name, an amount and a subcategory
   breakdown all had to fit in it, confirmed visually as a name/amount
   overlap bug. A category with subcategories (e.g. Housing) gets a
   collapsible breakdown identical to a budget's (`BudgetCardBreakdown`,
@@ -159,13 +160,16 @@ differ.
   - *A dropdown/selector for the category breakdown instead of two panels*:
     rejected for the same reason the Mine/Household tabs stay a toggle
     elsewhere but not here - a monthly report is read once, not navigated.
-  - *A side-by-side two-column grid for the two panels (tried first)*: CSS
-    confirmed correct (`sm:grid-cols-2` did produce two columns at desktop
-    widths), but each column ended up too narrow for an icon, a name, an
-    amount and a subcategory breakdown to coexist legibly - visually
-    confirmed as a name/amount overlap, not a CSS bug to patch further.
-    Stacking full-width fixes the room problem directly instead of chasing
-    truncation/wrapping fixes in an inherently too-narrow column.
+  - *A side-by-side two-column grid for Spending by category too (tried
+    first, applied everywhere)*: CSS confirmed correct (`sm:grid-cols-2` did
+    produce two columns at desktop widths), but Spending by category's
+    column ended up too narrow for an icon, a name, an amount and a
+    subcategory breakdown to coexist legibly - visually confirmed as a
+    name/amount overlap, not a CSS bug to patch further. Fixed by stacking
+    that section's panels full-width instead of chasing truncation/wrapping
+    fixes in an inherently too-narrow column - Top spending categories and
+    the comparison table have simpler rows and keep the two-up grid, since
+    it was never the narrow one.
   - *Keeping the trend chart as a line, one line per member*: two
     overlapping lines are harder to read as "what did we spend total" than
     one stacked bar whose segments show composition.

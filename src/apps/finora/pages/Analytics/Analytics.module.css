@@ -166,13 +166,21 @@
   @apply -mt-2 mb-4 text-sm text-finora-ink-muted;
 }
 
-/* Two member panels, stacked full-width rather than side by side (ADR-011)
-   - a two-up grid left each panel too narrow once an icon, a name, an
-   amount and (in Spending by category) a subcategory breakdown all have to
-   fit in it, which is what caused the name/amount overlap bug. Both panels
-   still show at once rather than behind a selector - this is a monthly
-   report read at a glance, not a navigable list. */
+/* Two member columns, side by side on desktop (ADR-011) - for Top spending
+   categories and the comparison table, whose rows (icon, name, one or two
+   amounts, a % change) fit two-up without crowding. Both columns still show
+   at once rather than behind a selector - this is a monthly report read at
+   a glance, not a navigable list. */
 .columns {
+  @apply grid grid-cols-1 gap-6 sm:grid-cols-2;
+}
+
+/* Spending by category's own version: stacked full-width instead of side by
+   side. A two-up grid left each panel too narrow once an icon, a name, an
+   amount and a subcategory breakdown all had to fit in it - confirmed
+   visually as a name/amount overlap bug, unlike the simpler rows .columns
+   above still handles fine. */
+.stackedColumns {
   @apply flex flex-col gap-6;
 }
 
