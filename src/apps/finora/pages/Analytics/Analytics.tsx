@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next'
 import cn from 'clsx'
 import { useAnalytics, type AnalyticsViewMode, type HouseholdTrendPoint } from '@hooks/useAnalytics'
 import { getPeriodRange, type DateRange, type PeriodType } from '@domain/analytics'
-import { getCategoryDisplayName } from '@domain/category'
+import { buildCategoryBreakdown, getCategoryDisplayName, type Category } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
 import type { Currency } from '@domain/profile'
@@ -14,6 +14,7 @@ import { useHousehold } from '@context/HouseholdContext'
 import { useLanguage } from '@context/LanguageContext'
 import { StatCard } from '@molecules/StatCard/StatCard'
 import { AsyncState } from '@molecules/AsyncState/AsyncState'
+import { BudgetCardBreakdown } from '@molecules/BudgetCardBreakdown/BudgetCardBreakdown'
 import type { CategorySpending, PeriodComparisonCategory } from '@services/analyticsService'
 import { buildCategoryInsights, buildHouseholdTotalInsight, buildInsights } from './analyticsInsights'
 import s from './Analytics.module.css'
@@ -74,21 +75,45 @@ interface CategorySpendListProps {
   currency: Currency
   locale: string
   showRank?: boolean
+  /**
+   * When given together with `rawByCategory`, each row gets a collapsible
+   * BudgetCardBreakdown for its subcategories (e.g. Housing -> Rent/
+   * Services) - only passed for "Spending by category", not "Top spending
+   * categories", which stays a plain glance-able list.
+   */
+  allCategories?: Category[]
+  rawByCategory?: Record<string, number>
 }
 
 /** The Spending-by-category / Top-categories row shape, reused for the Mine view and for each member's column in the Household view (ADR-011). */
-function CategorySpendList({ categories, t, currency, locale, showRank = false }: CategorySpendListProps) {
+function CategorySpendList({ categories, t, currency, locale, showRank = false, allCategories, rawByCategory }: CategorySpendListProps) {
   return (
     <ul className={showRank ? s.topCategoryList : s.categoryList}>
-      {categories.map((category, index) => (
-        <li key={category.category_id} className={showRank ? s.topCategoryRow : s.categoryRow}>
-          {showRank && <span className={s.topCategoryRank}>{index + 1}</span>}
-          <span className={s.categoryDot} style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }} />
-          <span className={s.categoryName}>{getCategoryDisplayName(category, t)}</span>
-          {!showRank && <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>}
-          <span className={s.categoryAmount}>{formatCurrency(category.amount, currency, locale)}</span>
-        </li>
-      ))}
+      {categories.map((category, index) => {
+        const displayName = getCategoryDisplayName(category, t)
+        const breakdownItems =
+          allCategories && rawByCategory ? buildCategoryBreakdown(category.category_id, allCategories, rawByCategory) : []
+
+        return (
+          <li key={category.category_id}>
+            <div className={showRank ? s.topCategoryRow : s.categoryRow}>
+              {showRank && <span className={s.topCategoryRank}>{index + 1}</span>}
+              <span className={s.categoryDot} style={{ backgroundColor: category.color ?? NEUTRAL_CATEGORY_COLOR }} />
+              <span className={s.categoryName}>{displayName}</span>
+              {!showRank && <span className={s.categoryPercentage}>{formatPercentage(category.percentage)}</span>}
+              <span className={s.categoryAmount}>{formatCurrency(category.amount, currency, locale)}</span>
+            </div>
+            {breakdownItems.length > 0 && (
+              <BudgetCardBreakdown
+                categoryId={category.category_id}
+                categoryName={displayName}
+                limit={category.amount}
+                items={breakdownItems}
+              />
+            )}
+          </li>
+        )
+      })}
     </ul>
   )
 }
@@ -164,7 +189,10 @@ export function Analytics() {
     spendingByCategory,
     trendData,
     comparison,
+    categories: allCategories,
+    rawByCategory,
     householdBreakdown,
+    householdRaw,
     householdTrend,
     householdComparison,
     isHouseholdView,
@@ -378,6 +406,8 @@ export function Analytics() {
                       t={t}
                       currency={currency}
                       locale={locale}
+                      allCategories={allCategories}
+                      rawByCategory={householdRaw?.own}
                     />
                     <CategoryColumn
                       label={partnerName}
@@ -387,12 +417,21 @@ export function Analytics() {
                       t={t}
                       currency={currency}
                       locale={locale}
+                      allCategories={allCategories}
+                      rawByCategory={householdRaw?.partner}
                     />
                   </div>
                 ) : spendingByCategory.length === 0 ? (
                   <p className={s.stateMessage}>{t('categoryBreakdown.empty')}</p>
                 ) : (
-                  <CategorySpendList categories={spendingByCategory} t={t} currency={currency} locale={locale} />
+                  <CategorySpendList
+                    categories={spendingByCategory}
+                    t={t}
+                    currency={currency}
+                    locale={locale}
+                    allCategories={allCategories}
+                    rawByCategory={rawByCategory}
+                  />
                 )}
               </div>
             </div>

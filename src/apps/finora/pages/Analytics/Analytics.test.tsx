@@ -5,6 +5,7 @@ import { useCurrency } from '@context/CurrencyContext'
 import { useHousehold } from '@context/HouseholdContext'
 import { useLanguage } from '@context/LanguageContext'
 import type { MonthlyStats, CategorySpending, TrendPoint, PeriodComparison } from '@services/analyticsService'
+import type { Category } from '@domain/category'
 import { Analytics } from './Analytics'
 
 vi.mock('@hooks/useAnalytics', () => ({ useAnalytics: vi.fn() }))
@@ -59,7 +60,10 @@ function mockAnalytics(overrides: Partial<ReturnType<typeof useAnalytics>> = {})
     spendingByCategory: SPENDING_BY_CATEGORY,
     trendData: TREND_DATA,
     comparison: COMPARISON_NO_PREVIOUS,
+    categories: [],
+    rawByCategory: {},
     householdBreakdown: null,
+    householdRaw: null,
     householdTrend: [],
     householdComparison: null,
     isHouseholdView: false,
@@ -240,6 +244,66 @@ describe('Analytics', () => {
         screen.getByText('comparison.insights.categoryLessOther:{"percent":20,"category":"Rent","name":"Dana"}')
       ).toBeInTheDocument()
       expect(screen.getByText('comparison.insights.totalMoreHousehold:{"percent":25}')).toBeInTheDocument()
+    })
+  })
+
+  describe('subcategory breakdown (Spending by category only)', () => {
+    const housing: Category = { id: 'housing', name: 'Housing', icon: null, color: null, parent_id: null, translationKey: null }
+    const rent: Category = { id: 'rent', name: 'Rent', icon: null, color: null, parent_id: 'housing', translationKey: null }
+    const services: Category = { id: 'services', name: 'Services', icon: null, color: null, parent_id: 'housing', translationKey: null }
+    const housingSpending: CategorySpending = {
+      category_id: 'housing',
+      name: 'Housing',
+      icon: null,
+      color: null,
+      translationKey: null,
+      amount: 1200,
+      percentage: 60,
+    }
+
+    it('expands a category with subcategories into a breakdown, in the Mine view', () => {
+      mockAnalytics({
+        spendingByCategory: [housingSpending],
+        categories: [housing, rent, services],
+        rawByCategory: { rent: 900, services: 300 },
+      })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('budget-card-housing-expand-toggle'))
+
+      expect(screen.getByText('Rent')).toBeInTheDocument()
+      expect(screen.getByText('Services')).toBeInTheDocument()
+    })
+
+    it('does not expand "Top spending categories" - that list stays a plain glance-able list', () => {
+      mockAnalytics({
+        spendingByCategory: [housingSpending],
+        categories: [housing, rent, services],
+        rawByCategory: { rent: 900, services: 300 },
+      })
+      renderPage()
+
+      expect(screen.queryAllByTestId('budget-card-housing-expand-toggle')).toHaveLength(1)
+    })
+
+    it('expands each member\'s own breakdown independently in the Household view', () => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner, partner: partnerProfile } as never)
+      mockAnalytics({
+        isHouseholdView: true,
+        householdBreakdown: { own: [housingSpending], partner: [{ ...housingSpending, amount: 600 }] },
+        householdRaw: { own: { rent: 900, services: 300 }, partner: { rent: 600 } },
+        categories: [housing, rent, services],
+      })
+      renderPage()
+
+      const ownColumn = screen.getByTestId('analytics-breakdown-own-column')
+      const partnerColumn = screen.getByTestId('analytics-breakdown-partner-column')
+
+      fireEvent.click(within(ownColumn).getByTestId('budget-card-housing-expand-toggle'))
+      expect(within(ownColumn).getByText('Services')).toBeInTheDocument()
+      // The partner's own breakdown panel is still collapsed - expanding one
+      // member's column must not reveal the other's.
+      expect(within(partnerColumn).queryByText('Services')).not.toBeInTheDocument()
     })
   })
 })
