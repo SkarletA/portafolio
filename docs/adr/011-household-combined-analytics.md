@@ -5,8 +5,9 @@
 Accepted
 
 Does not amend ADR-007 or ADR-010 - it documents a decision ADR-007 already
-anticipated but never wrote down explicitly, and draws the line between it and
-ADR-010's narrower rule now that both exist side by side.
+anticipated but never wrote down explicitly, and, after a bug surfaced in
+manual validation, settles on **reusing ADR-010's attribution rule directly**
+rather than inventing a second one.
 
 ## Context
 
@@ -19,130 +20,146 @@ built the household foundations, the split (ADR-009), the household-expense
 tag and household budget (ADR-010), but nothing yet reads `transactions` or
 `goal_transfers` for *both* members outside a single budget's category.
 
-Now that ADR-010 exists, there are two plausible readings of "combined" for
-Analytics/Dashboard, and they are not the same thing:
+This ADR went through two corrections before landing, both from the same
+root cause: treating "combined" as one single rule for every number on the
+screen, instead of recognizing that Analytics mixes two genuinely different
+kinds of figures.
 
-- **Full visibility** (what ADR-007 already grants at the RLS level): every
-  transaction and goal transfer of both members, tagged or not, summed
-  together - the household's whole financial picture.
-- **Tagged-only** (ADR-010's rule): only what a member explicitly marked as
-  shared (Case A) or household (Case B) counts as "of the household"; an
-  ordinary personal expense never does, even on a household budget.
+1. **A blind category merge hides who spent what.** The first
+   implementation summed every category total across both members into one
+   fused number - technically "full visibility," but it could say "the
+   household spent $800 on Travel" and nothing more, not whose. A household
+   overview that cannot answer that question defeats its own purpose.
+2. **Attributing a split by `user_id` instead of `transaction_shares` is
+   wrong, not just blind.** The fix for (1) widened `getSpendingByCategory`
+   et al. to run once per member, filtered to that member's own `user_id`.
+   That works for an ordinary expense, but a Case A split (ADR-009) lives in
+   **one row with one `user_id`** - "rent $14,700, $5,200 mine / $9,500 my
+   partner's" is one transaction the recorder owns, not two. Filtering by
+   `user_id` gave the full $14,700 to whoever recorded it and $0 to the
+   other member, confirmed with real data in manual validation. The
+   household budget (PR8, ADR-010) had already solved exactly this problem -
+   `getHouseholdAttributedAmount` reads `transaction_shares.amount` for Case
+   A instead of the row's own `user_id` - and PR9 should have reused it
+   instead of building a second, narrower implementation that didn't.
 
-Left undocumented, a future reader (or a future PR) has no way to tell which
-one Analytics/Dashboard should follow, or why it might legitimately differ
-from the household budget's rule next to it.
-
-A first implementation of "full visibility" blind-merged every number,
-including the category breakdown, into one fused total per category.
-Reviewing it surfaced a real problem, not a preference: a category total that
-mixes both members' spending with no attribution hides exactly the thing a
-household overview exists to show - "whose travel spending is this?" became
-unanswerable from the screen itself, undermining the point of combining in
-the first place. That is the second decision this ADR now also covers.
+Once (2) was fixed by reusing ADR-010's attribution, a further question
+became unavoidable: if a category's breakdown is now attributed the same way
+a household budget is, should it also follow the household budget's
+**tagged-only** rule (only `is_shared`/`is_household_expense` rows count),
+rather than attributing every transaction including untagged ones? The
+answer is yes, and for a simplifying reason, not just a stylistic one: once
+attribution is shared with Budgets, there is no longer a reason to maintain
+a second, parallel behavior for the one case (untagged spend) where they'd
+differ.
 
 ## Decision
 
-- **"Combined" in Analytics/Dashboard means full visibility: every expense,
-  income, reimbursement and goal deposit of both household members, tagged or
-  not.** No transaction needs `is_shared` or `is_household_expense` to count
-  once a household is active - this is exactly what ADR-007's RLS
-  (`household_member_ids()`) already permits reading, extended for the first
-  time to a consumer that sums rather than lists rows individually.
-- **This is deliberately different from ADR-010's household budget**, and the
-  difference is not an inconsistency to resolve later: a household budget is
-  a specific, bounded commitment the two members opted into for one category
-  ("cubrimos el total del alquiler entre los dos") - tagging is how each
-  transaction declares "this counts toward that commitment." Analytics and
-  Dashboard answer a different question - "what does this household's money
-  look like overall" - where requiring every row to be individually tagged
-  would be both wrong (most of a household's spending is never shared or
-  household-tagged, it is just each member's own, and still real household
-  spending) and impractical (nobody tags their coffee).
-- **No new tables, columns or RPCs.** This is a read-composition decision
-  only: the services behind Analytics/Dashboard widen their `user_id` filter
-  from the caller alone to every accepted household member, the same
-  `householdMemberIds?` parameter shape `getTransactions` (PR5) and
-  `getBudgets` (PR8) already use. `getGrossSpendByCategory` and the other pure
-  domain functions stay exactly as unaware of households as ADR-010 already
-  established.
+- **Two kinds of numbers in Analytics, two different rules - not one
+  "combined" definition for the whole screen:**
+  - **Aggregated totals - the top summary (income, expenses, savings rate,
+    saved to goals) and the comparison's headline total** - stay **full
+    visibility**: every transaction and goal transfer of both members,
+    tagged or not, summed together via a plain `.in('user_id', [...])`
+    widening (`getMonthlyStats`, unchanged). This is exactly what ADR-007's
+    RLS already permits reading, and it was never the buggy part - a blind
+    sum of both members' full rows already gives the right total regardless
+    of how a Case A split later gets attributed between them.
+  - **Everything broken out by category - Spending by category, Spending
+    over time (the trend chart), the comparison's per-category table, and
+    Top spending categories** - uses **exactly the household budget's rule
+    (ADR-010): only `is_shared` (attributed by each member's own
+    `transaction_shares.amount`) or `is_household_expense` (attributed in
+    full to whoever recorded it) counts, split into two per-member columns.
+    An untagged personal expense contributes to neither column, even though
+    it is part of the combined total above it on the same screen.
+- **One shared attribution primitive, not two.** `getHouseholdAttributedAmount`
+  (`domain/transaction.ts`) is unchanged from PR8 and untouched by this ADR.
+  `transactionsService.getHouseholdAttributedEntries` - the query
+  (`is_shared.eq.true,is_household_expense.eq.true`) plus the attribution
+  step - is extracted once and reused by both the household budget
+  (`getHouseholdContributionsByCategory`, a thin wrapper kept for its
+  existing name/shape) and Analytics' `getHouseholdSpendingByCategory` /
+  `getHouseholdTrendData`. There is exactly one implementation of "how does
+  a shared/household-tagged transaction split between two people," so
+  Budgets and Analytics cannot drift apart on it again.
 - **A personal/"Mine" view must remain available**, not just the combined
-  one - matching the precedent `Transactions`' Mine/Household tabs already set
-  (PR5), rather than silently replacing a member's individual numbers with
-  the household's.
-
-### Presentation within the Household view: aggregated-over-time stays fused, broken-out-by-category splits per member
-
-Not every number in Analytics is the same *kind* of combined. Two kinds exist,
-and they get different treatment:
-
-- **Aggregated over time** - the top summary (total income, total spent,
-  savings rate), the trend chart, and the period comparison's headline total
-  ("you spent $X this period vs $Y the previous one") - stays one fused
-  number, exactly as the Decision above states. There is nothing to attribute:
-  a month's total income is a single fact about the household.
-- **Broken out by category** - Spending by category, Top categories, and the
-  period comparison's per-category table - is presented as **two columns side
-  by side, one per member ("Tú" / the partner's name)**, each with its own
-  total and its own category list, instead of one blind-merged row per
-  category. This is the same data `Transactions`' Mine/Household tabs already
-  split, shown simultaneously instead of behind a selector, because this is a
-  monthly report meant to be read at a glance - not a navigable list, which is
-  what the tabs are for elsewhere. The automatically generated insight
-  sentences (`analyticsInsights.ts`), since they are derived from this same
-  per-category comparison data, are generated per member too ("Tú gastaste
-  18% más en Food…", "`<partner>` gastó 12% menos en Rent…"), capped at 1-2
-  per member if combining both members' insights produces too much text - the
-  exact cap is a visual call, decided by looking at the rendered result rather
-  than fixed in advance here.
-- **The trend chart becomes a stacked bar chart, not a line.** Each bar is one
-  bucket (day/month/year, the same granularity `getTrendData` already
-  produces); its height is the combined spend for that bucket (still one
-  fused number, per the rule above), divided into one segment per member
-  within the bar, with a legend naming which color is which. This follows
-  market precedent (Monarch Money's "Trend Bars," the default for a household
-  cash-flow view) and resolves the same tension as the category columns: the
-  total stays legible as a single combined shape, while who contributed what
-  to it is visible without a second chart. Reuses the app's existing
-  `primary`/`primarydark` tokens for the two members' segments and for the
-  two category columns, rather than introducing new color tokens.
+  one - matching the precedent `Transactions`' Mine/Household tabs already
+  set (PR5).
+- **Presentation: two columns, side by side, not a selector.** Spending by
+  category, Top spending categories and the comparison table render as two
+  labeled columns ("Tú" / the partner's name) simultaneously, the same data
+  `Transactions`' Mine/Household tabs already split but shown at once
+  instead of behind a toggle, because this is a monthly report read at a
+  glance, not a navigable list. A category with subcategories (e.g. Housing)
+  gets a collapsible breakdown identical to a budget's
+  (`BudgetCardBreakdown`, reused as-is - the same component, fed
+  `buildCategoryBreakdown`'s output and the row's own amount as its `limit`)
+  - only for Spending by category, not Top spending categories, which stays
+  a plain glance-able list.
+- **The trend chart is a stacked bar chart, not a line**, each bar one
+  bucket (day/month/year), its two segments each member's attributed spend
+  for that bucket, with a legend. Follows market precedent (Monarch Money's
+  "Trend Bars"). Reuses the app's existing `primary`/`primarydark` tokens
+  for both the bar segments and the two category columns - no new color
+  tokens.
+- **Per-member insights, one combined total insight.** The automatically
+  generated sentences (`analyticsInsights.ts`) are built from the
+  per-category comparison data, so they follow it: `buildCategoryInsights`
+  phrases one in 2nd person for the caller ("Tú gastaste 18% más en
+  Food…") or 3rd person with the member's name for the partner ("Dana gastó
+  12% menos en Rent…") - different sentences, not one template with a
+  swapped-in name, since Spanish conjugates by grammatical person.
+  `buildHouseholdTotalInsight` phrases the one combined total impersonally
+  ("el hogar gastó…"), since the headline total has no single person to
+  attribute it to. Capped at the same `TOP_CHANGES_LIMIT = 2` per member the
+  Mine view already uses (so up to 2+2+1 = 5 lines) - confirmed against the
+  rendered result rather than fixed smaller in advance, per the original
+  plan.
 
 ## Consequences
 
-- **Analytics/Dashboard and the household budget can legitimately show
-  different totals for the same category**, by design: the budget counts only
-  tagged entries, the combined view counts everything. This ADR is the answer
-  when that difference raises a question later.
-- **A member sees their partner's entire spending breakdown by category**
-  once combined view is on, not just the shared/household-tagged slice -
-  already permitted by ADR-007's RLS, now actually exercised. The two-column
-  presentation makes that explicit rather than hiding it inside a merged
-  number - a member always knows which total is whose.
-- **The top summary (income/expense/savings rate) and the category breakdown
-  can read as "combined" in different senses on the same screen** - the
-  former is a single fused figure, the latter is openly split per member.
-  This ADR is also the answer when that distinction itself raises a question.
+- **The top summary and the category breakdown can legitimately disagree on
+  the same screen, by design**: the top "Total spent" includes every
+  expense, the category columns below it only the tagged ones. A household
+  with little tagged spending will see a combined total much larger than
+  what its two columns add up to. This ADR is the answer when that
+  difference raises a question later - it mirrors the same gap ADR-010
+  already accepts between a household budget and the household's overall
+  spending.
+- **Analytics and the household budget can no longer drift apart on
+  attribution**, because they share one implementation
+  (`getHouseholdAttributedEntries`) instead of two. A future bug in Case
+  A/B attribution gets fixed once, for both.
+- **A member sees their partner's tagged spending broken down by category**,
+  not the partner's entire personal spending - narrower than ADR-007's RLS
+  technically permits, deliberately, for the reason above.
 - **Without an active, accepted household, nothing changes** - every service
   keeps defaulting to the caller's own `user_id` alone, identical to today.
 - **Alternatives considered (rejected):**
-  - *Reusing ADR-010's tagged-only rule for Analytics/Dashboard too*: would
-    make the household's own overview exclude most of its real spending,
-    defeating the point of a combined financial picture.
-  - *Leaving the choice undocumented and deciding it implicitly in the
-    implementation PR*: is exactly what left ADR-007's own stated intent
-    unresolved for three PRs; this ADR exists so the next reader does not have
-    to reconstruct the reasoning from a diff.
-  - *Blind-merging the category breakdown into one number per category
-    (the first implementation)*: technically simpler, but answers a worse
-    question - it can say "the household spent $800 on Travel" but not "whose
-    $800," which is precisely the information a shared financial overview
-    needs to be useful rather than just aggregate.
+  - *Reusing ADR-010's tagged-only rule for the top summary too*: would make
+    the household's own overview exclude most of its real spending (nobody
+    tags their coffee), defeating the point of a combined financial picture
+    - this is why the top summary alone stays full visibility.
+  - *Blind-merging the category breakdown into one number per category (the
+    first implementation)*: answers "how much" but not "whose," which is
+    precisely the information a shared financial overview needs to be
+    useful rather than just aggregate.
+  - *Attributing a household-tagged category breakdown by `user_id` instead
+    of `transaction_shares` (the second implementation)*: silently wrong for
+    any Case A split, confirmed with real data (a $14,700 rent split showing
+    $14,700/$0 instead of $5,200/$9,500) - this is the bug this ADR's final
+    version fixes.
+  - *A second, Analytics-specific attribution function instead of reusing
+    PR8's*: would reintroduce exactly the risk that caused the bug - two
+    implementations of the same rule that can silently diverge.
   - *A dropdown/selector for the category breakdown instead of two columns*:
     rejected for the same reason the Mine/Household tabs stay a toggle
-    elsewhere but not here - a monthly report is read once, side by side,
-    not navigated back and forth.
-  - *Keeping the trend chart as a line, one line per member*: two overlapping
-    lines are harder to read as "what did we spend total" than one stacked
-    bar whose segments show composition - the bar keeps the combined shape
-    primary and the per-member breakdown secondary, matching how the rest of
-    this view treats aggregated-over-time data.
+    elsewhere but not here - a monthly report is read once, side by side.
+  - *Keeping the trend chart as a line, one line per member*: two
+    overlapping lines are harder to read as "what did we spend total" than
+    one stacked bar whose segments show composition.
+  - *A new component for the subcategory breakdown instead of reusing
+    `BudgetCardBreakdown`*: unnecessary duplication for visually and
+    functionally identical behavior - a parent category's amount stands in
+    for a budget's limit with no change to the component itself.
