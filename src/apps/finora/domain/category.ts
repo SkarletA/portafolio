@@ -52,6 +52,56 @@ export function getCategoryIdsForRollup(categories: Category[], categoryId: stri
   return childrenIds.length > 0 ? [categoryId, ...childrenIds] : [categoryId]
 }
 
+export interface CategoryBreakdownItem {
+  category_id: string
+  name: string
+  icon: string | null
+  color: string | null
+  translationKey: string | null
+  amount: number
+}
+
+const OTHER_BREAKDOWN_LABEL = 'Other'
+
+// A parent category's own spend can have direct transactions too (the
+// subcategory picker is optional), so the breakdown needs an "Other" row for
+// that direct spend - otherwise the subcategories alone wouldn't reconcile
+// with the parent's rolled-up total. Shared by a budget's subcategory
+// breakdown (useBudgets) and Analytics' Spending-by-category breakdown -
+// one source of truth for "how does this category's spend split by
+// subcategory," not a copy per feature.
+export function buildCategoryBreakdown(
+  categoryId: string,
+  categories: Category[],
+  rawByCategory: Record<string, number>
+): CategoryBreakdownItem[] {
+  const children = categories.filter((category) => category.parent_id === categoryId)
+  if (children.length === 0) return []
+
+  const items: CategoryBreakdownItem[] = children.map((child) => ({
+    category_id: child.id,
+    name: child.name,
+    icon: child.icon,
+    color: child.color,
+    translationKey: child.translationKey,
+    amount: rawByCategory[child.id] ?? 0,
+  }))
+
+  const directToParent = rawByCategory[categoryId] ?? 0
+  if (directToParent > 0) {
+    items.push({
+      category_id: `${categoryId}:other`,
+      name: OTHER_BREAKDOWN_LABEL,
+      icon: null,
+      color: null,
+      translationKey: null,
+      amount: directToParent,
+    })
+  }
+
+  return items.sort((a, b) => b.amount - a.amount)
+}
+
 export interface CategoryLedgerEntry {
   category_id: string | null
   type: TransactionType

@@ -4,17 +4,11 @@ import { getCurrentMonthRange, getExpensesByCategory, getHouseholdContributionsB
 import { getCategories } from '@services/categoriesService'
 import { useHousehold } from '@context/HouseholdContext'
 import { getBudgetProgress, type BudgetStatus } from '@domain/budget'
-import type { Category } from '@domain/category'
+import { buildCategoryBreakdown, type Category, type CategoryBreakdownItem } from '@domain/category'
 import { addMoney } from '@domain/money'
 
-export interface BudgetBreakdownItem {
-  category_id: string
-  name: string
-  icon: string | null
-  color: string | null
-  translationKey: string | null
-  amount: number
-}
+/** @deprecated Use `CategoryBreakdownItem` from `@domain/category` - kept as an alias so existing imports don't need to change. */
+export type BudgetBreakdownItem = CategoryBreakdownItem
 
 export interface HouseholdContributions {
   own: number
@@ -28,50 +22,12 @@ export type BudgetWithProgress = BudgetWithCategory & {
   coveredBySavings: number
   percentage: number
   status: BudgetStatus
-  breakdown: BudgetBreakdownItem[]
+  breakdown: CategoryBreakdownItem[]
   /**
    * For a household budget, each member's tagged contribution to `spent`
    * (ADR-010's "two entries"); absent for a personal budget.
    */
   householdContributions?: HouseholdContributions
-}
-
-const OTHER_BREAKDOWN_LABEL = 'Other'
-
-// A budget's own category can have direct transactions too (the subcategory
-// picker is optional), so the breakdown needs an "Other" row for that direct
-// spend - otherwise the subcategories alone wouldn't reconcile with the
-// budget's rolled-up total.
-function buildBreakdown(
-  categoryId: string,
-  categories: Category[],
-  rawByCategory: Record<string, number>
-): BudgetBreakdownItem[] {
-  const children = categories.filter((category) => category.parent_id === categoryId)
-  if (children.length === 0) return []
-
-  const items: BudgetBreakdownItem[] = children.map((child) => ({
-    category_id: child.id,
-    name: child.name,
-    icon: child.icon,
-    color: child.color,
-    translationKey: child.translationKey,
-    amount: rawByCategory[child.id] ?? 0,
-  }))
-
-  const directToParent = rawByCategory[categoryId] ?? 0
-  if (directToParent > 0) {
-    items.push({
-      category_id: `${categoryId}:other`,
-      name: OTHER_BREAKDOWN_LABEL,
-      icon: null,
-      color: null,
-      translationKey: null,
-      amount: directToParent,
-    })
-  }
-
-  return items.sort((a, b) => b.amount - a.amount)
 }
 
 export function useBudgets() {
@@ -149,7 +105,7 @@ export function useBudgets() {
           // docs/adr/002-gross-spend-and-effective-limit.md.
           const effectiveLimit = addMoney(budget.monthly_limit, reimbursementsByCategory[budget.category_id] ?? 0)
           const { percentage, status } = getBudgetProgress(effectiveLimit, spent)
-          const breakdown = buildBreakdown(budget.category_id, categories, rawByCategory)
+          const breakdown = buildCategoryBreakdown(budget.category_id, categories, rawByCategory)
           // Excluded from `spent` but reported, so it doesn't silently vanish.
           // See docs/adr/003-installments-and-savings-funding.md.
           const coveredBySavings = savingsCoveredByCategory[budget.category_id] ?? 0

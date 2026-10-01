@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildCategoryBreakdown,
   buildCategoryTree,
   getCategoryDisplayName,
   getCategoryIdsForRollup,
@@ -219,6 +220,38 @@ describe('savings-funded expenses', () => {
     ]
 
     expect(getSavingsCoveredByCategory(others, categories).transport).toBe(0)
+  })
+})
+
+describe('buildCategoryBreakdown', () => {
+  it('returns no breakdown for a category with no subcategories', () => {
+    expect(buildCategoryBreakdown('transport', categories, { transport: 40 })).toEqual([])
+  })
+
+  it('breaks a parent category down by subcategory, sorted by amount descending', () => {
+    const breakdown = buildCategoryBreakdown('food', categories, { meat: 150, market: 300 })
+
+    expect(breakdown.map((item) => item.category_id)).toEqual(['market', 'meat'])
+    expect(breakdown.reduce((sum, item) => sum + item.amount, 0)).toBe(450)
+  })
+
+  it('zero-fills a subcategory with no spend, rather than omitting it', () => {
+    const breakdown = buildCategoryBreakdown('food', categories, { meat: 150 })
+
+    expect(breakdown.find((item) => item.category_id === 'market')?.amount).toBe(0)
+  })
+
+  it('adds an "Other" row for spend recorded directly on the parent category', () => {
+    const breakdown = buildCategoryBreakdown('food', categories, { meat: 150, market: 300, food: 20 })
+
+    expect(breakdown.reduce((sum, item) => sum + item.amount, 0)).toBe(470)
+    expect(breakdown.find((item) => item.name === 'Other')?.amount).toBe(20)
+  })
+
+  it('omits the "Other" row when nothing was recorded directly on the parent', () => {
+    const breakdown = buildCategoryBreakdown('food', categories, { meat: 150, market: 300 })
+
+    expect(breakdown.find((item) => item.name === 'Other')).toBeUndefined()
   })
 })
 
