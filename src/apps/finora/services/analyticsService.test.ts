@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getMonthlyStats, grossSpendByBucketKey, sumLedgerTotals } from './analyticsService'
 
 const tables: Record<string, unknown[]> = {}
+const filterCalls: [string, ...unknown[]][] = []
 
-// A thenable query builder: every filter returns it, awaiting it yields the table's rows.
+// A thenable query builder: every filter returns it (and is recorded),
+// awaiting it yields the table's rows.
 function query(table: string) {
   const builder = {
     select: () => builder,
-    eq: () => builder,
-    in: () => builder,
+    eq: (...args: [string, unknown]) => (filterCalls.push(['eq', ...args]), builder),
+    in: (...args: [string, unknown]) => (filterCalls.push(['in', ...args]), builder),
     lte: () => builder,
     gte: () => builder,
     then: (resolve: (value: { data: unknown[]; error: null }) => void) => resolve({ data: tables[table] ?? [], error: null }),
@@ -86,6 +88,7 @@ describe('getMonthlyStats', () => {
 
   beforeEach(() => {
     for (const key of Object.keys(tables)) delete tables[key]
+    filterCalls.length = 0
   })
 
   it('totals the period exactly, including goal deposits and the savings rate', async () => {
@@ -146,5 +149,23 @@ describe('getMonthlyStats', () => {
 
     expect(data).toBeNull()
     expect(error).toBeInstanceOf(RangeError)
+  })
+
+  it('filters to only the caller when no household ids are given', async () => {
+    tables.transactions = []
+    tables.goal_transfers = []
+
+    await getMonthlyStats(range)
+
+    expect(filterCalls).toContainEqual(['in', 'user_id', ['u1']])
+  })
+
+  it('filters to every given household member instead (ADR-011)', async () => {
+    tables.transactions = []
+    tables.goal_transfers = []
+
+    await getMonthlyStats(range, ['u1', 'u2'])
+
+    expect(filterCalls).toContainEqual(['in', 'user_id', ['u1', 'u2']])
   })
 })

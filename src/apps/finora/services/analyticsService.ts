@@ -75,21 +75,27 @@ export function sumLedgerTotals(
   )
 }
 
-export function getMonthlyStats(range: DateRange) {
-  return catchServiceErrors(() => loadMonthlyStats(range))
+// householdMemberIds: when given (both members accepted - ADR-007), combines
+// every member's transactions and goal deposits instead of only the caller's
+// own - ADR-011's "full visibility, no tagging" for Analytics/Dashboard.
+// Omitted or empty, behaves exactly as before.
+export function getMonthlyStats(range: DateRange, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadMonthlyStats(range, householdMemberIds))
 }
 
-async function loadMonthlyStats(range: DateRange) {
+async function loadMonthlyStats(range: DateRange, householdMemberIds?: string[]) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
+  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+
   const [{ data, error }, { data: deposits, error: depositsError }] = await Promise.all([
     supabase
       .from('transactions')
       .select('type, amount, date, installment_months, funding_source')
-      .eq('user_id', userData.user.id)
+      .in('user_id', userIds)
       .lte('date', range.end)
       .gte('last_installment_date', range.start),
     // Deposits are money kept, not spent: they lower the spendable balance
@@ -97,7 +103,7 @@ async function loadMonthlyStats(range: DateRange) {
     supabase
       .from('goal_transfers')
       .select('amount')
-      .eq('user_id', userData.user.id)
+      .in('user_id', userIds)
       .eq('kind', 'deposit')
       .gte('date', range.start)
       .lte('date', range.end),
@@ -140,13 +146,13 @@ export interface CategorySpending {
   percentage: number
 }
 
-export function getSpendingByCategory(range: DateRange) {
-  return catchServiceErrors(() => loadSpendingByCategory(range))
+export function getSpendingByCategory(range: DateRange, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadSpendingByCategory(range, householdMemberIds))
 }
 
-async function loadSpendingByCategory(range: DateRange) {
+async function loadSpendingByCategory(range: DateRange, householdMemberIds?: string[]) {
   const [{ data: expensesByCategory, error: expensesError }, { data: categoriesData, error: categoriesError }] =
-    await Promise.all([getExpensesByCategory(range), getCategories()])
+    await Promise.all([getExpensesByCategory(range, householdMemberIds), getCategories()])
 
   const error = expensesError || categoriesError
   if (error) return { data: null, error }
@@ -193,16 +199,19 @@ export type LedgerRow = {
 
 // Rows already expanded into the installments that fall in the range, so a
 // financed purchase lands one installment per bucket on its own date.
-async function fetchExpenseAndReimbursementRows(range: DateRange) {
+// householdMemberIds widens to every member's rows (ADR-011), same as above.
+async function fetchExpenseAndReimbursementRows(range: DateRange, householdMemberIds?: string[]) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
+  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+
   const { data, error } = await supabase
     .from('transactions')
     .select('date, amount, type, installment_months, funding_source')
-    .eq('user_id', userData.user.id)
+    .in('user_id', userIds)
     .in('type', ['expense', 'reimbursement'])
     .lte('date', range.end)
     .gte('last_installment_date', range.start)
@@ -229,12 +238,12 @@ export function grossSpendByBucketKey(rows: LedgerRow[], keyFn: (date: string) =
   }, {})
 }
 
-export function getDailySpending(range: DateRange) {
-  return catchServiceErrors(() => loadDailySpending(range))
+export function getDailySpending(range: DateRange, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadDailySpending(range, householdMemberIds))
 }
 
-async function loadDailySpending(range: DateRange) {
-  const { data, error } = await fetchExpenseAndReimbursementRows(range)
+async function loadDailySpending(range: DateRange, householdMemberIds?: string[]) {
+  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds)
 
   if (error) return { data: null, error }
 
@@ -260,11 +269,11 @@ const TREND_YEARS = 5
 // from getPeriodRange's current-vs-previous single period. Every bucket in
 // the window is included even when it has no activity, so the chart shows a
 // true, evenly-spaced trend line instead of skipping quiet periods.
-export function getTrendData(periodType: PeriodType) {
-  return catchServiceErrors(() => loadTrendData(periodType))
+export function getTrendData(periodType: PeriodType, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadTrendData(periodType, householdMemberIds))
 }
 
-async function loadTrendData(periodType: PeriodType) {
+async function loadTrendData(periodType: PeriodType, householdMemberIds?: string[]) {
   const today = new Date()
   const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
 
@@ -272,7 +281,10 @@ async function loadTrendData(periodType: PeriodType) {
     const start = new Date(todayUtc)
     start.setUTCDate(start.getUTCDate() - (TREND_DAYS - 1))
 
-    const { data, error } = await fetchExpenseAndReimbursementRows({ start: toIsoDate(start), end: toIsoDate(todayUtc) })
+    const { data, error } = await fetchExpenseAndReimbursementRows(
+      { start: toIsoDate(start), end: toIsoDate(todayUtc) },
+      householdMemberIds
+    )
     if (error) return { data: null, error }
 
     const grossByDate = grossSpendByBucketKey(data ?? [], (date) => date)
@@ -294,7 +306,7 @@ async function loadTrendData(periodType: PeriodType) {
       end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), 11, 31))),
     }
 
-    const { data, error } = await fetchExpenseAndReimbursementRows(range)
+    const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds)
     if (error) return { data: null, error }
 
     const grossByYear = grossSpendByBucketKey(data ?? [], (date) => date.slice(0, 4))
@@ -313,7 +325,7 @@ async function loadTrendData(periodType: PeriodType) {
     end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth() + 1, 0))),
   }
 
-  const { data, error } = await fetchExpenseAndReimbursementRows(range)
+  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds)
   if (error) return { data: null, error }
 
   const grossByMonth = grossSpendByBucketKey(data ?? [], (date) => date.slice(0, 7))
@@ -346,7 +358,7 @@ export interface PeriodComparison {
   hasPreviousData: boolean
 }
 
-export async function getPeriodComparison(periodType: PeriodType) {
+export async function getPeriodComparison(periodType: PeriodType, householdMemberIds?: string[]) {
   const { current, previous } = getPeriodRange(periodType, new Date())
 
   const [
@@ -355,10 +367,10 @@ export async function getPeriodComparison(periodType: PeriodType) {
     { data: currentCategories, error: currentCategoriesError },
     { data: previousCategories, error: previousCategoriesError },
   ] = await Promise.all([
-    getMonthlyStats(current),
-    getMonthlyStats(previous),
-    getSpendingByCategory(current),
-    getSpendingByCategory(previous),
+    getMonthlyStats(current, householdMemberIds),
+    getMonthlyStats(previous, householdMemberIds),
+    getSpendingByCategory(current, householdMemberIds),
+    getSpendingByCategory(previous, householdMemberIds),
   ])
 
   const error = currentStatsError || previousStatsError || currentCategoriesError || previousCategoriesError

@@ -211,21 +211,32 @@ export function getCurrentMonthRange() {
   }
 }
 
-export function getExpensesByCategory(range: { start: string; end: string }) {
-  return catchServiceErrors(() => loadExpensesByCategory(range))
+// householdMemberIds: when given (both members accepted - ADR-007), widens to
+// every member's rows instead of only the caller's own (ADR-011's "full
+// visibility, no tagging" for a combined Analytics/Dashboard view) - the same
+// optional-parameter shape getTransactions (PR5) and getBudgets (PR8) already
+// use. Omitted or empty, behaves exactly as before (ADR-010's household
+// budget keeps calling this with no household ids, unaffected).
+export function getExpensesByCategory(range: { start: string; end: string }, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadExpensesByCategory(range, householdMemberIds))
 }
 
-async function loadExpensesByCategory({ start, end }: { start: string; end: string }) {
+async function loadExpensesByCategory(
+  { start, end }: { start: string; end: string },
+  householdMemberIds?: string[]
+) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
+  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+
   const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
     supabase
       .from('transactions')
       .select('category_id, amount, type, date, installment_months, funding_source')
-      .eq('user_id', userData.user.id)
+      .in('user_id', userIds)
       .in('type', ['expense', 'reimbursement'])
       // A financed purchase dated before the range can still have an
       // installment inside it; for single payments last_installment_date is
