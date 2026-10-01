@@ -33,7 +33,10 @@
   },
   "categoryBreakdown": {
     "title": "Spending by category",
-    "empty": "No spending recorded for this period."
+    "titleWithPeriod": "Spending by category — {{period}}",
+    "empty": "No spending recorded for this period.",
+    "clearBucket": "Clear",
+    "loadingBucket": "Loading…"
   },
   "topCategories": {
     "title": "Top spending categories",

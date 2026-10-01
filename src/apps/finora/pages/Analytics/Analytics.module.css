@@ -44,6 +44,22 @@
   @apply mb-4 text-base font-semibold text-finora-ink;
 }
 
+.cardTitleRow {
+  @apply mb-4 flex flex-wrap items-center justify-between gap-2;
+}
+
+.cardTitleNoMargin {
+  @apply mb-0;
+}
+
+.clearBucketButton {
+  @apply flex shrink-0 items-center gap-1 rounded-md border border-finora-border px-2 py-1 text-xs font-medium text-finora-ink-muted;
+}
+
+.clearBucketIcon {
+  @apply h-3.5 w-3.5;
+}
+
 .chartWrap {
   @apply h-56;
 }

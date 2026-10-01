@@ -33,7 +33,10 @@
   },
   "categoryBreakdown": {
     "title": "Gastos por categoría",
-    "empty": "No hay gastos registrados en este periodo."
+    "titleWithPeriod": "Gastos por categoría — {{period}}",
+    "empty": "No hay gastos registrados en este periodo.",
+    "clearBucket": "Limpiar",
+    "loadingBucket": "Cargando…"
   },
   "topCategories": {
     "title": "Principales categorías de gasto",

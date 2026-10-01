@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import type { MouseHandlerDataParam } from 'recharts'
+import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import cn from 'clsx'
@@ -198,6 +200,12 @@ export function Analytics() {
     isHouseholdView,
     loading,
     error,
+    selectedBucket,
+    selectBucket,
+    bucketSpendingByCategory,
+    bucketRawByCategory,
+    householdBucketBreakdown,
+    bucketLoading,
   } = useAnalytics(periodType, viewMode)
 
   // Both sides accepted (ADR-007), same condition Transactions uses for its
@@ -237,10 +245,49 @@ export function Analytics() {
     ...point,
     label: formatTrendLabel(point.date, periodType),
   }))
+
+  // One handler on the chart itself (not one per <Bar>/<Line>) - recharts
+  // fires this once per category under the cursor regardless of how many
+  // series (own/partner) are stacked there, so a second <Bar> segment can
+  // never fire its own click and select a different bucket than the one
+  // actually clicked. activeIndex is the clicked category's position in
+  // the chart's own data array, looked up there for its real `date` -
+  // chartData's x-axis label is a formatted display string, not the date.
+  const handleChartClick = useCallback(
+    (chartState?: MouseHandlerDataParam) => {
+      const index = chartState?.activeIndex
+      if (typeof index !== 'number') return
+
+      const point = isHouseholdView ? householdChartData[index] : chartData[index]
+      if (point) selectBucket(point.date)
+    },
+    [isHouseholdView, householdChartData, chartData, selectBucket]
+  )
+
+  const handleClearBucket = useCallback(() => {
+    selectBucket(null)
+  }, [selectBucket])
+
   const periodLabel = useMemo(
     () => formatPeriodPillLabel(periodType, getPeriodRange(periodType, new Date()).current),
     [periodType]
   )
+  // The clicked bucket's own label ("September 2026"), reusing the exact
+  // same formatter the top period pill already uses - formatPeriodPillLabel
+  // only reads `current.start`, so a single-day range stands in fine.
+  const selectedBucketLabel = selectedBucket ? formatPeriodPillLabel(periodType, { start: selectedBucket, end: selectedBucket }) : null
+
+  // Drilling into a clicked bucket swaps Spending by category's data source
+  // only - the rest of the page (stats, trend, comparison) keeps showing the
+  // selected Daily/Monthly/Yearly period, untouched.
+  const effectiveSpendingByCategory = selectedBucket ? bucketSpendingByCategory : spendingByCategory
+  const effectiveRawByCategory = selectedBucket ? bucketRawByCategory : rawByCategory
+  const effectiveHouseholdOwn = selectedBucket ? (householdBucketBreakdown?.own ?? []) : (householdBreakdown?.own ?? [])
+  const effectiveHouseholdPartner = selectedBucket
+    ? (householdBucketBreakdown?.partner ?? [])
+    : (householdBreakdown?.partner ?? [])
+  const effectiveHouseholdOwnRaw = selectedBucket ? householdBucketBreakdown?.ownRaw : householdRaw?.own
+  const effectiveHouseholdPartnerRaw = selectedBucket ? householdBucketBreakdown?.partnerRaw : householdRaw?.partner
 
   const insights = comparison && comparison.hasPreviousData ? buildInsights(t, comparison) : []
   const householdInsights =
@@ -359,7 +406,7 @@ export function Analytics() {
                   ) : (
                     <div className={s.chartWrap}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={householdChartData}>
+                        <BarChart data={householdChartData} onClick={handleChartClick}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_COLOR} />
                           <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
                           <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={formatChartValue} />
@@ -376,7 +423,7 @@ export function Analytics() {
                 ) : (
                   <div className={s.chartWrap}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData}>
+                      <LineChart data={chartData} onClick={handleChartClick}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID_COLOR} />
                         <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
                         <YAxis tickLine={false} axisLine={false} fontSize={12} tickFormatter={formatChartValue} />
@@ -394,43 +441,62 @@ export function Analytics() {
                 )}
               </div>
 
-              <div className={cn(s.card, s.sideCard)}>
-                <h2 className={s.cardTitle}>{t('categoryBreakdown.title')}</h2>
-                {isHouseholdView ? (
+              <div className={cn(s.card, s.sideCard)} data-testid="analytics-category-breakdown-card">
+                <div className={s.cardTitleRow}>
+                  <h2 className={cn(s.cardTitle, s.cardTitleNoMargin)}>
+                    {selectedBucketLabel
+                      ? t('categoryBreakdown.titleWithPeriod', { period: selectedBucketLabel })
+                      : t('categoryBreakdown.title')}
+                  </h2>
+                  {selectedBucket && (
+                    <button
+                      type="button"
+                      onClick={handleClearBucket}
+                      className={s.clearBucketButton}
+                      data-testid="analytics-clear-bucket-button"
+                    >
+                      <X className={s.clearBucketIcon} aria-hidden="true" />
+                      {t('categoryBreakdown.clearBucket')}
+                    </button>
+                  )}
+                </div>
+                {bucketLoading && selectedBucket ? (
+                  <p className={s.stateMessage}>{t('categoryBreakdown.loadingBucket')}</p>
+                ) : isHouseholdView ? (
                   <div className={s.stackedColumns}>
                     <CategoryColumn
                       label={t('columns.own')}
-                      categories={householdBreakdown?.own ?? []}
+                      categories={effectiveHouseholdOwn}
                       emptyMessage={t('categoryBreakdown.empty')}
                       testId="analytics-breakdown-own-column"
                       t={t}
                       currency={currency}
                       locale={locale}
                       allCategories={allCategories}
-                      rawByCategory={householdRaw?.own}
+                      rawByCategory={effectiveHouseholdOwnRaw}
                     />
                     <CategoryColumn
                       label={partnerName}
-                      categories={householdBreakdown?.partner ?? []}
+                      categories={effectiveHouseholdPartner}
                       emptyMessage={t('categoryBreakdown.empty')}
                       testId="analytics-breakdown-partner-column"
                       t={t}
                       currency={currency}
                       locale={locale}
                       allCategories={allCategories}
-                      rawByCategory={householdRaw?.partner}
+                      rawByCategory={effectiveHouseholdPartnerRaw}
                     />
                   </div>
-                ) : spendingByCategory.length === 0 ? (
+                ) : effectiveSpendingByCategory.length === 0 ? (
                   <p className={s.stateMessage}>{t('categoryBreakdown.empty')}</p>
                 ) : (
                   <CategorySpendList
-                    categories={spendingByCategory}
+                    categories={effectiveSpendingByCategory}
                     t={t}
                     currency={currency}
                     locale={locale}
                     allCategories={allCategories}
-                    rawByCategory={rawByCategory}
+                    rawByCategory={effectiveRawByCategory}
                   />
                 )}
               </div>

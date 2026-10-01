@@ -69,6 +69,13 @@ function mockAnalytics(overrides: Partial<ReturnType<typeof useAnalytics>> = {})
     isHouseholdView: false,
     loading: false,
     error: null,
+    selectedBucket: null,
+    selectBucket: vi.fn(),
+    bucketSpendingByCategory: [],
+    bucketRawByCategory: {},
+    householdBucketBreakdown: null,
+    bucketLoading: false,
+    bucketError: null,
     refetch: vi.fn(),
     ...overrides,
   })
@@ -304,6 +311,84 @@ describe('Analytics', () => {
       // The partner's own breakdown panel is still collapsed - expanding one
       // member's column must not reveal the other's.
       expect(within(partnerColumn).queryByText('Services')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('selected bucket (click-to-drill into Spending by category)', () => {
+    it('shows the plain title and no Clear button when no bucket is selected', () => {
+      renderPage()
+
+      expect(screen.getByText('categoryBreakdown.title')).toBeInTheDocument()
+      expect(screen.queryByTestId('analytics-clear-bucket-button')).not.toBeInTheDocument()
+    })
+
+    it('shows the period in the title and a Clear button once a bucket is selected', () => {
+      mockAnalytics({ selectedBucket: '2026-09-01' })
+      renderPage()
+
+      expect(
+        screen.getByText('categoryBreakdown.titleWithPeriod:{"period":"September 2026"}')
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('analytics-clear-bucket-button')).toBeInTheDocument()
+    })
+
+    it('clears the selection when the Clear button is clicked', () => {
+      const selectBucket = vi.fn()
+      mockAnalytics({ selectedBucket: '2026-09-01', selectBucket })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('analytics-clear-bucket-button'))
+
+      expect(selectBucket).toHaveBeenCalledWith(null)
+    })
+
+    it('shows the loading message instead of stale data while the bucket is loading', () => {
+      mockAnalytics({ selectedBucket: '2026-09-01', bucketLoading: true })
+      renderPage()
+
+      const card = screen.getByTestId('analytics-category-breakdown-card')
+      expect(within(card).getByText('categoryBreakdown.loadingBucket')).toBeInTheDocument()
+      // "Food" still legitimately appears in Top spending categories, which
+      // keeps showing the period's data - only this card swaps to the bucket.
+      expect(within(card).queryByText('Food')).not.toBeInTheDocument()
+    })
+
+    it('shows the clicked bucket\'s own categories instead of the period\'s, in the Mine view', () => {
+      mockAnalytics({
+        selectedBucket: '2026-09-01',
+        spendingByCategory: SPENDING_BY_CATEGORY,
+        bucketSpendingByCategory: [
+          { category_id: 'c3', name: 'Health', icon: null, color: '#10b981', translationKey: null, amount: 80, percentage: 100 },
+        ],
+      })
+      renderPage()
+
+      const card = screen.getByTestId('analytics-category-breakdown-card')
+      expect(within(card).getByText('Health')).toBeInTheDocument()
+      expect(within(card).queryByText('Food')).not.toBeInTheDocument()
+    })
+
+    it("shows the clicked bucket's own per-member columns instead of the period's, in the Household view", () => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner, partner: partnerProfile } as never)
+      mockAnalytics({
+        isHouseholdView: true,
+        selectedBucket: '2026-09-01',
+        householdBreakdown: {
+          own: [{ category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 400, percentage: 100 }],
+          partner: [],
+        },
+        householdBucketBreakdown: {
+          own: [{ category_id: 'c4', name: 'Rent', icon: null, color: null, translationKey: null, amount: 5200, percentage: 100 }],
+          partner: [{ category_id: 'c4', name: 'Rent', icon: null, color: null, translationKey: null, amount: 9500, percentage: 100 }],
+          ownRaw: {},
+          partnerRaw: {},
+        },
+      })
+      renderPage()
+
+      const ownColumn = screen.getByTestId('analytics-breakdown-own-column')
+      expect(within(ownColumn).getByText('$5,200.00')).toBeInTheDocument()
+      expect(within(ownColumn).queryByText('$400.00')).not.toBeInTheDocument()
     })
   })
 })
