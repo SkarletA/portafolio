@@ -96,6 +96,18 @@
   @apply rounded-xl border border-finora-border bg-finora-surface py-10 text-center text-sm text-finora-ink-muted;
 }
 
+.ownerToggle {
+  @apply mb-5 flex gap-2;
+}
+
+.ownerButton {
+  @apply rounded-lg border border-finora-border px-3 py-2 text-sm font-medium text-finora-ink-muted;
+}
+
+.ownerButtonActive {
+  @apply border-finora-primary bg-finora-primary/10 text-finora-primary;
+}
+
 .periodToggle {
   @apply mb-6 inline-flex gap-1 rounded-lg bg-finora-surface-muted p-1;
 }

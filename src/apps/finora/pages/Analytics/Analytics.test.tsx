@@ -2,13 +2,18 @@ import { render, screen, within, fireEvent } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAnalytics } from '@hooks/useAnalytics'
 import { useCurrency } from '@context/CurrencyContext'
+import { useHousehold } from '@context/HouseholdContext'
 import { useLanguage } from '@context/LanguageContext'
 import type { MonthlyStats, CategorySpending, TrendPoint, PeriodComparison } from '@services/analyticsService'
 import { Analytics } from './Analytics'
 
 vi.mock('@hooks/useAnalytics', () => ({ useAnalytics: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: vi.fn() }))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: vi.fn() }))
+
+const acceptedOwn = { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted' as const, invited_by: 'u1' }
+const acceptedPartner = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
 
 const STATS: MonthlyStats = {
   totalSpent: 1250,
@@ -68,6 +73,7 @@ describe('Analytics', () => {
   beforeEach(() => {
     vi.mocked(useCurrency).mockReturnValue({ currency: 'USD', setCurrency: vi.fn() })
     vi.mocked(useLanguage).mockReturnValue({ language: 'en', setLanguage: vi.fn() })
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: null, partnerMember: null } as never)
     mockAnalytics()
   })
 
@@ -112,11 +118,28 @@ describe('Analytics', () => {
     renderPage()
     const yearButton = screen.getByTestId('analytics-period-year-button')
 
-    expect(useAnalytics).toHaveBeenLastCalledWith('month')
+    expect(useAnalytics).toHaveBeenLastCalledWith('month', 'mine')
     fireEvent.click(yearButton)
 
-    expect(useAnalytics).toHaveBeenLastCalledWith('year')
+    expect(useAnalytics).toHaveBeenLastCalledWith('year', 'mine')
     expect(yearButton).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('does not show the Mine/Household toggle without an accepted household partner', () => {
+    renderPage()
+    expect(screen.queryByTestId('analytics-tab-household-button')).not.toBeInTheDocument()
+  })
+
+  it('shows the toggle and switches viewMode when a household is accepted (ADR-011)', () => {
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+    renderPage()
+
+    expect(useAnalytics).toHaveBeenLastCalledWith('month', 'mine')
+    const householdButton = screen.getByTestId('analytics-tab-household-button')
+    fireEvent.click(householdButton)
+
+    expect(useAnalytics).toHaveBeenLastCalledWith('month', 'household')
+    expect(householdButton).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('shows a no-previous-data message when there is nothing to compare against', () => {

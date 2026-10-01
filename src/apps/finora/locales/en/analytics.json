@@ -1,6 +1,11 @@
 {
   "title": "Analytics",
   "subtitle": "Understand where your money goes",
+  "tabs": {
+    "ariaLabel": "Mine or combined with the household",
+    "mine": "My analytics",
+    "household": "Household"
+  },
   "period": {
     "ariaLabel": "Analytics period",
     "daily": "Daily",

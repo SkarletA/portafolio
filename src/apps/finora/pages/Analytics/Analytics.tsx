@@ -2,11 +2,12 @@ import { useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
-import { useAnalytics } from '@hooks/useAnalytics'
+import { useAnalytics, type AnalyticsViewMode } from '@hooks/useAnalytics'
 import { getPeriodRange, type DateRange, type PeriodType } from '@domain/analytics'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { useCurrency } from '@context/CurrencyContext'
+import { useHousehold } from '@context/HouseholdContext'
 import { useLanguage } from '@context/LanguageContext'
 import { StatCard } from '@molecules/StatCard/StatCard'
 import { AsyncState } from '@molecules/AsyncState/AsyncState'
@@ -63,12 +64,24 @@ export function Analytics() {
   const { currency } = useCurrency()
   const { language } = useLanguage()
   const locale = getLocaleForLanguage(language)
+  const { ownMember, partnerMember } = useHousehold()
   const [periodType, setPeriodType] = useState<PeriodType>('month')
-  const { stats, spendingByCategory, trendData, comparison, loading, error } = useAnalytics(periodType)
+  const [viewMode, setViewMode] = useState<AnalyticsViewMode>('mine')
+  const { stats, spendingByCategory, trendData, comparison, loading, error } = useAnalytics(periodType, viewMode)
+
+  // Both sides accepted (ADR-007), same condition Transactions uses for its
+  // own Mine/Household tabs - otherwise there is nothing to combine a toggle
+  // over.
+  const isHouseholdActive = ownMember?.status === 'accepted' && partnerMember?.status === 'accepted'
 
   const handlePeriodChange = useCallback((event: MouseEvent<HTMLButtonElement>) => {
     const nextPeriod = event.currentTarget.dataset.period as PeriodType | undefined
     if (nextPeriod) setPeriodType(nextPeriod)
+  }, [])
+
+  const handleViewModeClick = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    const nextViewMode = event.currentTarget.dataset.viewMode as AnalyticsViewMode | undefined
+    if (nextViewMode) setViewMode(nextViewMode)
   }, [])
 
   const formatChartValue = useCallback(
@@ -104,6 +117,31 @@ export function Analytics() {
         </div>
         <span className={s.periodPill}>{periodLabel}</span>
       </div>
+
+      {isHouseholdActive && (
+        <div className={s.ownerToggle} role="group" aria-label={t('tabs.ariaLabel')}>
+          <button
+            type="button"
+            data-view-mode="mine"
+            aria-pressed={viewMode === 'mine'}
+            onClick={handleViewModeClick}
+            className={cn(s.ownerButton, viewMode === 'mine' && s.ownerButtonActive)}
+            data-testid="analytics-tab-mine-button"
+          >
+            {t('tabs.mine')}
+          </button>
+          <button
+            type="button"
+            data-view-mode="household"
+            aria-pressed={viewMode === 'household'}
+            onClick={handleViewModeClick}
+            className={cn(s.ownerButton, viewMode === 'household' && s.ownerButtonActive)}
+            data-testid="analytics-tab-household-button"
+          >
+            {t('tabs.household')}
+          </button>
+        </div>
+      )}
 
       <div className={s.periodToggle} role="group" aria-label={t('period.ariaLabel')}>
         {PERIOD_OPTIONS.map((option) => (
