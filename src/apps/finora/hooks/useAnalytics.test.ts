@@ -4,12 +4,19 @@ import { useAnalytics } from './useAnalytics'
 import { getMonthlyStats, getPeriodComparison, getSpendingByCategory, getTrendData } from '@services/analyticsService'
 import { useHousehold } from '@context/HouseholdContext'
 
-vi.mock('../services/analyticsService', () => ({
-  getMonthlyStats: vi.fn(),
-  getSpendingByCategory: vi.fn(),
-  getTrendData: vi.fn(),
-  getPeriodComparison: vi.fn(),
-}))
+vi.mock('../services/analyticsService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/analyticsService')>()
+  return {
+    // buildCategoryComparison is kept real (a pure function the hook calls
+    // directly to build each member's comparison table, not mocked away) -
+    // only the I/O functions below are replaced.
+    buildCategoryComparison: actual.buildCategoryComparison,
+    getMonthlyStats: vi.fn(),
+    getSpendingByCategory: vi.fn(),
+    getTrendData: vi.fn(),
+    getPeriodComparison: vi.fn(),
+  }
+})
 
 vi.mock('../context/HouseholdContext', () => ({
   useHousehold: vi.fn(),
@@ -76,6 +83,8 @@ describe('useAnalytics', () => {
       categories: [],
       hasPreviousData: true,
     })
+    expect(result.current.isHouseholdView).toBe(false)
+    expect(result.current.householdBreakdown).toBeNull()
     expect(result.current.error).toBeNull()
     expect(getMonthlyStats).toHaveBeenCalledWith(
       expect.objectContaining({ start: expect.any(String), end: expect.any(String) }),
@@ -138,22 +147,10 @@ describe('useAnalytics', () => {
     vi.mocked(getTrendData).mockResolvedValue({ data: [], error: null } as never)
     vi.mocked(getPeriodComparison).mockResolvedValue({ data: emptyComparison, error: null } as never)
 
-    renderHook(() => useAnalytics('month'))
+    const { result } = renderHook(() => useAnalytics('month'))
 
     await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined))
-  })
-
-  it('combines both household members when viewMode is "household"', async () => {
-    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
-    vi.mocked(getMonthlyStats).mockResolvedValue({ data: emptyStats, error: null } as never)
-    vi.mocked(getSpendingByCategory).mockResolvedValue({ data: [], error: null } as never)
-    vi.mocked(getTrendData).mockResolvedValue({ data: [], error: null } as never)
-    vi.mocked(getPeriodComparison).mockResolvedValue({ data: emptyComparison, error: null } as never)
-
-    renderHook(() => useAnalytics('month', 'household'))
-
-    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', ['u1', 'u2']))
-    expect(getPeriodComparison).toHaveBeenCalledWith('month', ['u1', 'u2'])
+    expect(result.current.isHouseholdView).toBe(false)
   })
 
   it('ignores viewMode "household" without an accepted partner', async () => {
@@ -165,5 +162,106 @@ describe('useAnalytics', () => {
     renderHook(() => useAnalytics('month', 'household'))
 
     await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined))
+  })
+
+  describe('household view (ADR-011)', () => {
+    const ownCategory = { category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 400, percentage: 50 }
+    const partnerCategory = { category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 600, percentage: 50 }
+
+    beforeEach(() => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+      vi.mocked(getMonthlyStats).mockResolvedValue({ data: emptyStats, error: null } as never)
+      vi.mocked(getPeriodComparison).mockResolvedValue({
+        data: { ...emptyComparison, currentTotal: 1000, previousTotal: 800, totalPercentChange: 25, hasPreviousData: true },
+        error: null,
+      } as never)
+      // Distinguishes the caller's rows from the partner's by which single
+      // id the call was widened to, the same per-member attribution the
+      // household budget (PR8) already relies on.
+      vi.mocked(getSpendingByCategory).mockImplementation((_range, ids) => {
+        const data = ids?.[0] === 'u1' ? [ownCategory] : ids?.[0] === 'u2' ? [partnerCategory] : []
+        return Promise.resolve({ data, error: null } as never)
+      })
+      vi.mocked(getTrendData).mockImplementation((_periodType, ids) => {
+        const amount = ids?.[0] === 'u1' ? 100 : ids?.[0] === 'u2' ? 150 : 0
+        return Promise.resolve({ data: [{ date: '2026-09-01', amount }], error: null } as never)
+      })
+    })
+
+    it('fetches combined stats and the headline comparison with both member ids together', async () => {
+      renderHook(() => useAnalytics('month', 'household'))
+
+      await waitFor(() =>
+        expect(getMonthlyStats).toHaveBeenCalledWith(expect.objectContaining({ start: expect.any(String) }), [
+          'u1',
+          'u2',
+        ])
+      )
+      expect(getPeriodComparison).toHaveBeenCalledWith('month', ['u1', 'u2'])
+    })
+
+    it("fetches each member's category spend and trend separately, never as one combined pair", async () => {
+      renderHook(() => useAnalytics('month', 'household'))
+
+      await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', ['u1']))
+      expect(getTrendData).toHaveBeenCalledWith('month', ['u2'])
+      expect(getSpendingByCategory).toHaveBeenCalledWith(expect.anything(), ['u1'])
+      expect(getSpendingByCategory).toHaveBeenCalledWith(expect.anything(), ['u2'])
+    })
+
+    it('splits the category breakdown into own/partner columns instead of merging them', async () => {
+      const { result } = renderHook(() => useAnalytics('month', 'household'))
+
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      expect(result.current.isHouseholdView).toBe(true)
+      expect(result.current.householdBreakdown).toEqual({ own: [ownCategory], partner: [partnerCategory] })
+      expect(result.current.spendingByCategory).toEqual([])
+    })
+
+    it("stacks each member's trend point into a combined bar height with two segments", async () => {
+      const { result } = renderHook(() => useAnalytics('month', 'household'))
+
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      expect(result.current.householdTrend).toEqual([{ date: '2026-09-01', own: 100, partner: 150, amount: 250 }])
+    })
+
+    it("keeps the comparison's headline total combined but splits its category table per member", async () => {
+      const { result } = renderHook(() => useAnalytics('month', 'household'))
+
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      expect(result.current.householdComparison).toEqual({
+        currentTotal: 1000,
+        previousTotal: 800,
+        totalPercentChange: 25,
+        hasPreviousData: true,
+        own: [
+          {
+            category_id: 'c1',
+            name: 'Food',
+            icon: null,
+            color: null,
+            translationKey: null,
+            currentAmount: 400,
+            previousAmount: 400,
+            percentChange: 0,
+          },
+        ],
+        partner: [
+          {
+            category_id: 'c1',
+            name: 'Food',
+            icon: null,
+            color: null,
+            translationKey: null,
+            currentAmount: 600,
+            previousAmount: 600,
+            percentChange: 0,
+          },
+        ],
+      })
+    })
   })
 })
