@@ -64,6 +64,21 @@
   @apply h-56;
 }
 
+/* recharts enables accessibilityLayer by default, which puts tabIndex=0 on
+   the chart's root <svg> (.recharts-surface) so it's keyboard-navigable -
+   good for accessibility, but it also means a plain mouse click (to select
+   a trend bucket) focuses the whole chart and the browser draws its default
+   outline around it. Suppress that for mouse clicks only (:focus without
+   :focus-visible) and keep a clear outline for keyboard Tab navigation
+   (:focus-visible), so this isn't an accessibility regression. */
+.chartWrap :global(.recharts-surface:focus) {
+  outline: none;
+}
+
+.chartWrap :global(.recharts-surface:focus-visible) {
+  @apply outline-2 outline-offset-2 outline-finora-primary;
+}
+
 .categoryList {
   @apply flex flex-col gap-3;
 }
