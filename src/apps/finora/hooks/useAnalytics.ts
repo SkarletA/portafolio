@@ -10,8 +10,16 @@ import {
   type TrendPoint,
 } from '@services/analyticsService'
 import { getPeriodRange, type PeriodType } from '@domain/analytics'
+import { useHousehold } from '@context/HouseholdContext'
 
-export function useAnalytics(periodType: PeriodType = 'month') {
+export type AnalyticsViewMode = 'mine' | 'household'
+
+// viewMode: 'household' combines both household members' numbers (ADR-011's
+// "full visibility, no tagging"), only once the household is accepted;
+// 'mine' (the default) behaves exactly as before. The toggle itself lives in
+// Analytics.tsx, same Mine/Household pattern Transactions already uses.
+export function useAnalytics(periodType: PeriodType = 'month', viewMode: AnalyticsViewMode = 'mine') {
+  const { ownMember, partnerMember } = useHousehold()
   const [stats, setStats] = useState<MonthlyStats | null>(null)
   const [spendingByCategory, setSpendingByCategory] = useState<CategorySpending[]>([])
   const [trendData, setTrendData] = useState<TrendPoint[]>([])
@@ -20,11 +28,16 @@ export function useAnalytics(periodType: PeriodType = 'month') {
   const [error, setError] = useState<string | null>(null)
   const mountedRef = useRef(true)
 
+  const isHouseholdActive = ownMember?.status === 'accepted' && partnerMember?.status === 'accepted'
+  const householdMemberKey =
+    viewMode === 'household' && isHouseholdActive ? `${ownMember.user_id},${partnerMember.user_id}` : ''
+
   const refetch = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     const { current } = getPeriodRange(periodType, new Date())
+    const householdMemberIds = householdMemberKey ? householdMemberKey.split(',') : undefined
 
     const [
       { data: statsData, error: statsError },
@@ -32,10 +45,10 @@ export function useAnalytics(periodType: PeriodType = 'month') {
       { data: trendPoints, error: trendError },
       { data: comparisonData, error: comparisonError },
     ] = await Promise.all([
-      getMonthlyStats(current),
-      getSpendingByCategory(current),
-      getTrendData(periodType),
-      getPeriodComparison(periodType),
+      getMonthlyStats(current, householdMemberIds),
+      getSpendingByCategory(current, householdMemberIds),
+      getTrendData(periodType, householdMemberIds),
+      getPeriodComparison(periodType, householdMemberIds),
     ])
 
     if (!mountedRef.current) return
@@ -56,7 +69,7 @@ export function useAnalytics(periodType: PeriodType = 'month') {
     }
 
     setLoading(false)
-  }, [periodType])
+  }, [periodType, householdMemberKey])
 
   useEffect(() => {
     mountedRef.current = true

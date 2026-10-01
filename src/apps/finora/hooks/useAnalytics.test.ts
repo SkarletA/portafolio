@@ -2,6 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAnalytics } from './useAnalytics'
 import { getMonthlyStats, getPeriodComparison, getSpendingByCategory, getTrendData } from '@services/analyticsService'
+import { useHousehold } from '@context/HouseholdContext'
 
 vi.mock('../services/analyticsService', () => ({
   getMonthlyStats: vi.fn(),
@@ -9,6 +10,13 @@ vi.mock('../services/analyticsService', () => ({
   getTrendData: vi.fn(),
   getPeriodComparison: vi.fn(),
 }))
+
+vi.mock('../context/HouseholdContext', () => ({
+  useHousehold: vi.fn(),
+}))
+
+const acceptedOwn = { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted' as const, invited_by: 'u1' }
+const acceptedPartner = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
 
 const emptyStats = { totalSpent: 0, totalIncome: 0, avgPerDay: 0, savingsRate: 0 }
 const emptyComparison = {
@@ -25,6 +33,7 @@ describe('useAnalytics', () => {
     vi.mocked(getSpendingByCategory).mockReset()
     vi.mocked(getTrendData).mockReset()
     vi.mocked(getPeriodComparison).mockReset()
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: null, partnerMember: null } as never)
   })
 
   it('loads stats, category spending, trend data, and comparison successfully', async () => {
@@ -68,9 +77,12 @@ describe('useAnalytics', () => {
       hasPreviousData: true,
     })
     expect(result.current.error).toBeNull()
-    expect(getMonthlyStats).toHaveBeenCalledWith(expect.objectContaining({ start: expect.any(String), end: expect.any(String) }))
-    expect(getTrendData).toHaveBeenCalledWith('month')
-    expect(getPeriodComparison).toHaveBeenCalledWith('month')
+    expect(getMonthlyStats).toHaveBeenCalledWith(
+      expect.objectContaining({ start: expect.any(String), end: expect.any(String) }),
+      undefined
+    )
+    expect(getTrendData).toHaveBeenCalledWith('month', undefined)
+    expect(getPeriodComparison).toHaveBeenCalledWith('month', undefined)
   })
 
   it('refetches with the requested period type', async () => {
@@ -81,8 +93,8 @@ describe('useAnalytics', () => {
 
     renderHook(() => useAnalytics('year'))
 
-    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('year'))
-    expect(getPeriodComparison).toHaveBeenCalledWith('year')
+    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('year', undefined))
+    expect(getPeriodComparison).toHaveBeenCalledWith('year', undefined)
   })
 
   it('treats an empty period as a valid, non-error state', async () => {
@@ -117,5 +129,41 @@ describe('useAnalytics', () => {
     expect(result.current.trendData).toEqual([])
     expect(result.current.comparison).toBeNull()
     expect(result.current.error).toBe('Network error')
+  })
+
+  it('stays "mine" (self-only) by default even with an accepted household', async () => {
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+    vi.mocked(getMonthlyStats).mockResolvedValue({ data: emptyStats, error: null } as never)
+    vi.mocked(getSpendingByCategory).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getTrendData).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getPeriodComparison).mockResolvedValue({ data: emptyComparison, error: null } as never)
+
+    renderHook(() => useAnalytics('month'))
+
+    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined))
+  })
+
+  it('combines both household members when viewMode is "household"', async () => {
+    vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+    vi.mocked(getMonthlyStats).mockResolvedValue({ data: emptyStats, error: null } as never)
+    vi.mocked(getSpendingByCategory).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getTrendData).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getPeriodComparison).mockResolvedValue({ data: emptyComparison, error: null } as never)
+
+    renderHook(() => useAnalytics('month', 'household'))
+
+    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', ['u1', 'u2']))
+    expect(getPeriodComparison).toHaveBeenCalledWith('month', ['u1', 'u2'])
+  })
+
+  it('ignores viewMode "household" without an accepted partner', async () => {
+    vi.mocked(getMonthlyStats).mockResolvedValue({ data: emptyStats, error: null } as never)
+    vi.mocked(getSpendingByCategory).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getTrendData).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getPeriodComparison).mockResolvedValue({ data: emptyComparison, error: null } as never)
+
+    renderHook(() => useAnalytics('month', 'household'))
+
+    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined))
   })
 })
