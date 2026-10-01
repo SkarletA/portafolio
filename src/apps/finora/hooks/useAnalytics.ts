@@ -8,6 +8,7 @@ import {
   getPeriodComparison,
   getTrendData,
   type CategorySpending,
+  type HouseholdCategorySpending,
   type MonthlyStats,
   type PeriodComparison,
   type PeriodComparisonCategory,
@@ -15,7 +16,7 @@ import {
 } from '@services/analyticsService'
 import { getExpensesByCategory } from '@services/transactionsService'
 import { getCategories } from '@services/categoriesService'
-import { getPeriodRange, type PeriodType } from '@domain/analytics'
+import { getBucketRange, getPeriodRange, type PeriodType } from '@domain/analytics'
 import type { Category } from '@domain/category'
 import { useHousehold } from '@context/HouseholdContext'
 
@@ -69,7 +70,23 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
   const [householdComparison, setHouseholdComparison] = useState<HouseholdComparison | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // A trend bucket clicked on the chart (e.g. "September"), drilling
+  // Spending by category into just that bucket instead of the selected
+  // Daily/Monthly/Yearly period. Orthogonal to periodType/viewMode - it
+  // doesn't touch the period-level state above, and is cleared automatically
+  // (see the effect below) whenever either of those changes, so it can never
+  // point at a bucket that no longer makes sense.
+  const [selectedBucket, setSelectedBucket] = useState<string | null>(null)
+  const [bucketSpendingByCategory, setBucketSpendingByCategory] = useState<CategorySpending[]>([])
+  const [bucketRawByCategory, setBucketRawByCategory] = useState<Record<string, number>>({})
+  const [householdBucketBreakdown, setHouseholdBucketBreakdown] = useState<HouseholdCategorySpending | null>(null)
+  const [bucketLoading, setBucketLoading] = useState(false)
+  const [bucketError, setBucketError] = useState<string | null>(null)
   const mountedRef = useRef(true)
+
+  const selectBucket = useCallback((date: string | null) => {
+    setSelectedBucket(date)
+  }, [])
 
   const isHouseholdActive = ownMember?.status === 'accepted' && partnerMember?.status === 'accepted'
   const isHouseholdView = viewMode === 'household' && isHouseholdActive
@@ -195,6 +212,72 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
     }
   }, [refetch])
 
+  // A clicked bucket only makes sense for the period/view it was clicked
+  // in - changing either clears it instead of silently drilling into a
+  // bucket that no longer matches what's on screen.
+  useEffect(() => {
+    setSelectedBucket(null)
+  }, [periodType, viewMode])
+
+  useEffect(() => {
+    if (!selectedBucket) {
+      setBucketSpendingByCategory([])
+      setBucketRawByCategory({})
+      setHouseholdBucketBreakdown(null)
+      setBucketError(null)
+      setBucketLoading(false)
+      return
+    }
+
+    let cancelled = false
+
+    const loadBucket = async () => {
+      setBucketLoading(true)
+      setBucketError(null)
+
+      const bucketRange = getBucketRange(selectedBucket, periodType)
+
+      if (!householdMemberKey) {
+        const { data: expensesData, error: expensesError } = await getExpensesByCategory(bucketRange, undefined)
+
+        if (cancelled) return
+
+        if (expensesError) {
+          setBucketError(expensesError.message)
+          setBucketSpendingByCategory([])
+          setBucketRawByCategory({})
+        } else {
+          setBucketSpendingByCategory(buildCategorySpending(expensesData?.totals ?? {}, categories))
+          setBucketRawByCategory(expensesData?.raw ?? {})
+        }
+        setHouseholdBucketBreakdown(null)
+        setBucketLoading(false)
+        return
+      }
+
+      const [ownId, partnerId] = householdMemberKey.split(',')
+      const { data, error: bucketFetchError } = await getHouseholdSpendingByCategory(bucketRange, { ownId, partnerId })
+
+      if (cancelled) return
+
+      if (bucketFetchError) {
+        setBucketError(bucketFetchError.message)
+        setHouseholdBucketBreakdown(null)
+      } else {
+        setHouseholdBucketBreakdown(data)
+      }
+      setBucketSpendingByCategory([])
+      setBucketRawByCategory({})
+      setBucketLoading(false)
+    }
+
+    loadBucket()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedBucket, periodType, householdMemberKey, categories])
+
   return {
     stats,
     spendingByCategory,
@@ -209,6 +292,13 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
     isHouseholdView,
     loading,
     error,
+    selectedBucket,
+    selectBucket,
+    bucketSpendingByCategory,
+    bucketRawByCategory,
+    householdBucketBreakdown,
+    bucketLoading,
+    bucketError,
     refetch,
   }
 }

@@ -1,6 +1,7 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAnalytics } from './useAnalytics'
+import { useAnalytics, type AnalyticsViewMode } from './useAnalytics'
+import type { PeriodType } from '@domain/analytics'
 import {
   getHouseholdSpendingByCategory,
   getHouseholdTrendData,
@@ -284,6 +285,133 @@ describe('useAnalytics', () => {
         own: [expect.objectContaining({ category_id: 'c1', currentAmount: 5200 })],
         partner: [expect.objectContaining({ category_id: 'c1', currentAmount: 9500 })],
       })
+    })
+  })
+
+  describe('selected bucket (click-to-drill into Spending by category)', () => {
+    beforeEach(() => {
+      vi.mocked(getMonthlyStats).mockResolvedValue({ data: emptyStats, error: null } as never)
+      vi.mocked(getExpensesByCategory).mockResolvedValue({ data: emptyExpenses, error: null } as never)
+      vi.mocked(getCategories).mockResolvedValue({ data: [foodCategory], error: null } as never)
+      vi.mocked(getTrendData).mockResolvedValue({ data: [], error: null } as never)
+      vi.mocked(getPeriodComparison).mockResolvedValue({ data: emptyComparison, error: null } as never)
+    })
+
+    it("fetches the clicked bucket's own month range for the Mine view", async () => {
+      const { result } = renderHook(() => useAnalytics('month'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      vi.mocked(getExpensesByCategory).mockResolvedValue({
+        data: { totals: { c1: 300 }, raw: { c1: 300 }, reimbursements: {}, savingsCovered: {} },
+        error: null,
+      } as never)
+
+      act(() => {
+        result.current.selectBucket('2026-09-01')
+      })
+
+      await waitFor(() => expect(result.current.selectedBucket).toBe('2026-09-01'))
+      expect(getExpensesByCategory).toHaveBeenLastCalledWith({ start: '2026-09-01', end: '2026-09-30' }, undefined)
+      await waitFor(() =>
+        expect(result.current.bucketSpendingByCategory).toEqual([
+          { category_id: 'c1', name: 'Food', icon: null, color: '#2563eb', translationKey: null, amount: 300, percentage: 100 },
+        ])
+      )
+      expect(result.current.bucketRawByCategory).toEqual({ c1: 300 })
+    })
+
+    it('fetches the clicked bucket via the shared household-attributed query for the Household view', async () => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+      vi.mocked(getHouseholdSpendingByCategory).mockResolvedValue({
+        data: { own: [], partner: [], ownRaw: {}, partnerRaw: {} },
+        error: null,
+      } as never)
+      vi.mocked(getHouseholdTrendData).mockResolvedValue({ data: [], error: null } as never)
+
+      const { result } = renderHook(() => useAnalytics('month', 'household'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      const bucketResult = {
+        own: [{ category_id: 'c1', name: 'Housing', icon: null, color: null, translationKey: null, amount: 5200, percentage: 100 }],
+        partner: [],
+        ownRaw: { c1: 5200 },
+        partnerRaw: {},
+      }
+      vi.mocked(getHouseholdSpendingByCategory).mockResolvedValue({ data: bucketResult, error: null } as never)
+
+      act(() => {
+        result.current.selectBucket('2026-09-01')
+      })
+
+      await waitFor(() =>
+        expect(getHouseholdSpendingByCategory).toHaveBeenLastCalledWith(
+          { start: '2026-09-01', end: '2026-09-30' },
+          { ownId: 'u1', partnerId: 'u2' }
+        )
+      )
+      await waitFor(() => expect(result.current.householdBucketBreakdown).toEqual(bucketResult))
+    })
+
+    it('clears the bucket and its data when selectBucket(null) is called', async () => {
+      const { result } = renderHook(() => useAnalytics('month'))
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      vi.mocked(getExpensesByCategory).mockResolvedValue({
+        data: { totals: { c1: 10 }, raw: { c1: 10 }, reimbursements: {}, savingsCovered: {} },
+        error: null,
+      } as never)
+
+      act(() => {
+        result.current.selectBucket('2026-09-01')
+      })
+      await waitFor(() => expect(result.current.bucketSpendingByCategory.length).toBeGreaterThan(0))
+
+      act(() => {
+        result.current.selectBucket(null)
+      })
+
+      await waitFor(() => expect(result.current.selectedBucket).toBeNull())
+      expect(result.current.bucketSpendingByCategory).toEqual([])
+    })
+
+    it('auto-clears the selected bucket when periodType changes, so it never outlives its period', async () => {
+      const { result, rerender } = renderHook(({ periodType }: { periodType: PeriodType }) => useAnalytics(periodType), {
+        initialProps: { periodType: 'month' },
+      })
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      act(() => {
+        result.current.selectBucket('2026-09-01')
+      })
+      await waitFor(() => expect(result.current.selectedBucket).toBe('2026-09-01'))
+
+      rerender({ periodType: 'year' })
+
+      await waitFor(() => expect(result.current.selectedBucket).toBeNull())
+    })
+
+    it('auto-clears the selected bucket when viewMode changes', async () => {
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+      vi.mocked(getHouseholdSpendingByCategory).mockResolvedValue({
+        data: { own: [], partner: [], ownRaw: {}, partnerRaw: {} },
+        error: null,
+      } as never)
+      vi.mocked(getHouseholdTrendData).mockResolvedValue({ data: [], error: null } as never)
+
+      const { result, rerender } = renderHook(
+        ({ viewMode }: { viewMode: AnalyticsViewMode }) => useAnalytics('month', viewMode),
+        { initialProps: { viewMode: 'mine' } }
+      )
+      await waitFor(() => expect(result.current.loading).toBe(false))
+
+      act(() => {
+        result.current.selectBucket('2026-09-01')
+      })
+      await waitFor(() => expect(result.current.selectedBucket).toBe('2026-09-01'))
+
+      rerender({ viewMode: 'household' })
+
+      await waitFor(() => expect(result.current.selectedBucket).toBeNull())
     })
   })
 })
