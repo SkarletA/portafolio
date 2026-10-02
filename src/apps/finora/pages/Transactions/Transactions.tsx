@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { X } from 'lucide-react'
 import cn from 'clsx'
 import { useTransactions } from '@hooks/useTransactions'
 import { useCategories } from '@hooks/useCategories'
@@ -9,8 +10,9 @@ import { AsyncState } from '@molecules/AsyncState/AsyncState'
 import { Button } from '@atoms/Button/Button'
 import { Icon } from '@atoms/Icon/Icon'
 import { Select } from '@atoms/Select/Select'
-import { PAYMENT_METHODS } from '@domain/transaction'
+import { getAvailableMonths, PAYMENT_METHODS } from '@domain/transaction'
 import { getCategoryDisplayName } from '@domain/category'
+import { getPeriodRange } from '@domain/analytics'
 import { summarizeRefundsByPurchase } from '@domain/refund'
 import type { TransactionWithCategory } from '@services/transactionsService'
 import { useAuth } from '@context/AuthContext'
@@ -18,6 +20,16 @@ import { useHousehold } from '@context/HouseholdContext'
 import s from './Transactions.module.css'
 
 const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({ value: method, label: method }))
+
+// Hardcoded 'en-US' like TransactionItem's own date formatting - a formatted
+// date value, not static UI copy, so it's outside the t() rule (see
+// CLAUDE.md's UI Language section).
+const monthOptionFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+
+function formatMonthOptionLabel(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number)
+  return monthOptionFormatter.format(new Date(Date.UTC(year, monthNumber - 1, 1)))
+}
 
 type OwnerTab = 'mine' | 'household'
 
@@ -32,6 +44,7 @@ export function Transactions() {
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('')
+  const [monthFilter, setMonthFilter] = useState('')
   const [ownerTab, setOwnerTab] = useState<OwnerTab>('mine')
 
   // Both sides accepted (ADR-007), same condition useTransactions uses to
@@ -55,6 +68,14 @@ export function Transactions() {
     setPaymentMethod(nextPaymentMethod)
   }, [])
 
+  const handleMonthFilterChange = useCallback((nextMonth: string) => {
+    setMonthFilter(nextMonth)
+  }, [])
+
+  const handleClearMonthFilter = useCallback(() => {
+    setMonthFilter('')
+  }, [])
+
   const handleOwnerTabClick = useCallback((event: MouseEvent<HTMLButtonElement>) => {
     const nextTab = event.currentTarget.dataset.tab as OwnerTab | undefined
     if (nextTab) setOwnerTab(nextTab)
@@ -64,6 +85,23 @@ export function Transactions() {
     () => categories.map((category) => ({ value: category.id, label: getCategoryDisplayName(category, t) })),
     [categories, t]
   )
+
+  // Every month that actually has a transaction, across the full unfiltered,
+  // untabbed history - stable regardless of which owner tab is active, so
+  // switching tabs never changes what's offered here. A month with no rows in
+  // the current tab just falls through to the existing "no matches" empty state.
+  const monthOptions = useMemo(
+    () => getAvailableMonths(transactions).map((month) => ({ value: month, label: formatMonthOptionLabel(month) })),
+    [transactions]
+  )
+
+  // getPeriodRange (domain/analytics.ts) - the same month-range math Analytics
+  // and Budgets already use, reused here rather than a new one-off calculation.
+  const monthRange = useMemo(() => {
+    if (!monthFilter) return null
+    const [year, monthNumber] = monthFilter.split('-').map(Number)
+    return getPeriodRange('month', new Date(Date.UTC(year, monthNumber - 1, 1))).current
+  }, [monthFilter])
 
   // "Household" is every expense explicitly tagged as the household's - a
   // split (transaction.is_shared, ADR-009) or a household-tagged expense
@@ -94,9 +132,12 @@ export function Transactions() {
       if (paymentMethod && !transaction.payments.some((payment) => payment.payment_method === paymentMethod)) {
         return false
       }
+      if (monthRange && (transaction.date < monthRange.start || transaction.date > monthRange.end)) {
+        return false
+      }
       return true
     })
-  }, [ownerTransactions, search, categoryId, paymentMethod])
+  }, [ownerTransactions, search, categoryId, paymentMethod, monthRange])
 
   // Both computed from the full, unfiltered, untabbed list (ADR-006), so a
   // search, filter or owner tab never hides a purchase's refund count or a
@@ -183,6 +224,25 @@ export function Transactions() {
           placeholder={t('transactions:filters.allPaymentMethods')}
           testId="transactions-payment-method-select"
         />
+        <Select
+          ariaLabel={t('transactions:filters.monthAriaLabel')}
+          options={monthOptions}
+          value={monthFilter}
+          onChange={handleMonthFilterChange}
+          placeholder={t('transactions:filters.allMonths')}
+          testId="transactions-month-select"
+        />
+        {monthFilter && (
+          <button
+            type="button"
+            onClick={handleClearMonthFilter}
+            className={s.clearMonthButton}
+            data-testid="transactions-clear-month-button"
+          >
+            <X className={s.clearMonthIcon} aria-hidden="true" />
+            {t('transactions:filters.clearMonth')}
+          </button>
+        )}
       </div>
 
       <div className={s.card}>

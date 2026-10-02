@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '@domain/transaction'
 import { getHouseholdAttributedAmount } from '@domain/transaction'
+import type { DateRange } from '@domain/analytics'
 import type { Category } from '@domain/category'
 import {
   getGrossSpendByCategory,
@@ -30,7 +31,12 @@ const TRANSACTION_SELECT =
 // rows instead of only the caller's own; RLS already allows this, this is
 // only the client choosing to ask for more than itself. Omitted or empty,
 // behaves exactly as before.
-export async function getTransactions(householdMemberIds?: string[]) {
+// range: optional, same shape getExpensesByCategory already takes - omitted,
+// behaves exactly as before (the full history). Filters on `date` directly,
+// unlike getExpensesByCategory's last_installment_date widening: this is the
+// ledger's own list of rows, not an installment-expanded spend total, so a
+// financed purchase is placed by the date it was actually recorded.
+export async function getTransactions(householdMemberIds?: string[], range?: DateRange) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
@@ -38,11 +44,13 @@ export async function getTransactions(householdMemberIds?: string[]) {
 
   const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
 
-  return supabase
-    .from('transactions')
-    .select(TRANSACTION_SELECT)
-    .in('user_id', userIds)
-    .order('date', { ascending: false })
+  let query = supabase.from('transactions').select(TRANSACTION_SELECT).in('user_id', userIds)
+
+  if (range) {
+    query = query.gte('date', range.start).lte('date', range.end)
+  }
+
+  return query.order('date', { ascending: false })
 }
 
 export async function getTransactionById(id: string) {

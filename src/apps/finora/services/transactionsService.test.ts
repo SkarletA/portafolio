@@ -29,6 +29,8 @@ function query(table: string) {
     eq: (...args: [string, unknown]) => (call.filters.push(['eq', ...args]), builder),
     in: (...args: [string, unknown]) => (call.filters.push(['in', ...args]), builder),
     not: (...args: [string, string, unknown]) => (call.filters.push(['not', ...args]), builder),
+    gte: (...args: [string, unknown]) => (call.filters.push(['gte', ...args]), builder),
+    lte: (...args: [string, unknown]) => (call.filters.push(['lte', ...args]), builder),
     order: () => builder,
     then: (resolve: (value: unknown) => void) => {
       calls.push(call)
@@ -79,6 +81,20 @@ describe('getTransactions', () => {
     await getTransactions(['u1', 'u2'])
 
     expect(calls[0].filters).toContainEqual(['in', 'user_id', ['u1', 'u2']])
+  })
+
+  it('adds no date filter when no range is given - the full history', async () => {
+    await getTransactions()
+
+    expect(calls[0].filters).not.toContainEqual(['gte', 'date', expect.anything()])
+    expect(calls[0].filters).not.toContainEqual(['lte', 'date', expect.anything()])
+  })
+
+  it('filters by date when a range is given', async () => {
+    await getTransactions(undefined, { start: '2026-09-01', end: '2026-09-30' })
+
+    expect(calls[0].filters).toContainEqual(['gte', 'date', '2026-09-01'])
+    expect(calls[0].filters).toContainEqual(['lte', 'date', '2026-09-30'])
   })
 })
 
