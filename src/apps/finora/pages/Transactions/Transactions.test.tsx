@@ -141,6 +141,150 @@ describe('Transactions', () => {
     expect(navigateMock).toHaveBeenCalledWith('/finora/add-transaction')
   })
 
+  describe('month filter', () => {
+    const augustRent = transaction({
+      id: 't7',
+      description: 'August rent',
+      date: '2026-08-01',
+      category_id: 'c2',
+      category: CATEGORY_TRANSPORT,
+      payments: [{ id: 'p7', transaction_id: 't7', payment_method: 'Cash', amount: 500 }],
+    })
+
+    it('shows only the selected month\'s transactions', () => {
+      vi.mocked(useTransactions).mockReturnValue({
+        transactions: [...TRANSACTIONS, augustRent],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('transactions-month-select-trigger'))
+      fireEvent.click(screen.getByTestId('transactions-month-select-option-2026-08'))
+
+      expect(screen.getByText('August rent')).toBeInTheDocument()
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+      expect(screen.queryByText('Uber ride')).not.toBeInTheDocument()
+    })
+
+    it('offers only months that actually have a transaction', () => {
+      vi.mocked(useTransactions).mockReturnValue({
+        transactions: [...TRANSACTIONS, augustRent],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('transactions-month-select-trigger'))
+      expect(screen.getByTestId('transactions-month-select-option-2026-08')).toBeInTheDocument()
+      expect(screen.getByTestId('transactions-month-select-option-2026-09')).toBeInTheDocument()
+      expect(screen.queryByTestId('transactions-month-select-option-2026-07')).not.toBeInTheDocument()
+    })
+
+    it('combines the month filter with category (AND, not OR)', () => {
+      vi.mocked(useTransactions).mockReturnValue({
+        transactions: [...TRANSACTIONS, augustRent],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('transactions-month-select-trigger'))
+      fireEvent.click(screen.getByTestId('transactions-month-select-option-2026-09'))
+      fireEvent.click(screen.getByTestId('transactions-category-select-trigger'))
+      fireEvent.click(screen.getByTestId('transactions-category-select-option-c2'))
+
+      // September has Uber ride (Transport) but not August rent (also
+      // Transport, wrong month) - the two filters narrow together, neither
+      // one on its own.
+      expect(screen.getByText('Uber ride')).toBeInTheDocument()
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+      expect(screen.queryByText('August rent')).not.toBeInTheDocument()
+    })
+
+    it('shows the no-matches empty state when the month and another filter leave nothing', () => {
+      vi.mocked(useTransactions).mockReturnValue({
+        transactions: [...TRANSACTIONS, augustRent],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('transactions-month-select-trigger'))
+      fireEvent.click(screen.getByTestId('transactions-month-select-option-2026-08'))
+      fireEvent.click(screen.getByTestId('transactions-category-select-trigger'))
+      fireEvent.click(screen.getByTestId('transactions-category-select-option-c1'))
+
+      // August only has the Transport rent - nothing Food (c1) that month.
+      expect(screen.getByText('transactions:list.noMatches')).toBeInTheDocument()
+    })
+
+    it('shows a clear button only while a month is selected, and resets the list when clicked', () => {
+      vi.mocked(useTransactions).mockReturnValue({
+        transactions: [...TRANSACTIONS, augustRent],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      renderPage()
+
+      expect(screen.queryByTestId('transactions-clear-month-button')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('transactions-month-select-trigger'))
+      fireEvent.click(screen.getByTestId('transactions-month-select-option-2026-08'))
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('transactions-clear-month-button'))
+
+      expect(screen.queryByTestId('transactions-clear-month-button')).not.toBeInTheDocument()
+      expect(screen.getByText('Starbucks')).toBeInTheDocument()
+      expect(screen.getByText('August rent')).toBeInTheDocument()
+    })
+
+    it('applies the same month filter on the household tab', () => {
+      const householdAugust = transaction({
+        id: 't8',
+        user_id: 'u2',
+        description: 'August shared gas',
+        date: '2026-08-15',
+        is_shared: true,
+        shares: [
+          { id: 's5', transaction_id: 't8', user_id: 'u1', amount: 20 },
+          { id: 's6', transaction_id: 't8', user_id: 'u2', amount: 20 },
+        ],
+      })
+      const householdSeptember = transaction({
+        id: 't9',
+        user_id: 'u2',
+        description: 'September shared gas',
+        is_shared: true,
+        shares: [
+          { id: 's7', transaction_id: 't9', user_id: 'u1', amount: 20 },
+          { id: 's8', transaction_id: 't9', user_id: 'u2', amount: 20 },
+        ],
+      })
+      vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
+      vi.mocked(useTransactions).mockReturnValue({
+        transactions: [...TRANSACTIONS, householdAugust, householdSeptember],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      renderPage()
+
+      fireEvent.click(screen.getByTestId('transactions-tab-household-button'))
+      fireEvent.click(screen.getByTestId('transactions-month-select-trigger'))
+      fireEvent.click(screen.getByTestId('transactions-month-select-option-2026-08'))
+
+      expect(screen.getByText('August shared gas')).toBeInTheDocument()
+      expect(screen.queryByText('September shared gas')).not.toBeInTheDocument()
+    })
+  })
+
   describe('owner tabs', () => {
     // A shared expense the signed-in user registered themselves - the exact
     // bug this filter fix covers: it must show on BOTH tabs, not get hidden

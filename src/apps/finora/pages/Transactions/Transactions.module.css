@@ -48,6 +48,14 @@
   @apply h-4 w-4 shrink-0 text-finora-ink-muted;
 }
 
+.clearMonthButton {
+  @apply flex shrink-0 items-center gap-1 rounded-md border border-finora-border px-2 py-1 text-xs font-medium text-finora-ink-muted;
+}
+
+.clearMonthIcon {
+  @apply h-3.5 w-3.5;
+}
+
 .card {
   @apply rounded-xl border border-finora-border bg-finora-surface px-2 py-1 shadow-sm sm:px-5;
 }

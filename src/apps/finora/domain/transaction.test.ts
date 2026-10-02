@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getHouseholdAttributedAmount, getPrimaryPaymentMethod } from './transaction'
+import { getAvailableMonths, getHouseholdAttributedAmount, getPrimaryPaymentMethod } from './transaction'
 
 describe('getPrimaryPaymentMethod', () => {
   it('returns an empty string when there are no payments', () => {
@@ -78,5 +78,23 @@ describe('getHouseholdAttributedAmount', () => {
     }
 
     expect(getHouseholdAttributedAmount(transaction, 'partner')).toBe(0)
+  })
+})
+
+describe('getAvailableMonths', () => {
+  it('returns an empty list with no transactions', () => {
+    expect(getAvailableMonths([])).toEqual([])
+  })
+
+  it('returns each distinct year-month, newest first', () => {
+    const transactions = [{ date: '2026-08-05' }, { date: '2026-09-01' }, { date: '2026-08-20' }]
+
+    expect(getAvailableMonths(transactions)).toEqual(['2026-09', '2026-08'])
+  })
+
+  it('does not repeat a month with more than one transaction in it', () => {
+    const transactions = [{ date: '2026-09-01' }, { date: '2026-09-28' }]
+
+    expect(getAvailableMonths(transactions)).toEqual(['2026-09'])
   })
 })

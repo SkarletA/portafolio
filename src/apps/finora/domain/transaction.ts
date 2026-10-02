@@ -99,3 +99,13 @@ export function getHouseholdAttributedAmount(
   }
   return 0
 }
+
+/**
+ * Every distinct year-month (`YYYY-MM`) with at least one transaction,
+ * newest first - the Transactions page's month filter options, so it only
+ * ever offers a month that actually has something to show.
+ */
+export function getAvailableMonths(transactions: Pick<Transaction, 'date'>[]): string[] {
+  const months = new Set(transactions.map((transaction) => transaction.date.slice(0, 7)))
+  return [...months].sort().reverse()
+}
