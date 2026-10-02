@@ -19,7 +19,10 @@
     "contributionYou": "You {{amount}}",
     "contributionOther": "{{name}} {{amount}}",
     "percentageLabel": "{{percent}}% of available limit",
-    "progressAriaLabel": "{{category}} budget: {{status}}"
+    "progressAriaLabel": "{{category}} budget: {{status}}",
+    "editAriaLabel": "Edit {{category}} budget",
+    "deleteAriaLabel": "Delete {{category}} budget",
+    "confirmDelete": "Delete the {{category}} budget?"
   },
   "breakdown": {
     "hide": "Hide breakdown",
@@ -36,6 +39,11 @@
     "allCategoriesBudgeted": "All your categories already have a budget.",
     "monthlyLimit": "Monthly limit",
     "saveBudget": "Save budget",
+    "editTitle": "Edit budget",
+    "saveChanges": "Save changes",
+    "loadingBudget": "Loading budget…",
+    "loadError": "We couldn't load this budget. Please try again later.",
+    "notFound": "We couldn't find this budget.",
     "backToBudgets": "Back to budgets",
     "householdBudget": "Is this a household budget?",
     "householdBudgetHint": "Both of you contribute toward this budget's single limit - only what each of you explicitly tags as shared or household counts.",

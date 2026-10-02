@@ -1,5 +1,5 @@
 import { authHandlers, signInMockUser } from '@storybook-mocks/supabaseAuth'
-import { restHandler } from '@storybook-mocks/supabaseRest'
+import { restHandler, rpcHandler } from '@storybook-mocks/supabaseRest'
 import { CATEGORIES, TRANSACTIONS, BUDGETS } from '@storybook-mocks/fixtures'
 import { AddBudget } from './AddBudget'
 
@@ -11,6 +11,7 @@ const ADD_BUDGET_HANDLERS = [
   // household_members empty -> useHousehold resolves to "no household", so
   // the household-budget toggle stays disabled, same as AddTransaction.stories.tsx.
   restHandler('household_members', []),
+  rpcHandler('get_household_partner', null),
 ]
 
 export default {
@@ -20,7 +21,7 @@ export default {
     docs: {
       description: {
         component:
-          'The new-budget form: a category picker (already-budgeted categories filtered out via useCategories + useBudgets) and a monthly limit input, mocked here through MSW.',
+          'The new/edit-budget form: a category picker (already-budgeted categories filtered out via useCategories + useBudgets) and a monthly limit input, mocked here through MSW. Only mode="create" is demoed here - edit mode loads an existing budget by id via useBudgets + react-router params, which needs its own routed mocking pass (same deferral as AddGoal.stories.tsx).',
       },
     },
     msw: { handlers: ADD_BUDGET_HANDLERS },
@@ -28,4 +29,6 @@ export default {
   loaders: [signInMockUser],
 }
 
-export const Default = {}
+export const Create = {
+  args: { mode: 'create' },
+}

@@ -2,12 +2,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AddBudget } from './AddBudget'
-import { createBudget } from '@services/budgetsService'
+import { createBudget, updateBudget } from '@services/budgetsService'
 import { useAuth } from '@context/AuthContext'
 import { useHousehold } from '@context/HouseholdContext'
 import { useBudgets } from '@hooks/useBudgets'
 
-vi.mock('@services/budgetsService', () => ({ createBudget: vi.fn() }))
+vi.mock('@services/budgetsService', () => ({ createBudget: vi.fn(), updateBudget: vi.fn() }))
 const categories = [{ id: 'c1', name: 'Food', icon: null, color: null, parent_id: null, translationKey: null }]
 
 vi.mock('@hooks/useCategories', () => ({
@@ -32,7 +32,18 @@ function renderPage() {
   render(
     <MemoryRouter initialEntries={['/finora/add-budget']}>
       <Routes>
-        <Route path="/finora/add-budget" element={<AddBudget />} />
+        <Route path="/finora/add-budget" element={<AddBudget mode="create" />} />
+        <Route path="/finora/budgets" element={<p>budgets list</p>} />
+      </Routes>
+    </MemoryRouter>
+  )
+}
+
+function renderEdit(id = 'b1') {
+  render(
+    <MemoryRouter initialEntries={[`/finora/budgets/${id}/edit`]}>
+      <Routes>
+        <Route path="/finora/budgets/:id/edit" element={<AddBudget mode="edit" />} />
         <Route path="/finora/budgets" element={<p>budgets list</p>} />
       </Routes>
     </MemoryRouter>
@@ -46,6 +57,7 @@ function fillLimit(value: string) {
 describe('AddBudget', () => {
   beforeEach(() => {
     vi.mocked(createBudget).mockReset()
+    vi.mocked(updateBudget).mockReset()
     vi.mocked(useBudgets).mockReturnValue({ budgets: [], loading: false, error: null, refetch: vi.fn() } as never)
     vi.mocked(useAuth).mockReturnValue({ user: { id: 'u1', email: null } } as never)
     vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
@@ -156,5 +168,100 @@ describe('AddBudget', () => {
     await waitFor(() =>
       expect(createBudget).toHaveBeenCalledWith({ category_id: 'c1', monthly_limit: 100, is_household: false })
     )
+  })
+
+  const existingBudget = {
+    id: 'b1',
+    user_id: 'u1',
+    category_id: 'c1',
+    monthly_limit: 300,
+    is_household: false,
+    created_at: null,
+    category: { id: 'c1', name: 'Food', icon: null, color: null, translationKey: null },
+    spent: 0,
+    effectiveLimit: 300,
+    coveredBySavings: 0,
+    percentage: 0,
+    status: 'on-track',
+    breakdown: [],
+  }
+
+  describe('edit mode', () => {
+    it('shows a loading state while the budget is loading', () => {
+      vi.mocked(useBudgets).mockReturnValue({ budgets: [], loading: true, error: null, refetch: vi.fn() } as never)
+      renderEdit()
+
+      expect(screen.getByText('form.loadingBudget')).toBeInTheDocument()
+    })
+
+    it('shows a not-found message for an id that is not in my budgets', () => {
+      vi.mocked(useBudgets).mockReturnValue({ budgets: [], loading: false, error: null, refetch: vi.fn() } as never)
+      renderEdit('missing')
+
+      expect(screen.getByRole('alert')).toHaveTextContent('form.notFound')
+      expect(screen.queryByTestId('edit-budget-monthly-limit-input')).not.toBeInTheDocument()
+    })
+
+    it('shows the same not-found message for a household budget that belongs to my partner, not me', () => {
+      vi.mocked(useBudgets).mockReturnValue({
+        budgets: [{ ...existingBudget, id: 'b1', user_id: 'u2', is_household: true }],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as never)
+      renderEdit('b1')
+
+      expect(screen.getByRole('alert')).toHaveTextContent('form.notFound')
+      expect(screen.queryByTestId('edit-budget-monthly-limit-input')).not.toBeInTheDocument()
+    })
+
+    it('prefills the category, limit and household toggle from the existing budget', () => {
+      vi.mocked(useBudgets).mockReturnValue({
+        budgets: [{ ...existingBudget, is_household: true }],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as never)
+      vi.mocked(useHousehold).mockReturnValue({ partnerMember: acceptedPartnerMember, partner: acceptedPartner } as never)
+      renderEdit('b1')
+
+      expect(screen.getByText('budgets:form.editTitle')).toBeInTheDocument()
+      expect(screen.getByTestId('edit-budget-monthly-limit-input')).toHaveValue(300)
+      expect(screen.getByTestId('edit-budget-household-checkbox')).toBeChecked()
+      expect(screen.getByTestId('edit-budget-save-button')).toHaveTextContent('budgets:form.saveChanges')
+    })
+
+    it('submits an edit as an update, keyed by the budget id, and returns to the budgets list', async () => {
+      vi.mocked(useBudgets).mockReturnValue({
+        budgets: [existingBudget],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as never)
+      vi.mocked(updateBudget).mockResolvedValue({ error: null } as never)
+      renderEdit('b1')
+
+      fireEvent.change(screen.getByTestId('edit-budget-monthly-limit-input'), { target: { value: '450' } })
+      fireEvent.click(screen.getByTestId('edit-budget-save-button'))
+
+      await waitFor(() =>
+        expect(updateBudget).toHaveBeenCalledWith('b1', { category_id: 'c1', monthly_limit: 450, is_household: false })
+      )
+      expect(createBudget).not.toHaveBeenCalled()
+      expect(await screen.findByText('budgets list')).toBeInTheDocument()
+    })
+
+    it("does not block the budget's own category as already budgeted against itself", () => {
+      vi.mocked(useBudgets).mockReturnValue({
+        budgets: [existingBudget],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as never)
+      renderEdit('b1')
+
+      expect(screen.queryByTestId('edit-budget-monthly-limit-input')).toBeEnabled()
+      expect(screen.getByTestId('edit-budget-save-button')).not.toBeDisabled()
+    })
   })
 })

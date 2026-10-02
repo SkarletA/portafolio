@@ -53,3 +53,18 @@ export async function createBudget(data: NewBudgetInput) {
     .select()
     .single()
 }
+
+export type EditableBudgetInput = NewBudgetInput
+
+// No cross-row invariant to protect here (unlike goals/goal_transfers), so a
+// direct update against the table is enough - the "Users update their own
+// budgets" RLS policy (auth.uid() = user_id, household_foundations.sql)
+// already rejects anyone but the owner.
+export function updateBudget(id: string, data: EditableBudgetInput) {
+  return supabase.from('budgets').update(data).eq('id', id).select().single()
+}
+
+// Same owner-only enforcement via the "Users delete their own budgets" RLS policy.
+export function deleteBudget(id: string) {
+  return supabase.from('budgets').delete().eq('id', id)
+}

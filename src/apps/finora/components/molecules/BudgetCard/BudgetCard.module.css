@@ -48,8 +48,48 @@
   @apply mt-1 flex flex-wrap gap-1.5;
 }
 
+.headerEnd {
+  @apply flex shrink-0 flex-col items-end gap-1;
+}
+
 .statusBadge {
   @apply inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+}
+
+.actions {
+  @apply flex items-center gap-1;
+}
+
+.actionIcon {
+  @apply flex h-7 w-7 items-center justify-center rounded-md text-finora-ink-muted transition-colors hover:bg-finora-surface-muted hover:text-finora-ink;
+}
+
+.actionIconGlyph {
+  @apply h-4 w-4;
+}
+
+.deleteConfirmCard {
+  @apply flex flex-wrap items-center gap-3 text-sm;
+}
+
+.deleteConfirmText {
+  @apply flex-1 font-medium text-finora-ink;
+}
+
+.deleteConfirmActions {
+  @apply flex gap-2;
+}
+
+.deleteConfirmButton {
+  @apply rounded-lg bg-finora-danger px-3 py-1.5 text-xs font-semibold text-white;
+}
+
+.deleteCancelButton {
+  @apply rounded-lg border border-finora-border px-3 py-1.5 text-xs font-semibold text-finora-ink-muted;
+}
+
+.error {
+  @apply w-full text-xs text-finora-danger;
 }
 
 .statusOnTrack {
