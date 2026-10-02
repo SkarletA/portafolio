@@ -1,5 +1,5 @@
 import { authHandlers, MOCK_USER_ID, signInMockUser } from '@storybook-mocks/supabaseAuth'
-import { restHandler } from '@storybook-mocks/supabaseRest'
+import { restHandler, rpcHandler } from '@storybook-mocks/supabaseRest'
 import { CATEGORIES, TRANSACTIONS } from '@storybook-mocks/fixtures'
 import { Transactions } from './Transactions'
 
@@ -38,8 +38,7 @@ const PARTNER_ID = '00000000-0000-4000-8000-000000000002'
 // caller and one owned by PARTNER_ID here, so both must appear - and never a
 // non-shared row, like the caller's own "Rent" (t2) or the partner's
 // "Groceries". The partner's name in the split chips comes from
-// get_household_partner (ADR-008), which still has no MSW mock (see
-// AppShell.stories.tsx's note), so it renders blank here.
+// get_household_partner (ADR-008), mocked below via rpcHandler.
 export const WithHousehold = {
   parameters: {
     msw: {
@@ -77,6 +76,7 @@ export const WithHousehold = {
           { id: 'm1', household_id: 'h1', user_id: MOCK_USER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
           { id: 'm2', household_id: 'h1', user_id: PARTNER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
         ]),
+        rpcHandler('get_household_partner', { user_id: PARTNER_ID, first_name: 'Maribel', last_name: 'Prueba', avatar_url: null }),
       ],
     },
   },

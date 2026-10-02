@@ -13,3 +13,11 @@ export function restHandler(table: string, rows: Record<string, unknown>[]) {
 export function restSingleHandler(table: string, row: Record<string, unknown>) {
   return http.get(`${SUPABASE_URL}/rest/v1/${table}`, () => HttpResponse.json(row))
 }
+
+// A PostgREST RPC (POST /rest/v1/rpc/<fn>), ignoring the call's own
+// arguments. `row` matches a `.single()`/`.maybeSingle()` caller - the row
+// itself (or `null` for no match, e.g. get_household_partner with no
+// partner yet) rather than an array.
+export function rpcHandler(fn: string, row: Record<string, unknown> | null) {
+  return http.post(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, () => HttpResponse.json(row))
+}
