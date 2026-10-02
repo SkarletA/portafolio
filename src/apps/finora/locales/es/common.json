@@ -49,5 +49,10 @@
   },
   "localeBadge": {
     "ariaLabel": "Idioma {{language}}, moneda {{currency}}. Ir a configuración."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o fue movida.",
+    "backButton": "Volver a Finora"
   }
 }
