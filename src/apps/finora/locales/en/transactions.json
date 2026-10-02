@@ -40,7 +40,6 @@
     "installmentsSummary": "{{count}} monthly payments of {{amount}}",
     "installmentsCount": "{{count}} monthly payments",
     "coveredBySavings": "Covered by savings",
-    "coveredBySavingsFrom": "Covered by savings from {{goal}}",
     "refundOf": "Refund of {{description}}",
     "refundReturnedToGoal": "Returned to savings",
     "refundReturnedToGoalFrom": "Returned to {{goal}}",
@@ -52,7 +51,10 @@
     "you": "You",
     "chipYou": "You {{amount}}",
     "chipOther": "{{name}} {{amount}}",
-    "householdExpenseTag": "Household expense"
+    "householdExpenseTag": "Counts toward household · not split",
+    "chips": {
+      "coveredBySavings": "Covered by savings · {{goal}}"
+    }
   },
   "form": {
     "addTitle": "Add transaction",

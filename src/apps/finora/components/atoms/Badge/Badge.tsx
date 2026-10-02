@@ -8,12 +8,14 @@ interface BadgeProps {
   /**
    * `success` for a positive status, `neutral` for a plain informational tag,
    * `shared` for a household expense split's per-person amount
-   * (docs/adr/009-shared-expense-split.md).
+   * (docs/adr/009-shared-expense-split.md), `context` for a single-line
+   * informational tag with no money split (TransactionItem's gray chips -
+   * see the comment above its CONTEXT_CHIP section for the blue/gray rule).
    */
-  variant?: 'success' | 'neutral' | 'shared'
+  variant?: 'success' | 'neutral' | 'shared' | 'context'
 }
 
-const VARIANT_CLASS = { success: 'success', neutral: 'neutral', shared: 'shared' } as const
+const VARIANT_CLASS = { success: 'success', neutral: 'neutral', shared: 'shared', context: 'context' } as const
 
 /** A small pill-shaped status label. */
 export function Badge({ children, variant = 'neutral' }: BadgeProps) {

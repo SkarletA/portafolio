@@ -32,6 +32,18 @@
   @apply mt-1 flex flex-wrap gap-1.5;
 }
 
+.contextChips {
+  @apply mt-1 flex flex-wrap items-center gap-1.5;
+}
+
+.contextChipButton {
+  @apply rounded-full border-0 bg-transparent p-0 text-left transition-opacity hover:opacity-80;
+}
+
+.contextChipIcon {
+  @apply h-3 w-3 shrink-0;
+}
+
 .date {
   @apply hidden text-sm text-finora-ink-muted sm:block;
 }

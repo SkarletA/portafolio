@@ -10,14 +10,16 @@ vi.mock('react-router-dom', async () => {
 })
 vi.mock('@hooks/useGoals', () => ({ useGoals: vi.fn() }))
 vi.mock('@molecules/GoalCard/GoalCard', () => ({
-  GoalCard: ({ goal }: { goal: { id: string } }) => <div data-testid={`mock-goal-card-${goal.id}`} />,
+  GoalCard: ({ goal, initiallyOpen }: { goal: { id: string }; initiallyOpen?: boolean }) => (
+    <div data-testid={`mock-goal-card-${goal.id}`} data-initially-open={initiallyOpen} />
+  ),
 }))
 
 const EMPTY_GOALS = { goals: [], loading: false, error: null, refetch: vi.fn() }
 
-function renderPage() {
+function renderPage(initialEntry = '/finora/goals') {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Goals />
     </MemoryRouter>
   )
@@ -76,5 +78,15 @@ describe('Goals', () => {
 
     expect(screen.getByTestId('mock-goal-card-g1')).toBeInTheDocument()
     expect(screen.getByTestId('mock-goal-card-g2')).toBeInTheDocument()
+  })
+
+  it('opens only the goal named in an ?activity= query param - arriving from a transaction\'s savings chip', () => {
+    const goals = [{ id: 'g1' }, { id: 'g2' }]
+    vi.mocked(useGoals).mockReturnValue({ ...EMPTY_GOALS, goals } as never)
+
+    renderPage('/finora/goals?activity=g2')
+
+    expect(screen.getByTestId('mock-goal-card-g1')).toHaveAttribute('data-initially-open', 'false')
+    expect(screen.getByTestId('mock-goal-card-g2')).toHaveAttribute('data-initially-open', 'true')
   })
 })

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { PiggyBank, Undo2, Users } from 'lucide-react'
 import cn from 'clsx'
 import type { TransactionWithCategory } from '@services/transactionsService'
 import { deleteTransaction } from '@services/transactionsService'
@@ -83,10 +84,12 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
   // (ADR-006); "covered by savings" only describes an expense's own funding.
   const isSavingsFunded = transaction.type === 'expense' && transaction.funding_source === 'savings'
   const savingsGoalName = transaction.goal_transfer?.goal?.name ?? null
-  const savingsLabel = !isSavingsFunded
+  const savingsGoalId = transaction.goal_transfer?.goal_id ?? null
+  // Chip text, not the old meta-line label - see the CONTEXT_CHIP block below.
+  const savingsChipLabel = !isSavingsFunded
     ? null
     : savingsGoalName
-      ? t('item.coveredBySavingsFrom', { goal: savingsGoalName })
+      ? t('item.chips.coveredBySavings', { goal: savingsGoalName })
       : t('item.coveredBySavings')
 
   // A reimbursement linked to a purchase (ADR-006): its own text, and, when
@@ -120,13 +123,28 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
   const partnerShare = transaction.is_shared ? transaction.shares.find((share) => share.user_id !== user?.id) : null
 
   // Case B (docs/adr/010-household-expense-tag-and-household-budget.md): a
-  // plain text tag, not a chip - there is no split amount to show, only that
-  // this expense counts toward the household.
+  // gray context chip, like refund-of and covered-by-savings below - there is
+  // no split amount to show, only that this expense counts toward the
+  // household. See the CONTEXT_CHIP rule above handleRefundChipClick.
   const householdExpenseLabel = transaction.is_household_expense ? t('item.householdExpenseTag') : null
 
   const handleEditClick = useCallback(() => {
     navigate(`/finora/transactions/${transaction.id}/edit`)
   }, [navigate, transaction.id])
+
+  // CONTEXT_CHIP rule: a blue chip (Badge variant="shared", above) is money
+  // split between people - it always shows two amounts (docs/adr/009). A gray
+  // chip (Badge variant="context", below) is single-line informational
+  // context with no amount breakdown at all - what it's about, not who owes
+  // what. Any future per-row metadata (e.g. "12 monthly payments") follows
+  // this same gray-chip pattern, not a third style.
+  const handleRefundChipClick = useCallback(() => {
+    if (refundedPurchase) navigate(`/finora/transactions/${refundedPurchase.id}/edit`)
+  }, [navigate, refundedPurchase])
+
+  const handleSavingsChipClick = useCallback(() => {
+    if (savingsGoalId) navigate(`/finora/goals?activity=${savingsGoalId}`)
+  }, [navigate, savingsGoalId])
 
   const handleDeleteClick = useCallback(() => {
     setIsConfirmingDelete(true)
@@ -232,11 +250,8 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
             {` · ${paidByLabel}`}
             {paymentMethodsLabel ? ` · ${paymentMethodsLabel}` : ''}
             {installmentsLabel ? ` · ${installmentsLabel}` : ''}
-            {savingsLabel ? ` · ${savingsLabel}` : ''}
-            {refundOfLabel ? ` · ${refundOfLabel}` : ''}
             {refundGoalLabel ? ` · ${refundGoalLabel}` : ''}
             {refundsSummaryLabel ? ` · ${refundsSummaryLabel}` : ''}
-            {householdExpenseLabel ? ` · ${householdExpenseLabel}` : ''}
           </p>
           {transaction.is_shared && myShare && partnerShare && (
             <div className={s.sharedChips}>
@@ -244,6 +259,49 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
               <Badge variant="shared">
                 {t('item.chipOther', { name: partnerName ?? '', amount: formatCurrency(partnerShare.amount, currency, locale) })}
               </Badge>
+            </div>
+          )}
+          {(refundOfLabel || savingsChipLabel || householdExpenseLabel) && (
+            <div className={s.contextChips}>
+              {refundOfLabel && (
+                <button
+                  type="button"
+                  onClick={handleRefundChipClick}
+                  className={s.contextChipButton}
+                  data-testid={`transaction-item-${transaction.id}-refund-chip`}
+                >
+                  <Badge variant="context">
+                    <Undo2 className={s.contextChipIcon} aria-hidden="true" />
+                    {refundOfLabel}
+                  </Badge>
+                </button>
+              )}
+              {savingsChipLabel && savingsGoalId ? (
+                <button
+                  type="button"
+                  onClick={handleSavingsChipClick}
+                  className={s.contextChipButton}
+                  data-testid={`transaction-item-${transaction.id}-savings-chip`}
+                >
+                  <Badge variant="context">
+                    <PiggyBank className={s.contextChipIcon} aria-hidden="true" />
+                    {savingsChipLabel}
+                  </Badge>
+                </button>
+              ) : (
+                savingsChipLabel && (
+                  <Badge variant="context">
+                    <PiggyBank className={s.contextChipIcon} aria-hidden="true" />
+                    {savingsChipLabel}
+                  </Badge>
+                )
+              )}
+              {householdExpenseLabel && (
+                <Badge variant="context">
+                  <Users className={s.contextChipIcon} aria-hidden="true" />
+                  {householdExpenseLabel}
+                </Badge>
+              )}
             </div>
           )}
         </div>
