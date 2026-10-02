@@ -120,7 +120,7 @@ The main goals of this project are to:
 * [x] Build Finora
 * [x] Add responsive design
 * [x] Add accessibility improvements
-* [ ] Configure SEO and metadata (Open Graph tags, sitemap)
+* [x] Configure SEO and metadata (Open Graph tags, sitemap)
 * [x] Deploy to Vercel
 * [ ] Configure custom domain
 
