@@ -1,0 +1,17 @@
+@reference '../../styles/theme.css';
+
+.section {
+  @apply mx-auto flex max-w-5xl flex-col items-center justify-center gap-3 px-4 py-24 text-center sm:px-10;
+}
+
+.code {
+  @apply text-sm font-bold tracking-wide text-finora-primary;
+}
+
+.title {
+  @apply text-xl font-bold tracking-tight text-finora-ink sm:text-2xl;
+}
+
+.description {
+  @apply max-w-md text-sm text-finora-ink-muted;
+}

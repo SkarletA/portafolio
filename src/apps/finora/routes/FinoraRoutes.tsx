@@ -8,6 +8,7 @@ import { Dashboard } from '../pages/Dashboard/Dashboard'
 import { ForgotPassword } from '../pages/ForgotPassword/ForgotPassword'
 import { Goals } from '../pages/Goals/Goals'
 import { Login } from '../pages/Login/Login'
+import { NotFound } from '../pages/NotFound/NotFound'
 import { Register } from '../pages/Register/Register'
 import { ResetPassword } from '../pages/ResetPassword/ResetPassword'
 import { Settings } from '../pages/Settings/Settings'
@@ -117,6 +118,7 @@ export function FinoraRoutes() {
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="reset-password" element={<ResetPassword />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }
