@@ -4,7 +4,7 @@ import { getPercentChange } from '@domain/analytics'
 import type { PeriodComparison, PeriodComparisonCategory } from '@services/analyticsService'
 import enAnalytics from '../../locales/en/analytics.json'
 import esAnalytics from '../../locales/es/analytics.json'
-import { buildInsights } from './analyticsInsights'
+import { buildCategoryInsights, buildHouseholdTotalInsight, buildInsights } from './analyticsInsights'
 
 // A real i18next instance with the real locale files (not the global
 // react-i18next mock), so the assertions cover the template and the
@@ -75,5 +75,68 @@ describe('buildInsights', () => {
       'Your spending on Food stayed the same as the previous period.',
       'Your total spending stayed the same as the previous period.',
     ])
+  })
+})
+
+describe('buildCategoryInsights', () => {
+  it('phrases an "own" insight in 2nd person, same as buildInsights', () => {
+    const insights = buildCategoryInsights(i18n.getFixedT('en') as TFunction, [category('Food', -27.6)], 'own')
+
+    expect(insights).toEqual(['You spent 28% less on Food than the previous period.'])
+  })
+
+  it('phrases an "other" insight in 3rd person with the member\'s name, in English', () => {
+    const insights = buildCategoryInsights(i18n.getFixedT('en') as TFunction, [category('Rent', 12)], 'other', 'Dana')
+
+    expect(insights).toEqual(['Dana spent 12% more on Rent than the previous period.'])
+  })
+
+  it('phrases an "other" insight in 3rd person with the member\'s name, in Spanish', () => {
+    const insights = buildCategoryInsights(i18n.getFixedT('es') as TFunction, [category('Rent', 12)], 'other', 'Dana')
+
+    expect(insights).toEqual(['Dana gastó 12% más en Rent que en el periodo anterior.'])
+  })
+
+  it('says an "other" spending stayed the same, attributed to the member by name', () => {
+    const insights = buildCategoryInsights(i18n.getFixedT('en') as TFunction, [category('Food', 0)], 'other', 'Dana')
+
+    expect(insights).toEqual(["Dana's spending on Food stayed the same as the previous period."])
+  })
+
+  it('limits to the top 2 changes, largest magnitude first, same as buildInsights', () => {
+    const insights = buildCategoryInsights(
+      i18n.getFixedT('en') as TFunction,
+      [category('Food', 5), category('Rent', -40), category('Transport', 20)],
+      'own'
+    )
+
+    expect(insights).toEqual([
+      'You spent 40% less on Rent than the previous period.',
+      'You spent 20% more on Transport than the previous period.',
+    ])
+  })
+})
+
+describe('buildHouseholdTotalInsight', () => {
+  it('phrases the combined total impersonally, without picking a grammatical person, in English', () => {
+    expect(buildHouseholdTotalInsight(i18n.getFixedT('en') as TFunction, 25)).toBe(
+      'Overall, the household spent 25% more than the previous period.'
+    )
+    expect(buildHouseholdTotalInsight(i18n.getFixedT('en') as TFunction, -10)).toBe(
+      'Overall, the household spent 10% less than the previous period.'
+    )
+    expect(buildHouseholdTotalInsight(i18n.getFixedT('en') as TFunction, 0)).toBe(
+      "The household's total spending stayed the same as the previous period."
+    )
+  })
+
+  it('phrases the combined total impersonally in Spanish', () => {
+    expect(buildHouseholdTotalInsight(i18n.getFixedT('es') as TFunction, 25)).toBe(
+      'En general, el hogar gastó 25% más que en el periodo anterior.'
+    )
+  })
+
+  it('returns null when there is no previous-period total to compare', () => {
+    expect(buildHouseholdTotalInsight(i18n.getFixedT('en') as TFunction, null)).toBeNull()
   })
 })

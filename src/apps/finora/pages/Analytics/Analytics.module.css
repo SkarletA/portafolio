@@ -44,8 +44,39 @@
   @apply mb-4 text-base font-semibold text-finora-ink;
 }
 
+.cardTitleRow {
+  @apply mb-4 flex flex-wrap items-center justify-between gap-2;
+}
+
+.cardTitleNoMargin {
+  @apply mb-0;
+}
+
+.clearBucketButton {
+  @apply flex shrink-0 items-center gap-1 rounded-md border border-finora-border px-2 py-1 text-xs font-medium text-finora-ink-muted;
+}
+
+.clearBucketIcon {
+  @apply h-3.5 w-3.5;
+}
+
 .chartWrap {
   @apply h-56;
+}
+
+/* recharts enables accessibilityLayer by default, which puts tabIndex=0 on
+   the chart's root <svg> (.recharts-surface) so it's keyboard-navigable -
+   good for accessibility, but it also means a plain mouse click (to select
+   a trend bucket) focuses the whole chart and the browser draws its default
+   outline around it. Suppress that for mouse clicks only (:focus without
+   :focus-visible) and keep a clear outline for keyboard Tab navigation
+   (:focus-visible), so this isn't an accessibility regression. */
+.chartWrap :global(.recharts-surface:focus) {
+  outline: none;
+}
+
+.chartWrap :global(.recharts-surface:focus-visible) {
+  @apply outline-2 outline-offset-2 outline-finora-primary;
 }
 
 .categoryList {
@@ -61,15 +92,20 @@
 }
 
 .categoryName {
-  @apply flex-1 truncate font-medium text-finora-ink;
+  /* min-w-0 overrides a flex item's default min-width: auto, which would
+     otherwise keep it sized to its text content and ignore `truncate` - a
+     long name would overlap the amount instead of ellipsizing, worst in a
+     narrow container like Analytics' Household columns. Same fix as
+     BudgetCardBreakdown.module.css's .name. */
+  @apply min-w-0 flex-1 truncate font-medium text-finora-ink;
 }
 
 .categoryPercentage {
-  @apply w-10 text-right text-xs text-finora-ink-muted;
+  @apply w-10 shrink-0 text-right text-xs text-finora-ink-muted;
 }
 
 .categoryAmount {
-  @apply text-right font-semibold text-finora-ink;
+  @apply shrink-0 text-right font-semibold text-finora-ink;
 }
 
 .topCategoryList {
@@ -94,6 +130,18 @@
 
 .stateMessage {
   @apply rounded-xl border border-finora-border bg-finora-surface py-10 text-center text-sm text-finora-ink-muted;
+}
+
+.ownerToggle {
+  @apply mb-5 flex gap-2;
+}
+
+.ownerButton {
+  @apply rounded-lg border border-finora-border px-3 py-2 text-sm font-medium text-finora-ink-muted;
+}
+
+.ownerButtonActive {
+  @apply border-finora-primary bg-finora-primary/10 text-finora-primary;
 }
 
 .periodToggle {
@@ -147,4 +195,26 @@
 /* Sits right under the stat figures it qualifies. */
 .savingsNote {
   @apply -mt-2 mb-4 text-sm text-finora-ink-muted;
+}
+
+/* Two member columns, side by side on desktop (ADR-011) - for Top spending
+   categories and the comparison table, whose rows (icon, name, one or two
+   amounts, a % change) fit two-up without crowding. Both columns still show
+   at once rather than behind a selector - this is a monthly report read at
+   a glance, not a navigable list. */
+.columns {
+  @apply grid grid-cols-1 gap-6 sm:grid-cols-2;
+}
+
+/* Spending by category's own version: stacked full-width instead of side by
+   side. A two-up grid left each panel too narrow once an icon, a name, an
+   amount and a subcategory breakdown all had to fit in it - confirmed
+   visually as a name/amount overlap bug, unlike the simpler rows .columns
+   above still handles fine. */
+.stackedColumns {
+  @apply flex flex-col gap-6;
+}
+
+.columnLabel {
+  @apply mb-3 text-sm font-semibold text-finora-ink;
 }

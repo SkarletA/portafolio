@@ -211,21 +211,32 @@ export function getCurrentMonthRange() {
   }
 }
 
-export function getExpensesByCategory(range: { start: string; end: string }) {
-  return catchServiceErrors(() => loadExpensesByCategory(range))
+// householdMemberIds: when given (both members accepted - ADR-007), widens to
+// every member's rows instead of only the caller's own (ADR-011's "full
+// visibility, no tagging" for a combined Analytics/Dashboard view) - the same
+// optional-parameter shape getTransactions (PR5) and getBudgets (PR8) already
+// use. Omitted or empty, behaves exactly as before (ADR-010's household
+// budget keeps calling this with no household ids, unaffected).
+export function getExpensesByCategory(range: { start: string; end: string }, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadExpensesByCategory(range, householdMemberIds))
 }
 
-async function loadExpensesByCategory({ start, end }: { start: string; end: string }) {
+async function loadExpensesByCategory(
+  { start, end }: { start: string; end: string },
+  householdMemberIds?: string[]
+) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
+  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+
   const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
     supabase
       .from('transactions')
       .select('category_id, amount, type, date, installment_months, funding_source')
-      .eq('user_id', userData.user.id)
+      .in('user_id', userIds)
       .in('type', ['expense', 'reimbursement'])
       // A financed purchase dated before the range can still have an
       // installment inside it; for single payments last_installment_date is
@@ -271,6 +282,71 @@ interface HouseholdLedgerRow extends ScheduledRow {
   shares: { user_id: string; amount: number }[]
 }
 
+export interface HouseholdAttributedRow extends CategoryLedgerEntry {
+  date: string
+}
+
+export interface HouseholdAttributedEntries {
+  /** The caller's own tagged (Case A share or Case B) entries, each already attributed. */
+  own: HouseholdAttributedRow[]
+  /** The household partner's tagged entries, same attribution. */
+  partner: HouseholdAttributedRow[]
+}
+
+// The two members' tagged (Case A share or Case B full amount) entries for
+// a range, each already attributed to the member who should receive the
+// amount - never an untagged personal expense, even the caller's own. One
+// query, reused for both a category rollup (getGrossSpendByCategory - the
+// household budget, PR8, and Analytics' household category breakdown, PR9)
+// and a date-bucket rollup (grossSpendByBucketKey - Analytics' trend chart),
+// so "how does a shared/household-tagged transaction split between two
+// people" has exactly one implementation, not one per consumer. See
+// docs/adr/010-household-expense-tag-and-household-budget.md and
+// docs/adr/011-household-combined-analytics.md.
+export function getHouseholdAttributedEntries(
+  range: { start: string; end: string },
+  members: { ownId: string; partnerId: string }
+) {
+  return catchServiceErrors(() => loadHouseholdAttributedEntries(range, members))
+}
+
+async function loadHouseholdAttributedEntries(
+  { start, end }: { start: string; end: string },
+  { ownId, partnerId }: { ownId: string; partnerId: string }
+) {
+  const { data: rows, error } = await supabase
+    .from('transactions')
+    .select(
+      'category_id, amount, type, date, installment_months, funding_source, user_id, is_shared, is_household_expense, shares:transaction_shares(user_id, amount)'
+    )
+    .in('user_id', [ownId, partnerId])
+    .eq('type', 'expense')
+    .or('is_shared.eq.true,is_household_expense.eq.true')
+    .lte('date', end)
+    .gte('last_installment_date', start)
+
+  if (error) return { data: null, error }
+
+  const entries = expandLedgerRowsInRange((rows ?? []) as unknown as HouseholdLedgerRow[], { start, end })
+
+  const data: HouseholdAttributedEntries = {
+    own: attributeEntries(entries, ownId),
+    partner: attributeEntries(entries, partnerId),
+  }
+
+  return { data, error: null }
+}
+
+function attributeEntries(rows: HouseholdLedgerRow[], memberId: string): HouseholdAttributedRow[] {
+  return rows.map((row) => ({
+    category_id: row.category_id,
+    type: row.type,
+    date: row.date,
+    funding_source: row.funding_source,
+    amount: getHouseholdAttributedAmount(row, memberId),
+  }))
+}
+
 export interface HouseholdContributionsByCategory {
   /** The caller's own tagged (Case A share or Case B) spend, rolled up per category. */
   own: Record<string, number>
@@ -278,12 +354,11 @@ export interface HouseholdContributionsByCategory {
   partner: Record<string, number>
 }
 
-// A household budget's spend is the two members' explicitly tagged entries
-// only - never an untagged personal expense in the same category, even by
-// the budget's own creator. Built from two ordinary calls to the unchanged
-// getGrossSpendByCategory, each fed a pre-filtered, pre-attributed entry
-// list - that function stays completely unaware households exist. See
-// docs/adr/010-household-expense-tag-and-household-budget.md.
+// The household budget's "two entries" (ADR-010): each member's tagged
+// spend, rolled up per category. A thin wrapper over
+// getHouseholdAttributedEntries + the unchanged getGrossSpendByCategory,
+// kept as its own function because useBudgets.ts already depends on this
+// exact name and return shape.
 export function getHouseholdContributionsByCategory(
   range: { start: string; end: string },
   members: { ownId: string; partnerId: string }
@@ -292,42 +367,23 @@ export function getHouseholdContributionsByCategory(
 }
 
 async function loadHouseholdContributionsByCategory(
-  { start, end }: { start: string; end: string },
-  { ownId, partnerId }: { ownId: string; partnerId: string }
+  range: { start: string; end: string },
+  members: { ownId: string; partnerId: string }
 ) {
-  const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
-    supabase
-      .from('transactions')
-      .select(
-        'category_id, amount, type, date, installment_months, funding_source, user_id, is_shared, is_household_expense, shares:transaction_shares(user_id, amount)'
-      )
-      .in('user_id', [ownId, partnerId])
-      .eq('type', 'expense')
-      .or('is_shared.eq.true,is_household_expense.eq.true')
-      .lte('date', end)
-      .gte('last_installment_date', start),
+  const [{ data: attributed, error: attributedError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
+    getHouseholdAttributedEntries(range, members),
     getCategories(),
   ])
 
-  if (rowsError) return { data: null, error: rowsError }
+  if (attributedError) return { data: null, error: attributedError }
   if (categoriesError) return { data: null, error: categoriesError }
 
   const categories = (categoriesData ?? []) as Category[]
-  const entries = expandLedgerRowsInRange((rows ?? []) as unknown as HouseholdLedgerRow[], { start, end })
 
   const data: HouseholdContributionsByCategory = {
-    own: getGrossSpendByCategory(attributeEntries(entries, ownId), categories),
-    partner: getGrossSpendByCategory(attributeEntries(entries, partnerId), categories),
+    own: getGrossSpendByCategory(attributed?.own ?? [], categories),
+    partner: getGrossSpendByCategory(attributed?.partner ?? [], categories),
   }
 
   return { data, error: null }
-}
-
-function attributeEntries(rows: HouseholdLedgerRow[], memberId: string): CategoryLedgerEntry[] {
-  return rows.map((row) => ({
-    category_id: row.category_id,
-    type: row.type,
-    funding_source: row.funding_source,
-    amount: getHouseholdAttributedAmount(row, memberId),
-  }))
 }

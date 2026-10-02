@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { getExpensesByCategory } from './transactionsService'
+import { getExpensesByCategory, getHouseholdAttributedEntries } from './transactionsService'
 import { getCategories } from './categoriesService'
 import { catchServiceErrors } from './catchServiceErrors'
 import {
@@ -11,7 +11,7 @@ import {
   type DateRange,
   type PeriodType,
 } from '@domain/analytics'
-import type { Category } from '@domain/category'
+import { getGrossSpendByCategory, getRawGrossSpendByCategory, type Category } from '@domain/category'
 import { expandLedgerRowsInRange, isIncomeFundedExpense, isIncomeFundedReimbursement } from '@domain/installments'
 import { addMoney, sumMoney, subtractMoney } from '@domain/money'
 import type { FundingSource, TransactionType } from '@domain/transaction'
@@ -75,21 +75,27 @@ export function sumLedgerTotals(
   )
 }
 
-export function getMonthlyStats(range: DateRange) {
-  return catchServiceErrors(() => loadMonthlyStats(range))
+// householdMemberIds: when given (both members accepted - ADR-007), combines
+// every member's transactions and goal deposits instead of only the caller's
+// own - ADR-011's "full visibility, no tagging" for Analytics/Dashboard.
+// Omitted or empty, behaves exactly as before.
+export function getMonthlyStats(range: DateRange, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadMonthlyStats(range, householdMemberIds))
 }
 
-async function loadMonthlyStats(range: DateRange) {
+async function loadMonthlyStats(range: DateRange, householdMemberIds?: string[]) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
+  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+
   const [{ data, error }, { data: deposits, error: depositsError }] = await Promise.all([
     supabase
       .from('transactions')
       .select('type, amount, date, installment_months, funding_source')
-      .eq('user_id', userData.user.id)
+      .in('user_id', userIds)
       .lte('date', range.end)
       .gte('last_installment_date', range.start),
     // Deposits are money kept, not spent: they lower the spendable balance
@@ -97,7 +103,7 @@ async function loadMonthlyStats(range: DateRange) {
     supabase
       .from('goal_transfers')
       .select('amount')
-      .eq('user_id', userData.user.id)
+      .in('user_id', userIds)
       .eq('kind', 'deposit')
       .gte('date', range.start)
       .lte('date', range.end),
@@ -140,28 +146,18 @@ export interface CategorySpending {
   percentage: number
 }
 
-export function getSpendingByCategory(range: DateRange) {
-  return catchServiceErrors(() => loadSpendingByCategory(range))
-}
-
-async function loadSpendingByCategory(range: DateRange) {
-  const [{ data: expensesByCategory, error: expensesError }, { data: categoriesData, error: categoriesError }] =
-    await Promise.all([getExpensesByCategory(range), getCategories()])
-
-  const error = expensesError || categoriesError
-  if (error) return { data: null, error }
-
-  const categories = (categoriesData ?? []) as Category[]
-  // Only top-level categories are listed: each one's amount already includes
-  // its subcategories via getGrossSpendByCategory's rollup, so listing children
-  // as separate rows too would double-count spend and push percentages past 100%.
+// Only top-level categories are listed: each one's amount already includes
+// its subcategories via getGrossSpendByCategory's rollup, so listing children
+// as separate rows too would double-count spend and push percentages past
+// 100%. Exported so a per-member household list (ADR-011) can be built the
+// same way from pre-attributed totals, not a second implementation.
+export function buildCategorySpending(totals: Record<string, number>, categories: Category[]): CategorySpending[] {
   const topLevelCategories = categories.filter((category) => !category.parent_id)
-  const expensesMap = expensesByCategory?.totals ?? {}
-  const totalSpent = sumMoney(topLevelCategories.map((category) => expensesMap[category.id] ?? 0))
+  const totalSpent = sumMoney(topLevelCategories.map((category) => totals[category.id] ?? 0))
 
-  const spending: CategorySpending[] = topLevelCategories
+  return topLevelCategories
     .map((category) => {
-      const amount = expensesMap[category.id] ?? 0
+      const amount = totals[category.id] ?? 0
       return {
         category_id: category.id,
         name: category.name,
@@ -174,8 +170,64 @@ async function loadSpendingByCategory(range: DateRange) {
     })
     .filter((entry) => entry.amount > 0)
     .sort((a, b) => b.amount - a.amount)
+}
 
-  return { data: spending, error: null }
+export function getSpendingByCategory(range: DateRange, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadSpendingByCategory(range, householdMemberIds))
+}
+
+async function loadSpendingByCategory(range: DateRange, householdMemberIds?: string[]) {
+  const [{ data: expensesByCategory, error: expensesError }, { data: categoriesData, error: categoriesError }] =
+    await Promise.all([getExpensesByCategory(range, householdMemberIds), getCategories()])
+
+  const error = expensesError || categoriesError
+  if (error) return { data: null, error }
+
+  const categories = (categoriesData ?? []) as Category[]
+
+  return { data: buildCategorySpending(expensesByCategory?.totals ?? {}, categories), error: null }
+}
+
+export interface HouseholdCategorySpending {
+  own: CategorySpending[]
+  partner: CategorySpending[]
+  /** Each member's un-rolled-up per-category spend, for a subcategory breakdown (e.g. Housing -> Rent/Services). */
+  ownRaw: Record<string, number>
+  partnerRaw: Record<string, number>
+}
+
+// The household view's Spending-by-category / Top-categories / Comparison
+// data: each member's *tagged* (Case A share or Case B, ADR-010) spend,
+// never a blind merge - reuses the same getHouseholdAttributedEntries both
+// the household budget (PR8) and this function build on, so a split
+// transaction (e.g. rent $14,700 split $5,200/$9,500) attributes correctly
+// here too, not just in Budgets. See
+// docs/adr/011-household-combined-analytics.md.
+export function getHouseholdSpendingByCategory(range: DateRange, members: { ownId: string; partnerId: string }) {
+  return catchServiceErrors(() => loadHouseholdSpendingByCategory(range, members))
+}
+
+async function loadHouseholdSpendingByCategory(range: DateRange, members: { ownId: string; partnerId: string }) {
+  const [{ data: attributed, error: attributedError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
+    getHouseholdAttributedEntries(range, members),
+    getCategories(),
+  ])
+
+  if (attributedError) return { data: null, error: attributedError }
+  if (categoriesError) return { data: null, error: categoriesError }
+
+  const categories = (categoriesData ?? []) as Category[]
+  const ownEntries = attributed?.own ?? []
+  const partnerEntries = attributed?.partner ?? []
+
+  const data: HouseholdCategorySpending = {
+    own: buildCategorySpending(getGrossSpendByCategory(ownEntries, categories), categories),
+    partner: buildCategorySpending(getGrossSpendByCategory(partnerEntries, categories), categories),
+    ownRaw: getRawGrossSpendByCategory(ownEntries),
+    partnerRaw: getRawGrossSpendByCategory(partnerEntries),
+  }
+
+  return { data, error: null }
 }
 
 export interface DailySpending {
@@ -193,16 +245,19 @@ export type LedgerRow = {
 
 // Rows already expanded into the installments that fall in the range, so a
 // financed purchase lands one installment per bucket on its own date.
-async function fetchExpenseAndReimbursementRows(range: DateRange) {
+// householdMemberIds widens to every member's rows (ADR-011), same as above.
+async function fetchExpenseAndReimbursementRows(range: DateRange, householdMemberIds?: string[]) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
+  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+
   const { data, error } = await supabase
     .from('transactions')
     .select('date, amount, type, installment_months, funding_source')
-    .eq('user_id', userData.user.id)
+    .in('user_id', userIds)
     .in('type', ['expense', 'reimbursement'])
     .lte('date', range.end)
     .gte('last_installment_date', range.start)
@@ -217,9 +272,15 @@ async function fetchExpenseAndReimbursementRows(range: DateRange) {
 // caller derives from each row's date (exact day, month, or year). Moves in
 // lockstep with getMonthlyStats' totalSpent so the trend chart always agrees
 // with "Total spent", including leaving out expenses covered by savings.
-// See docs/adr/002-gross-spend-and-effective-limit.md and
+// Takes the minimal row shape (not LedgerRow itself) so a household member's
+// already-attributed entries (which carry no installment_months - expansion
+// already happened) can be rolled up the same way. See
+// docs/adr/002-gross-spend-and-effective-limit.md and
 // docs/adr/003-installments-and-savings-funding.md.
-export function grossSpendByBucketKey(rows: LedgerRow[], keyFn: (date: string) => string): Record<string, number> {
+export function grossSpendByBucketKey(
+  rows: { date: string; amount: number; type: TransactionType; funding_source: FundingSource }[],
+  keyFn: (date: string) => string
+): Record<string, number> {
   return rows.reduce<Record<string, number>>((totals, row) => {
     if (!isIncomeFundedExpense(row)) return totals
 
@@ -229,12 +290,12 @@ export function grossSpendByBucketKey(rows: LedgerRow[], keyFn: (date: string) =
   }, {})
 }
 
-export function getDailySpending(range: DateRange) {
-  return catchServiceErrors(() => loadDailySpending(range))
+export function getDailySpending(range: DateRange, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadDailySpending(range, householdMemberIds))
 }
 
-async function loadDailySpending(range: DateRange) {
-  const { data, error } = await fetchExpenseAndReimbursementRows(range)
+async function loadDailySpending(range: DateRange, householdMemberIds?: string[]) {
+  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds)
 
   if (error) return { data: null, error }
 
@@ -256,15 +317,19 @@ const TREND_DAYS = 30
 const TREND_MONTHS = 12
 const TREND_YEARS = 5
 
-// A rolling window of buckets (last 30 days / 12 months / 5 years), distinct
-// from getPeriodRange's current-vs-previous single period. Every bucket in
-// the window is included even when it has no activity, so the chart shows a
-// true, evenly-spaced trend line instead of skipping quiet periods.
-export function getTrendData(periodType: PeriodType) {
-  return catchServiceErrors(() => loadTrendData(periodType))
+interface TrendWindow {
+  range: DateRange
+  keyFn: (date: string) => string
+  /** Every bucket's date in the window, even ones with no activity - so a trend never skips a quiet period. */
+  bucketDates: string[]
 }
 
-async function loadTrendData(periodType: PeriodType) {
+// The rolling window's range, date-to-bucket-key function, and the list of
+// every bucket in it (last 30 days / 12 months / 5 years), distinct from
+// getPeriodRange's current-vs-previous single period. The day/month/year
+// window math in one place, shared by the self-only and household-combined
+// trend (ADR-011) so they can never drift into different bucket boundaries.
+function getTrendWindow(periodType: PeriodType): TrendWindow {
   const today = new Date()
   const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
 
@@ -272,56 +337,90 @@ async function loadTrendData(periodType: PeriodType) {
     const start = new Date(todayUtc)
     start.setUTCDate(start.getUTCDate() - (TREND_DAYS - 1))
 
-    const { data, error } = await fetchExpenseAndReimbursementRows({ start: toIsoDate(start), end: toIsoDate(todayUtc) })
-    if (error) return { data: null, error }
-
-    const grossByDate = grossSpendByBucketKey(data ?? [], (date) => date)
-
-    const trend: TrendPoint[] = Array.from({ length: TREND_DAYS }, (_, i) => {
+    const bucketDates = Array.from({ length: TREND_DAYS }, (_, i) => {
       const date = new Date(start)
       date.setUTCDate(date.getUTCDate() + i)
-      const iso = toIsoDate(date)
-      return { date: iso, amount: grossByDate[iso] ?? 0 }
+      return toIsoDate(date)
     })
 
-    return { data: trend, error: null }
+    return {
+      range: { start: toIsoDate(start), end: toIsoDate(todayUtc) },
+      keyFn: (date) => date,
+      bucketDates,
+    }
   }
 
   if (periodType === 'year') {
     const startYear = todayUtc.getUTCFullYear() - (TREND_YEARS - 1)
-    const range: DateRange = {
-      start: toIsoDate(new Date(Date.UTC(startYear, 0, 1))),
-      end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), 11, 31))),
+    const bucketDates = Array.from({ length: TREND_YEARS }, (_, i) => toIsoDate(new Date(Date.UTC(startYear + i, 0, 1))))
+
+    return {
+      range: {
+        start: toIsoDate(new Date(Date.UTC(startYear, 0, 1))),
+        end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), 11, 31))),
+      },
+      keyFn: (date) => date.slice(0, 4),
+      bucketDates,
     }
-
-    const { data, error } = await fetchExpenseAndReimbursementRows(range)
-    if (error) return { data: null, error }
-
-    const grossByYear = grossSpendByBucketKey(data ?? [], (date) => date.slice(0, 4))
-
-    const trend: TrendPoint[] = Array.from({ length: TREND_YEARS }, (_, i) => {
-      const year = startYear + i
-      return { date: toIsoDate(new Date(Date.UTC(year, 0, 1))), amount: grossByYear[String(year)] ?? 0 }
-    })
-
-    return { data: trend, error: null }
   }
 
   const startMonth = new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth() - (TREND_MONTHS - 1), 1))
-  const range: DateRange = {
-    start: toIsoDate(startMonth),
-    end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth() + 1, 0))),
-  }
+  const bucketDates = Array.from({ length: TREND_MONTHS }, (_, i) =>
+    toIsoDate(new Date(Date.UTC(startMonth.getUTCFullYear(), startMonth.getUTCMonth() + i, 1)))
+  )
 
-  const { data, error } = await fetchExpenseAndReimbursementRows(range)
+  return {
+    range: {
+      start: toIsoDate(startMonth),
+      end: toIsoDate(new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth() + 1, 0))),
+    },
+    keyFn: (date) => date.slice(0, 7),
+    bucketDates,
+  }
+}
+
+export function getTrendData(periodType: PeriodType, householdMemberIds?: string[]) {
+  return catchServiceErrors(() => loadTrendData(periodType, householdMemberIds))
+}
+
+async function loadTrendData(periodType: PeriodType, householdMemberIds?: string[]) {
+  const { range, keyFn, bucketDates } = getTrendWindow(periodType)
+
+  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds)
   if (error) return { data: null, error }
 
-  const grossByMonth = grossSpendByBucketKey(data ?? [], (date) => date.slice(0, 7))
+  const grossByKey = grossSpendByBucketKey(data ?? [], keyFn)
+  const trend: TrendPoint[] = bucketDates.map((date) => ({ date, amount: grossByKey[keyFn(date)] ?? 0 }))
 
-  const trend: TrendPoint[] = Array.from({ length: TREND_MONTHS }, (_, i) => {
-    const date = new Date(Date.UTC(startMonth.getUTCFullYear(), startMonth.getUTCMonth() + i, 1))
-    const key = toIsoDate(date).slice(0, 7)
-    return { date: toIsoDate(date), amount: grossByMonth[key] ?? 0 }
+  return { data: trend, error: null }
+}
+
+export interface HouseholdTrendPoint {
+  date: string
+  own: number
+  partner: number
+}
+
+// Each member's tagged spend per trend bucket (ADR-010's attribution,
+// ADR-011's presentation rule) - fed into the stacked bar chart's two
+// segments. Built on the same getHouseholdAttributedEntries and
+// getTrendWindow the rest of this household view already uses.
+export function getHouseholdTrendData(periodType: PeriodType, members: { ownId: string; partnerId: string }) {
+  return catchServiceErrors(() => loadHouseholdTrendData(periodType, members))
+}
+
+async function loadHouseholdTrendData(periodType: PeriodType, members: { ownId: string; partnerId: string }) {
+  const { range, keyFn, bucketDates } = getTrendWindow(periodType)
+
+  const { data: attributed, error } = await getHouseholdAttributedEntries(range, members)
+  if (error) return { data: null, error }
+
+  const ownByKey = grossSpendByBucketKey(attributed?.own ?? [], keyFn)
+  const partnerByKey = grossSpendByBucketKey(attributed?.partner ?? [], keyFn)
+
+  const trend: HouseholdTrendPoint[] = bucketDates.map((date) => {
+    const key = keyFn(date)
+    return { date, own: ownByKey[key] ?? 0, partner: partnerByKey[key] ?? 0 }
   })
 
   return { data: trend, error: null }
@@ -346,29 +445,20 @@ export interface PeriodComparison {
   hasPreviousData: boolean
 }
 
-export async function getPeriodComparison(periodType: PeriodType) {
-  const { current, previous } = getPeriodRange(periodType, new Date())
-
-  const [
-    { data: currentStats, error: currentStatsError },
-    { data: previousStats, error: previousStatsError },
-    { data: currentCategories, error: currentCategoriesError },
-    { data: previousCategories, error: previousCategoriesError },
-  ] = await Promise.all([
-    getMonthlyStats(current),
-    getMonthlyStats(previous),
-    getSpendingByCategory(current),
-    getSpendingByCategory(previous),
-  ])
-
-  const error = currentStatsError || previousStatsError || currentCategoriesError || previousCategoriesError
-  if (error) return { data: null, error }
-
-  const hasPreviousData = !!previousStats && (previousStats.totalSpent > 0 || previousStats.totalIncome > 0)
-  const previousByCategoryId = new Map((previousCategories ?? []).map((category) => [category.category_id, category]))
+// Matches each current-period category to its previous-period amount (0 when
+// new) and vice versa (a category dropped to 0 still shows its previous
+// amount, not disappears). Exported so a household-combined view (ADR-011)
+// can build the same comparison per member instead of only once for a
+// single merged list - same function, different (pre-filtered) inputs, the
+// same reuse pattern ADR-010/011 already established for getGrossSpendByCategory.
+export function buildCategoryComparison(
+  currentCategories: CategorySpending[],
+  previousCategories: CategorySpending[]
+): PeriodComparisonCategory[] {
+  const previousByCategoryId = new Map(previousCategories.map((category) => [category.category_id, category]))
   const seenCategoryIds = new Set<string>()
 
-  const categories: PeriodComparisonCategory[] = (currentCategories ?? []).map((category) => {
+  const categories: PeriodComparisonCategory[] = currentCategories.map((category) => {
     seenCategoryIds.add(category.category_id)
     const previousAmount = previousByCategoryId.get(category.category_id)?.amount ?? 0
 
@@ -384,7 +474,7 @@ export async function getPeriodComparison(periodType: PeriodType) {
     }
   })
 
-  for (const category of previousCategories ?? []) {
+  for (const category of previousCategories) {
     if (seenCategoryIds.has(category.category_id)) continue
 
     categories.push({
@@ -398,6 +488,30 @@ export async function getPeriodComparison(periodType: PeriodType) {
       percentChange: getPercentChange(0, category.amount),
     })
   }
+
+  return categories
+}
+
+export async function getPeriodComparison(periodType: PeriodType, householdMemberIds?: string[]) {
+  const { current, previous } = getPeriodRange(periodType, new Date())
+
+  const [
+    { data: currentStats, error: currentStatsError },
+    { data: previousStats, error: previousStatsError },
+    { data: currentCategories, error: currentCategoriesError },
+    { data: previousCategories, error: previousCategoriesError },
+  ] = await Promise.all([
+    getMonthlyStats(current, householdMemberIds),
+    getMonthlyStats(previous, householdMemberIds),
+    getSpendingByCategory(current, householdMemberIds),
+    getSpendingByCategory(previous, householdMemberIds),
+  ])
+
+  const error = currentStatsError || previousStatsError || currentCategoriesError || previousCategoriesError
+  if (error) return { data: null, error }
+
+  const hasPreviousData = !!previousStats && (previousStats.totalSpent > 0 || previousStats.totalIncome > 0)
+  const categories = buildCategoryComparison(currentCategories ?? [], previousCategories ?? [])
 
   const currentTotal = currentStats?.totalSpent ?? 0
   const previousTotal = previousStats?.totalSpent ?? 0

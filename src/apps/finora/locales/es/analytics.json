@@ -1,6 +1,11 @@
 {
   "title": "Analíticas",
   "subtitle": "Entiende en qué se va tu dinero",
+  "tabs": {
+    "ariaLabel": "Mías o combinadas con el hogar",
+    "mine": "Mis analíticas",
+    "household": "Hogar"
+  },
   "period": {
     "ariaLabel": "Periodo de análisis",
     "daily": "Diario",
@@ -23,9 +28,15 @@
     "title": "Gastos a lo largo del tiempo",
     "empty": "Aún no hay gastos registrados en este periodo."
   },
+  "columns": {
+    "own": "Tú"
+  },
   "categoryBreakdown": {
     "title": "Gastos por categoría",
-    "empty": "No hay gastos registrados en este periodo."
+    "titleWithPeriod": "Gastos por categoría — {{period}}",
+    "empty": "No hay gastos registrados en este periodo.",
+    "clearBucket": "Limpiar",
+    "loadingBucket": "Cargando…"
   },
   "topCategories": {
     "title": "Principales categorías de gasto",
@@ -41,7 +52,13 @@
       "categorySame": "Tu gasto en {{category}} se mantuvo igual que en el periodo anterior.",
       "totalMore": "En general, gastaste {{percent}}% más que en el periodo anterior.",
       "totalLess": "En general, gastaste {{percent}}% menos que en el periodo anterior.",
-      "totalSame": "Tu gasto total se mantuvo igual que en el periodo anterior."
+      "totalSame": "Tu gasto total se mantuvo igual que en el periodo anterior.",
+      "categoryMoreOther": "{{name}} gastó {{percent}}% más en {{category}} que en el periodo anterior.",
+      "categoryLessOther": "{{name}} gastó {{percent}}% menos en {{category}} que en el periodo anterior.",
+      "categorySameOther": "El gasto de {{name}} en {{category}} se mantuvo igual que en el periodo anterior.",
+      "totalMoreHousehold": "En general, el hogar gastó {{percent}}% más que en el periodo anterior.",
+      "totalLessHousehold": "En general, el hogar gastó {{percent}}% menos que en el periodo anterior.",
+      "totalSameHousehold": "El gasto total del hogar se mantuvo igual que en el periodo anterior."
     }
   }
 }
