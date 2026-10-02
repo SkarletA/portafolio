@@ -1,4 +1,17 @@
+import { authHandlers, MOCK_USER_ID, signInMockUser } from '@storybook-mocks/supabaseAuth'
+import { restHandler, rpcHandler } from '@storybook-mocks/supabaseRest'
 import { BudgetCard } from './BudgetCard'
+
+const PARTNER_ID = '00000000-0000-4000-8000-000000000002'
+
+// Signed in (not the Storybook norm - see .storybook/preview.tsx) so
+// useAuth().user.id matches each fixture's user_id below: without it, every
+// card would read as not-my-own and hide edit/delete on every story, same
+// reason TransactionItem.stories.tsx does this. household_members empty ->
+// useHousehold resolves to "no household"; get_household_partner mocked to
+// null to match (the HouseholdBudget story below overrides both to an
+// accepted partner, needed for its contribution chips to show a real name).
+const BUDGET_CARD_HANDLERS = [...authHandlers, restHandler('household_members', []), rpcHandler('get_household_partner', null)]
 
 export default {
   title: 'Finora/Molecules/BudgetCard',
@@ -10,7 +23,9 @@ export default {
           "A category's monthly spending progress: amount spent against its limit, with a status badge and progress bar.",
       },
     },
+    msw: { handlers: BUDGET_CARD_HANDLERS },
   },
+  loaders: [signInMockUser],
   argTypes: {
     budget: {
       description: 'The budgeted category, its spend/limit figures, and computed progress status.',
@@ -22,6 +37,11 @@ export default {
       control: 'boolean',
       table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' } },
     },
+    onDeleted: {
+      description: 'Called after a successful delete, so the caller can refresh its list.',
+      action: 'deleted',
+      table: { type: { summary: 'function' } },
+    },
   },
 }
 
@@ -29,7 +49,7 @@ export const OnTrack = {
   args: {
     budget: {
       id: '1',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       category_id: 'c1',
       monthly_limit: 400,
       created_at: null,
@@ -48,7 +68,7 @@ export const NearLimit = {
   args: {
     budget: {
       id: '2',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       category_id: 'c2',
       monthly_limit: 200,
       created_at: null,
@@ -67,7 +87,7 @@ export const Exceeded = {
   args: {
     budget: {
       id: '3',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       category_id: 'c3',
       monthly_limit: 150,
       created_at: null,
@@ -86,7 +106,7 @@ export const WithReimbursement = {
   args: {
     budget: {
       id: '4',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       category_id: 'c4',
       monthly_limit: 2000,
       created_at: null,
@@ -105,7 +125,7 @@ export const HouseholdBudget = {
   args: {
     budget: {
       id: '6',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       category_id: 'c6',
       monthly_limit: 1000,
       created_at: null,
@@ -120,13 +140,25 @@ export const HouseholdBudget = {
       householdContributions: { own: 400, partner: 600 },
     },
   },
+  parameters: {
+    msw: {
+      handlers: [
+        ...authHandlers,
+        restHandler('household_members', [
+          { id: 'm1', household_id: 'h1', user_id: MOCK_USER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
+          { id: 'm2', household_id: 'h1', user_id: PARTNER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
+        ]),
+        rpcHandler('get_household_partner', { user_id: PARTNER_ID, first_name: 'Maribel', last_name: 'Prueba', avatar_url: null }),
+      ],
+    },
+  },
 }
 
 export const WithSpendingCoveredBySavings = {
   args: {
     budget: {
       id: '5',
-      user_id: 'u1',
+      user_id: MOCK_USER_ID,
       category_id: 'c5',
       monthly_limit: 3000,
       created_at: null,

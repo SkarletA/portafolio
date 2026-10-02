@@ -740,6 +740,10 @@ For simple sequential tasks, work directly.
 * This does not apply to code identifiers, `data-testid`s, comments, or conversation with the user — only to strings rendered in the UI.
 * Component tests run against the global `react-i18next` mock in `vitest.setup.js` (`t()` returns the key), so assert on keys there. When the rendered text itself matters (interpolation, punctuation, symbols like `%`), test with a real `i18next` instance loaded with the real locale files.
 
+### Mocks
+
+* In test files and Storybook stories, `vi.mock(...)` and every import must use the project's `@alias` paths (`@services/...`, `@context/...`, `@hooks/...`, `@domain/...`, `@storybook-mocks/...`, etc.), never a relative path (`../../../services/...`).
+
 ### Database Types
 
 `src/apps/finora/domain/database.types.ts` is the reference for the database schema: tables, columns, nullability, foreign keys and relationships between tables, and the arguments of RPC functions. It must be complete and current enough that nobody has to ask the user (or the live database) about the schema each time something changes.

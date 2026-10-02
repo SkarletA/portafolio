@@ -19,7 +19,10 @@
     "contributionYou": "Tú {{amount}}",
     "contributionOther": "{{name}} {{amount}}",
     "percentageLabel": "{{percent}}% del límite disponible",
-    "progressAriaLabel": "Presupuesto de {{category}}: {{status}}"
+    "progressAriaLabel": "Presupuesto de {{category}}: {{status}}",
+    "editAriaLabel": "Editar presupuesto de {{category}}",
+    "deleteAriaLabel": "Borrar presupuesto de {{category}}",
+    "confirmDelete": "¿Borrar el presupuesto de {{category}}?"
   },
   "breakdown": {
     "hide": "Ocultar desglose",
@@ -36,6 +39,11 @@
     "allCategoriesBudgeted": "Todas tus categorías ya tienen un presupuesto.",
     "monthlyLimit": "Límite mensual",
     "saveBudget": "Guardar presupuesto",
+    "editTitle": "Editar presupuesto",
+    "saveChanges": "Guardar cambios",
+    "loadingBudget": "Cargando presupuesto…",
+    "loadError": "No pudimos cargar este presupuesto. Inténtalo de nuevo más tarde.",
+    "notFound": "No pudimos encontrar este presupuesto.",
     "backToBudgets": "Volver a presupuestos",
     "householdBudget": "¿Es un presupuesto de hogar?",
     "householdBudgetHint": "Entre los dos cubren el límite único de este presupuesto - solo cuenta lo que cada quien marque explícitamente como compartido o de hogar.",

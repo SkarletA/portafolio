@@ -61,7 +61,15 @@ export function FinoraRoutes() {
         path="add-budget"
         element={
           <ProtectedRoute>
-            <AddBudget />
+            <AddBudget mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="budgets/:id/edit"
+        element={
+          <ProtectedRoute>
+            <AddBudget mode="edit" />
           </ProtectedRoute>
         }
       />

@@ -10,7 +10,7 @@ import s from './Budgets.module.css'
 
 export function Budgets() {
   const { t } = useTranslation('budgets')
-  const { budgets, loading, error } = useBudgets()
+  const { budgets, loading, error, refetch } = useBudgets()
   const navigate = useNavigate()
 
   const handleNewBudgetClick = useCallback(() => {
@@ -44,7 +44,7 @@ export function Budgets() {
         <div className={s.grid}>
           {budgets.map((budget) => (
             <div key={budget.id} className={s.budgetGroup}>
-              <BudgetCard budget={budget} flush={budget.breakdown.length > 0} />
+              <BudgetCard budget={budget} flush={budget.breakdown.length > 0} onDeleted={refetch} />
               <BudgetCardBreakdown
                 categoryId={budget.category_id}
                 categoryName={budget.category?.name ?? t('card.uncategorized')}
