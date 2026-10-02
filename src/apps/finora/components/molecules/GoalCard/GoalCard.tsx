@@ -19,6 +19,8 @@ interface GoalCardProps {
   goal: GoalWithProgress
   /** Called after a deposit is added or deleted, so the caller can refresh the goal's balance. */
   onBalanceChanged: () => void
+  /** Opens the activity list on mount - e.g. arriving from a transaction's "Covered by savings" chip. */
+  initiallyOpen?: boolean
 }
 
 const targetDateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -31,7 +33,7 @@ const targetDateFormatter = new Intl.DateTimeFormat('en-US', {
  * A savings goal's progress toward its target amount, with an inline form to
  * add funds and a collapsible list of the money that moved in and out of it.
  */
-export function GoalCard({ goal, onBalanceChanged }: GoalCardProps) {
+export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: GoalCardProps) {
   const { t } = useTranslation(['goals', 'common'])
   const { currency } = useCurrency()
   const { language } = useLanguage()
@@ -40,7 +42,7 @@ export function GoalCard({ goal, onBalanceChanged }: GoalCardProps) {
   const [amount, setAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [isActivityOpen, setIsActivityOpen] = useState(false)
+  const [isActivityOpen, setIsActivityOpen] = useState(initiallyOpen)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const {

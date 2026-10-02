@@ -14,4 +14,10 @@ describe('Badge', () => {
 
     expect(screen.getByText('You $60.00').className).toContain('shared')
   })
+
+  it('applies the context variant styling', () => {
+    render(<Badge variant="context">Refund of Shoes</Badge>)
+
+    expect(screen.getByText('Refund of Shoes').className).toContain('context')
+  })
 })

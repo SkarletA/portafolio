@@ -38,10 +38,10 @@ const deposit = {
   transaction: null,
 }
 
-function renderCard(goal = baseGoal, onBalanceChanged = vi.fn()) {
+function renderCard(goal = baseGoal, onBalanceChanged = vi.fn(), initiallyOpen = false) {
   render(
     <MemoryRouter>
-      <GoalCard goal={goal} onBalanceChanged={onBalanceChanged} />
+      <GoalCard goal={goal} onBalanceChanged={onBalanceChanged} initiallyOpen={initiallyOpen} />
     </MemoryRouter>
   )
   return { onBalanceChanged }
@@ -142,6 +142,15 @@ describe('GoalCard', () => {
     fireEvent.click(toggle)
 
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(await screen.findByText('+$500.00')).toBeInTheDocument()
+    expect(getGoalTransfers).toHaveBeenCalledWith('1')
+  })
+
+  it('opens the activity on mount when initiallyOpen is true - arriving from a transaction\'s savings chip', async () => {
+    vi.mocked(getGoalTransfers).mockResolvedValue({ data: [deposit], error: null } as never)
+    renderCard(baseGoal, vi.fn(), true)
+
+    expect(screen.getByTestId('goal-card-1-activity-toggle-button')).toHaveAttribute('aria-expanded', 'true')
     expect(await screen.findByText('+$500.00')).toBeInTheDocument()
     expect(getGoalTransfers).toHaveBeenCalledWith('1')
   })

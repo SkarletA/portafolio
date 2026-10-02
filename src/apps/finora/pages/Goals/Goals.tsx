@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useGoals } from '@hooks/useGoals'
 import { GoalCard } from '@molecules/GoalCard/GoalCard'
@@ -11,6 +11,10 @@ export function Goals() {
   const { t } = useTranslation('goals')
   const { goals, loading, error, refetch } = useGoals()
   const navigate = useNavigate()
+  // Arriving from a transaction's "Covered by savings" chip
+  // (TransactionItem.tsx) - opens that goal's activity on mount.
+  const [searchParams] = useSearchParams()
+  const activityGoalId = searchParams.get('activity')
 
   const handleNewGoalClick = useCallback(() => {
     navigate('/finora/add-goal')
@@ -42,7 +46,12 @@ export function Goals() {
       >
         <div className={s.grid}>
           {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} onBalanceChanged={refetch} />
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onBalanceChanged={refetch}
+              initiallyOpen={goal.id === activityGoalId}
+            />
           ))}
         </div>
       </AsyncState>

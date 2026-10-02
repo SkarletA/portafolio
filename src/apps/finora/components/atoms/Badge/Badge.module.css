@@ -1,7 +1,7 @@
 @reference '../../../styles/theme.css';
 
 .badge {
-  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
 }
 
 .success {
@@ -14,4 +14,8 @@
 
 .shared {
   @apply bg-finora-shared-bg text-finora-shared;
+}
+
+.context {
+  @apply bg-finora-surface-muted text-finora-context;
 }

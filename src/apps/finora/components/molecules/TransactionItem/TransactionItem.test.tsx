@@ -19,6 +19,12 @@ vi.mock('../../../context/LanguageContext', () => ({ useLanguage: () => ({ langu
 vi.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1', email: 'a@example.com' } }) }))
 vi.mock('../../../context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 
+const navigateMock = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => navigateMock }
+})
+
 const baseTransaction: TransactionWithCategory = {
   id: '1',
   user_id: 'u1',
@@ -56,6 +62,7 @@ function renderItem(
 describe('TransactionItem', () => {
   beforeEach(() => {
     vi.mocked(deleteTransaction).mockReset()
+    navigateMock.mockClear()
     vi.mocked(useHousehold).mockReturnValue({
       partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
     } as never)
@@ -82,7 +89,7 @@ describe('TransactionItem', () => {
     expect(screen.queryByText(/item\.chipOther/)).not.toBeInTheDocument()
   })
 
-  it('shows a plain household-expense tag for Case B, not chips', () => {
+  it('shows a gray, non-clickable context chip for Case B, not the blue split chips', () => {
     renderItem({ ...baseTransaction, is_household_expense: true })
 
     expect(screen.getByText(/item\.householdExpenseTag/)).toBeInTheDocument()
@@ -185,13 +192,14 @@ describe('TransactionItem', () => {
     expect(screen.getByText(/item\.installmentsCount:\{"count":3\}/)).toBeInTheDocument()
   })
 
-  it('labels an expense covered by savings in text, not only color', () => {
+  it('labels an expense covered by savings in text, not only color, and is not clickable without a linked goal', () => {
     renderItem({ ...baseTransaction, funding_source: 'savings' })
 
-    expect(screen.getByText(/item\.coveredBySavings/)).toBeInTheDocument()
+    expect(screen.getByText(/item\.coveredBySavings\b/)).toBeInTheDocument()
+    expect(screen.queryByTestId('transaction-item-1-savings-chip')).not.toBeInTheDocument()
   })
 
-  it('names the goal an expense covered by savings came from', () => {
+  it('names the goal an expense covered by savings came from, as a clickable context chip', () => {
     renderItem({
       ...baseTransaction,
       funding_source: 'savings',
@@ -199,7 +207,20 @@ describe('TransactionItem', () => {
       goal_transfer: { kind: 'withdrawal', goal_id: 'g1', amount: 120, goal: { name: 'Vacation' } },
     })
 
-    expect(screen.getByText(/item\.coveredBySavingsFrom:\{"goal":"Vacation"\}/)).toBeInTheDocument()
+    expect(screen.getByText(/item\.chips\.coveredBySavings:\{"goal":"Vacation"\}/)).toBeInTheDocument()
+  })
+
+  it('navigates to the goal\'s activity when the savings chip is clicked', () => {
+    renderItem({
+      ...baseTransaction,
+      funding_source: 'savings',
+      refunds_transaction_id: null,
+      goal_transfer: { kind: 'withdrawal', goal_id: 'g1', amount: 120, goal: { name: 'Vacation' } },
+    })
+
+    fireEvent.click(screen.getByTestId('transaction-item-1-savings-chip'))
+
+    expect(navigateMock).toHaveBeenCalledWith('/finora/goals?activity=g1')
   })
 
   it('shows neither label for a single payment funded by income', () => {
@@ -227,7 +248,7 @@ describe('TransactionItem', () => {
     expect(deleteTransaction).not.toHaveBeenCalled()
   })
 
-  it('names the purchase a linked reimbursement refunds', () => {
+  it('names the purchase a linked reimbursement refunds, as a clickable context chip', () => {
     renderItem(
       { ...baseTransaction, type: 'reimbursement', amount: 40, description: 'Refund', refunds_transaction_id: 'p1' },
       vi.fn(),
@@ -235,6 +256,18 @@ describe('TransactionItem', () => {
     )
 
     expect(screen.getByText(/item\.refundOf:\{"description":"Shoes"\}/)).toBeInTheDocument()
+  })
+
+  it('navigates to the refunded purchase when the refund chip is clicked', () => {
+    renderItem(
+      { ...baseTransaction, type: 'reimbursement', amount: 40, description: 'Refund', refunds_transaction_id: 'p1' },
+      vi.fn(),
+      { refundedPurchase: { id: 'p1', description: 'Shoes' } }
+    )
+
+    fireEvent.click(screen.getByTestId('transaction-item-1-refund-chip'))
+
+    expect(navigateMock).toHaveBeenCalledWith('/finora/transactions/p1/edit')
   })
 
   it('says a reimbursement returned money to its goal, in text, not just color', () => {

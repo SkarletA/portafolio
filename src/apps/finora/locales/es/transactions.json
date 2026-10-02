@@ -40,7 +40,6 @@
     "installmentsSummary": "{{count}} mensualidades de {{amount}}",
     "installmentsCount": "{{count}} mensualidades",
     "coveredBySavings": "Cubierto con ahorros",
-    "coveredBySavingsFrom": "Cubierto con ahorros de {{goal}}",
     "refundOf": "Reembolso de {{description}}",
     "refundReturnedToGoal": "Devuelto a ahorros",
     "refundReturnedToGoalFrom": "Devuelto a {{goal}}",
@@ -52,7 +51,10 @@
     "you": "ti",
     "chipYou": "Tú {{amount}}",
     "chipOther": "{{name}} {{amount}}",
-    "householdExpenseTag": "Gasto del hogar"
+    "householdExpenseTag": "Cuenta para el hogar · sin dividir",
+    "chips": {
+      "coveredBySavings": "Cubierto con ahorros · {{goal}}"
+    }
   },
   "form": {
     "addTitle": "Agregar transacción",
