@@ -3,9 +3,30 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { coverageConfigDefaults } from 'vitest/config'
+import { portfolioSeo } from './src/data/seo.ts'
+
+const escapeHtml = (value) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+// Fills the %seo.<key>% placeholders in index.html from src/data/seo.ts. An unknown
+// key fails the build instead of shipping a literal placeholder to crawlers.
+const seoHtmlPlugin = {
+  name: 'seo-html',
+  transformIndexHtml(html) {
+    return html.replace(/%seo\.(\w+)%/g, (_, key) => {
+      if (!(key in portfolioSeo)) throw new Error(`Unknown SEO placeholder: %seo.${key}%`)
+      return escapeHtml(portfolioSeo[key])
+    })
+  },
+}
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), seoHtmlPlugin],
   resolve: {
     // Finora-only aliases - pages/ and routes/ deliberately keep relative
     // imports (see src/apps/finora/../../CLAUDE.md). Shared by both `vite
