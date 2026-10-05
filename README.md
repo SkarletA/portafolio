@@ -130,6 +130,8 @@ Deployed on Vercel: **[portafolio-skarlet-a.vercel.app](https://portafolio-skarl
 
 The portfolio lives at the root; Finora is client-side routed at `/finora` on the same deployment.
 
+`vercel.json` rewrites every path that isn't a real file to `/index.html`. Without it, Vercel returns 404 for direct loads and refreshes of client-side routes such as `/finora/login`, which also breaks the Supabase email links. Real files (assets, `sitemap.xml`, `robots.txt`) are still served as files.
+
 ## ✅ CI/CD
 
 Every pull request runs through GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): lint, then test with coverage, then build.
