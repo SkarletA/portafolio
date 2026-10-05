@@ -12,7 +12,10 @@
     "allPaymentMethods": "Todos los métodos de pago",
     "monthAriaLabel": "Filtrar por mes",
     "allMonths": "Todos los meses",
-    "clearMonth": "Limpiar"
+    "clear": "Limpiar",
+    "clearMonthAriaLabel": "Quitar filtro de mes",
+    "clearCategoryAriaLabel": "Quitar filtro de categoría",
+    "clearPaymentMethodAriaLabel": "Quitar filtro de método de pago"
   },
   "tabs": {
     "ariaLabel": "Mías o compartidas con el hogar",

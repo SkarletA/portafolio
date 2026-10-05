@@ -391,4 +391,83 @@ describe('Transactions', () => {
       expect(screen.getByText('transactions:list.emptyHousehold')).toBeInTheDocument()
     })
   })
+
+  describe('category and payment method filters', () => {
+    const CATEGORY_COMIDA = { id: 'c3', name: 'Comida', icon: null, color: null, parent_id: 'c1', translationKey: null }
+    const HIERARCHY_TRANSACTIONS: TransactionWithCategory[] = [
+      transaction({ id: 't1', description: 'Starbucks', category_id: 'c1', category: CATEGORY_FOOD, payments: [{ id: 'p1', transaction_id: 't1', payment_method: 'Credit Card', amount: 120 }] }),
+      transaction({ id: 't3', description: 'Almuerzo', category_id: 'c3', category: CATEGORY_COMIDA, payments: [{ id: 'p3', transaction_id: 't3', payment_method: 'Cash', amount: 25 }] }),
+      transaction({ id: 't2', description: 'Uber ride', category_id: 'c2', category: CATEGORY_TRANSPORT, payments: [{ id: 'p2', transaction_id: 't2', payment_method: 'Cash', amount: 40 }] }),
+    ]
+
+    beforeEach(() => {
+      vi.mocked(useTransactions).mockReturnValue({ transactions: HIERARCHY_TRANSACTIONS, loading: false, error: null, refetch: vi.fn() })
+      vi.mocked(useCategories).mockReturnValue({ categories: [CATEGORY_FOOD, CATEGORY_COMIDA, CATEGORY_TRANSPORT], loading: false, error: null, refetch: vi.fn() })
+    })
+
+    function pickCategory(categoryValue: string) {
+      fireEvent.click(screen.getByTestId('transactions-category-select-trigger'))
+      fireEvent.click(screen.getByTestId(`transactions-category-select-option-${categoryValue}`))
+    }
+
+    function pickPaymentMethod(method: string) {
+      fireEvent.click(screen.getByTestId('transactions-payment-method-select-trigger'))
+      fireEvent.click(screen.getByTestId(`transactions-payment-method-select-option-${method}`))
+    }
+
+    it('shows a parent category together with its subcategories', () => {
+      renderPage()
+      pickCategory('c1')
+
+      expect(screen.getByText('Starbucks')).toBeInTheDocument()
+      expect(screen.getByText('Almuerzo')).toBeInTheDocument()
+      expect(screen.queryByText('Uber ride')).not.toBeInTheDocument()
+    })
+
+    it('shows only the subcategory when a subcategory is selected', () => {
+      renderPage()
+      pickCategory('c3')
+
+      expect(screen.getByText('Almuerzo')).toBeInTheDocument()
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+      expect(screen.queryByText('Uber ride')).not.toBeInTheDocument()
+    })
+
+    it('combines the category filter with the payment method filter', () => {
+      renderPage()
+      pickCategory('c1')
+      pickPaymentMethod('Cash')
+
+      expect(screen.getByText('Almuerzo')).toBeInTheDocument()
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+      expect(screen.queryByText('Uber ride')).not.toBeInTheDocument()
+    })
+
+    it('shows the category clear button only while a category is selected, and resets the filter', () => {
+      renderPage()
+      expect(screen.queryByTestId('transactions-category-filter-clear')).not.toBeInTheDocument()
+
+      pickCategory('c2')
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('transactions-category-filter-clear'))
+
+      expect(screen.queryByTestId('transactions-category-filter-clear')).not.toBeInTheDocument()
+      expect(screen.getByText('Starbucks')).toBeInTheDocument()
+      expect(screen.getByText('Uber ride')).toBeInTheDocument()
+    })
+
+    it('shows the payment method clear button only while a method is selected, and resets the filter', () => {
+      renderPage()
+      expect(screen.queryByTestId('transactions-payment-method-filter-clear')).not.toBeInTheDocument()
+
+      pickPaymentMethod('Cash')
+      expect(screen.queryByText('Starbucks')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('transactions-payment-method-filter-clear'))
+
+      expect(screen.queryByTestId('transactions-payment-method-filter-clear')).not.toBeInTheDocument()
+      expect(screen.getByText('Starbucks')).toBeInTheDocument()
+    })
+  })
 })

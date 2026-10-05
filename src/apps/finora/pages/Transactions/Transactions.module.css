@@ -48,11 +48,11 @@
   @apply h-4 w-4 shrink-0 text-finora-ink-muted;
 }
 
-.clearMonthButton {
+.clearFilterButton {
   @apply flex shrink-0 items-center gap-1 rounded-md border border-finora-border px-2 py-1 text-xs font-medium text-finora-ink-muted;
 }
 
-.clearMonthIcon {
+.clearFilterIcon {
   @apply h-3.5 w-3.5;
 }
 
