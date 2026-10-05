@@ -24,6 +24,10 @@
   @apply text-sm text-finora-danger;
 }
 
+.notice {
+  @apply text-sm text-finora-ink-muted;
+}
+
 .footer {
   @apply mt-6 text-sm text-finora-ink-muted;
 }

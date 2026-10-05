@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { supabase } from '@services/supabaseClient'
-import { requestPasswordReset, signUp } from '@services/authService'
+import { requestPasswordReset, resendConfirmation, signUp } from '@services/authService'
 
 vi.mock('@services/supabaseClient', () => ({
   supabase: {
     auth: {
       signUp: vi.fn(),
+      resend: vi.fn(),
       resetPasswordForEmail: vi.fn(),
     },
   },
@@ -22,6 +23,19 @@ describe('authService redirects', () => {
   beforeEach(() => {
     vi.mocked(supabase.auth.signUp).mockResolvedValue({ data: {}, error: null } as never)
     vi.mocked(supabase.auth.resetPasswordForEmail).mockResolvedValue({ data: {}, error: null } as never)
+    vi.mocked(supabase.auth.resend).mockResolvedValue({ data: {}, error: null } as never)
+  })
+
+  it('resendConfirmation sends the signup confirmation again to the Finora app root', async () => {
+    await resendConfirmation('ada@example.com')
+
+    expect(supabase.auth.resend).toHaveBeenCalledWith({
+      type: 'signup',
+      email: 'ada@example.com',
+      options: {
+        emailRedirectTo: `${origin}/finora`,
+      },
+    })
   })
 
   it('signUp sends the confirmation link to the Finora app root', async () => {

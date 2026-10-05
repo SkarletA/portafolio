@@ -8,12 +8,15 @@ import s from './Login.module.css'
 
 export function Login() {
   const { t } = useTranslation(['auth', 'common'])
-  const { signIn } = useAuth()
+  const { signIn, resendConfirmation } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMessage, setResendMessage] = useState<string | null>(null)
 
   const handleEmailChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setEmail(event.target.value)
@@ -28,15 +31,17 @@ export function Login() {
       event.preventDefault()
       setSubmitting(true)
       setError(null)
+      setNeedsConfirmation(false)
+      setResendMessage(null)
 
       const { error: signInError } = await signIn(email, password)
 
       setSubmitting(false)
 
       if (signInError) {
-        setError(
-          signInError.message === 'Email not confirmed' ? t('auth:login.emailNotConfirmed') : signInError.message
-        )
+        const isUnconfirmed = signInError.message === 'Email not confirmed'
+        setNeedsConfirmation(isUnconfirmed)
+        setError(isUnconfirmed ? t('auth:login.emailNotConfirmed') : signInError.message)
         return
       }
 
@@ -44,6 +49,16 @@ export function Login() {
     },
     [email, password, signIn, navigate, t]
   )
+
+  const handleResendConfirmation = useCallback(async () => {
+    setResending(true)
+    setResendMessage(null)
+
+    const { error: resendError } = await resendConfirmation(email)
+
+    setResending(false)
+    setResendMessage(resendError ? resendError.message : t('auth:login.confirmationResent', { email }))
+  }, [email, resendConfirmation, t])
 
   return (
     <section className={s.section}>
@@ -75,6 +90,24 @@ export function Login() {
         <Button id="login-submit-button" data-testid="login-submit-button" type="submit" disabled={submitting}>
           {submitting ? t('auth:login.submitting') : t('auth:login.submit')}
         </Button>
+
+        {needsConfirmation && (
+          <Button
+            id="login-resend-confirmation-button"
+            data-testid="login-resend-confirmation-button"
+            variant="secondary"
+            onClick={handleResendConfirmation}
+            disabled={resending}
+          >
+            {resending ? t('auth:login.resendingConfirmation') : t('auth:login.resendConfirmation')}
+          </Button>
+        )}
+
+        {resendMessage && (
+          <p className={s.notice} role="status" data-testid="login-resend-confirmation-message">
+            {resendMessage}
+          </p>
+        )}
       </form>
 
       <p className={s.footer}>
