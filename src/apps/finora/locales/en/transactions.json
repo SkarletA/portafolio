@@ -12,7 +12,10 @@
     "allPaymentMethods": "All payment methods",
     "monthAriaLabel": "Filter by month",
     "allMonths": "All months",
-    "clearMonth": "Clear"
+    "clear": "Clear",
+    "clearMonthAriaLabel": "Clear month filter",
+    "clearCategoryAriaLabel": "Clear category filter",
+    "clearPaymentMethodAriaLabel": "Clear payment method filter"
   },
   "tabs": {
     "ariaLabel": "Mine or shared with the household",

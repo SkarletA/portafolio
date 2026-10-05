@@ -10,8 +10,9 @@ import { AsyncState } from '@molecules/AsyncState/AsyncState'
 import { Button } from '@atoms/Button/Button'
 import { Icon } from '@atoms/Icon/Icon'
 import { Select } from '@atoms/Select/Select'
+import { GroupedSelect, type GroupedSelectGroup } from '@atoms/Select/GroupedSelect'
 import { getAvailableMonths, PAYMENT_METHODS } from '@domain/transaction'
-import { getCategoryDisplayName } from '@domain/category'
+import { buildCategoryTree, getCategoryDisplayName, getCategoryIdsForRollup } from '@domain/category'
 import { getPeriodRange } from '@domain/analytics'
 import { summarizeRefundsByPurchase } from '@domain/refund'
 import type { TransactionWithCategory } from '@services/transactionsService'
@@ -32,6 +33,23 @@ function formatMonthOptionLabel(month: string): string {
 }
 
 type OwnerTab = 'mine' | 'household'
+
+interface FilterClearButtonProps {
+  label: string
+  ariaLabel: string
+  testId: string
+  onClick: () => void
+}
+
+// Same look for every filter's "clear" action, so each filter resets the same way.
+function FilterClearButton({ label, ariaLabel, testId, onClick }: FilterClearButtonProps) {
+  return (
+    <button type="button" onClick={onClick} className={s.clearFilterButton} aria-label={ariaLabel} data-testid={testId}>
+      <X className={s.clearFilterIcon} aria-hidden="true" />
+      {label}
+    </button>
+  )
+}
 
 export function Transactions() {
   const { t } = useTranslation(['transactions', 'common', 'categories'])
@@ -68,6 +86,14 @@ export function Transactions() {
     setPaymentMethod(nextPaymentMethod)
   }, [])
 
+  const handleClearCategoryFilter = useCallback(() => {
+    setCategoryId('')
+  }, [])
+
+  const handleClearPaymentMethodFilter = useCallback(() => {
+    setPaymentMethod('')
+  }, [])
+
   const handleMonthFilterChange = useCallback((nextMonth: string) => {
     setMonthFilter(nextMonth)
   }, [])
@@ -81,9 +107,23 @@ export function Transactions() {
     if (nextTab) setOwnerTab(nextTab)
   }, [])
 
-  const categoryOptions = useMemo(
-    () => categories.map((category) => ({ value: category.id, label: getCategoryDisplayName(category, t) })),
-    [categories, t]
+  // Parents are selectable headers with their subcategories indented under them.
+  // The leading "all" group has an empty value, which clears the category filter.
+  const categoryGroups = useMemo<GroupedSelectGroup[]>(() => {
+    const hierarchy = buildCategoryTree(categories).map(({ parent, children }) => ({
+      value: parent.id,
+      label: getCategoryDisplayName(parent, t),
+      children: children.map((child) => ({ value: child.id, label: getCategoryDisplayName(child, t) })),
+    }))
+
+    return [{ value: '', label: t('transactions:filters.allCategories'), children: [] }, ...hierarchy]
+  }, [categories, t])
+
+  // A parent selection matches its own transactions and its subcategories'
+  // (ADR-001's rollup), so filtering "Food" also shows what was booked to "Comida".
+  const categoryScopeIds = useMemo(
+    () => (categoryId ? getCategoryIdsForRollup(categories, categoryId) : null),
+    [categories, categoryId]
   )
 
   // Every month that actually has a transaction, across the full unfiltered,
@@ -126,7 +166,7 @@ export function Transactions() {
       if (trimmedSearch && !transaction.description.toLowerCase().includes(trimmedSearch)) {
         return false
       }
-      if (categoryId && transaction.category_id !== categoryId) {
+      if (categoryScopeIds && (!transaction.category_id || !categoryScopeIds.includes(transaction.category_id))) {
         return false
       }
       if (paymentMethod && !transaction.payments.some((payment) => payment.payment_method === paymentMethod)) {
@@ -137,7 +177,7 @@ export function Transactions() {
       }
       return true
     })
-  }, [ownerTransactions, search, categoryId, paymentMethod, monthRange])
+  }, [ownerTransactions, search, categoryScopeIds, paymentMethod, monthRange])
 
   // Both computed from the full, unfiltered, untabbed list (ADR-006), so a
   // search, filter or owner tab never hides a purchase's refund count or a
@@ -207,15 +247,23 @@ export function Transactions() {
             data-testid="transactions-search-input"
           />
         </div>
-        <Select
+        <GroupedSelect
           ariaLabel={t('transactions:filters.categoryAriaLabel')}
-          options={categoryOptions}
+          groups={categoryGroups}
           value={categoryId}
           onChange={handleCategoryFilterChange}
           placeholder={t('transactions:filters.allCategories')}
           disabled={categoriesLoading}
           testId="transactions-category-select"
         />
+        {categoryId && (
+          <FilterClearButton
+            label={t('transactions:filters.clear')}
+            ariaLabel={t('transactions:filters.clearCategoryAriaLabel')}
+            testId="transactions-category-filter-clear"
+            onClick={handleClearCategoryFilter}
+          />
+        )}
         <Select
           ariaLabel={t('transactions:filters.paymentMethodAriaLabel')}
           options={PAYMENT_METHOD_OPTIONS}
@@ -224,6 +272,14 @@ export function Transactions() {
           placeholder={t('transactions:filters.allPaymentMethods')}
           testId="transactions-payment-method-select"
         />
+        {paymentMethod && (
+          <FilterClearButton
+            label={t('transactions:filters.clear')}
+            ariaLabel={t('transactions:filters.clearPaymentMethodAriaLabel')}
+            testId="transactions-payment-method-filter-clear"
+            onClick={handleClearPaymentMethodFilter}
+          />
+        )}
         <Select
           ariaLabel={t('transactions:filters.monthAriaLabel')}
           options={monthOptions}
@@ -233,15 +289,12 @@ export function Transactions() {
           testId="transactions-month-select"
         />
         {monthFilter && (
-          <button
-            type="button"
+          <FilterClearButton
+            label={t('transactions:filters.clear')}
+            ariaLabel={t('transactions:filters.clearMonthAriaLabel')}
+            testId="transactions-clear-month-button"
             onClick={handleClearMonthFilter}
-            className={s.clearMonthButton}
-            data-testid="transactions-clear-month-button"
-          >
-            <X className={s.clearMonthIcon} aria-hidden="true" />
-            {t('transactions:filters.clearMonth')}
-          </button>
+          />
         )}
       </div>
 
