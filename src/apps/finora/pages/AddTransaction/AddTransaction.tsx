@@ -157,6 +157,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
 
   // Money is received in one place, so only expenses can be split across methods.
   const isSingleMethod = type !== 'expense'
+  // An expense paid with exactly one method carries the whole total on that
+  // method, so it has no amount of its own to type.
+  const isSinglePaymentMethod = !isSingleMethod && payments.filter((payment) => payment.checked).length === 1
   // Only expenses can be financed or covered by savings (ADR-003); other types
   // always save the defaults, whatever the hidden controls last held.
   const isExpense = type === 'expense'
@@ -564,7 +567,9 @@ export function AddTransaction({ mode }: AddTransactionProps) {
       // the field (e.g. with Enter). The database would reject it anyway.
       const hasTooManyDecimals =
         roundMoneyInput(amount) !== amount ||
-        (!isSingleMethod && checkedPayments.some((payment) => roundMoneyInput(payment.amount) !== payment.amount))
+        (!isSingleMethod &&
+          !isSinglePaymentMethod &&
+          checkedPayments.some((payment) => roundMoneyInput(payment.amount) !== payment.amount))
 
       if (isSingleMethod) {
         if (!receivedMethod) {
@@ -572,7 +577,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
         }
       } else if (checkedPayments.length === 0) {
         nextErrors.payments = t('transactions:validation.selectPaymentMethod')
-      } else {
+      } else if (!isSinglePaymentMethod) {
         const hasInvalidAmount = checkedPayments.some(
           (payment) => !payment.amount || Number.isNaN(Number(payment.amount)) || Number(payment.amount) <= 0
         )
@@ -689,7 +694,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
           ? [{ payment_method: receivedMethod, amount: parsedAmount }]
           : checkedPayments.map((payment) => ({
               payment_method: payment.paymentMethod,
-              amount: Number(payment.amount),
+              amount: isSinglePaymentMethod ? parsedAmount : Number(payment.amount),
             })),
         shares:
           effectiveIsShared && user && partnerMember
@@ -781,6 +786,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
       type,
       payments,
       isSingleMethod,
+      isSinglePaymentMethod,
       receivedMethod,
       effectiveInstallmentMonths,
       fundingSource,
@@ -806,15 +812,16 @@ export function AddTransaction({ mode }: AddTransactionProps) {
     ]
   )
 
-  const assignedTotal = payments.reduce(
-    (sum, payment) => sum + (payment.checked ? Number(payment.amount) || 0 : 0),
-    0
-  )
   const totalAmount = Number(amount) || 0
-  const paymentsMatchTotal = paymentsMatchAmount(
-    payments.filter((payment) => payment.checked).map((payment) => Number(payment.amount) || 0),
-    totalAmount
-  )
+  const assignedTotal = isSinglePaymentMethod
+    ? totalAmount
+    : payments.reduce((sum, payment) => sum + (payment.checked ? Number(payment.amount) || 0 : 0), 0)
+  const paymentsMatchTotal =
+    isSinglePaymentMethod ||
+    paymentsMatchAmount(
+      payments.filter((payment) => payment.checked).map((payment) => Number(payment.amount) || 0),
+      totalAmount
+    )
 
   // Only the owner's part is ever typed; the partner's is always the exact
   // remainder (ADR-005: a difference shown as a money figure goes through the
@@ -1194,7 +1201,7 @@ export function AddTransaction({ mode }: AddTransactionProps) {
                     />
                     {payment.paymentMethod}
                   </label>
-                  {payment.checked && (
+                  {payment.checked && !isSinglePaymentMethod && (
                     <input
                       type="number"
                       inputMode="decimal"

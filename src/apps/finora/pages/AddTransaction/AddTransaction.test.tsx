@@ -237,7 +237,6 @@ describe('AddTransaction refund link', () => {
     fireEvent.click(screen.getByTestId('add-transaction-category-select-trigger'))
     fireEvent.click(screen.getByTestId('add-transaction-category-select-option-food'))
     fireEvent.click(screen.getByTestId('add-transaction-payment-cash-checkbox'))
-    fireEvent.change(screen.getByTestId('add-transaction-payment-cash-amount-input'), { target: { value: '50' } })
     fireEvent.click(screen.getByTestId('add-transaction-save-button'))
 
     await waitFor(() => expect(screen.getByText('transactions:validation.purchaseHasLinkedRefunds')).toBeInTheDocument())
@@ -287,7 +286,6 @@ function fillBasicExpenseFields(amount: string) {
   fireEvent.click(screen.getByTestId('add-transaction-category-select-trigger'))
   fireEvent.click(screen.getByTestId('add-transaction-category-select-option-food'))
   fireEvent.click(screen.getByTestId('add-transaction-payment-cash-checkbox'))
-  fireEvent.change(screen.getByTestId('add-transaction-payment-cash-amount-input'), { target: { value: amount } })
 }
 
 describe('AddTransaction shared expense', () => {
@@ -515,5 +513,46 @@ describe('AddTransaction household expense (Case B, no split)', () => {
     fireEvent.click(screen.getByTestId('add-transaction-save-button'))
 
     expect(await screen.findByText('transactions:validation.shareNoLongerValid')).toBeInTheDocument()
+  })
+})
+
+describe('AddTransaction single payment method', () => {
+  beforeEach(() => {
+    vi.mocked(saveTransaction).mockReset()
+    mockHooks()
+  })
+
+  it('hides the amount for an expense paid with one method, and sends the total as that payment', async () => {
+    vi.mocked(saveTransaction).mockResolvedValue({ data: 't1', error: null } as never)
+    renderCreate()
+    fillBasicExpenseFields('100')
+
+    expect(screen.queryByTestId('add-transaction-payment-cash-amount-input')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('add-transaction-save-button'))
+
+    await waitFor(() => expect(saveTransaction).toHaveBeenCalled())
+    expect(vi.mocked(saveTransaction).mock.calls[0][1].payments).toEqual([{ payment_method: 'Cash', amount: 100 }])
+  })
+
+  it('still asks for an amount per method when two methods are checked', () => {
+    renderCreate()
+    fillBasicExpenseFields('100')
+    fireEvent.click(screen.getByTestId('add-transaction-payment-credit-card-checkbox'))
+
+    expect(screen.getByTestId('add-transaction-payment-cash-amount-input')).toBeInTheDocument()
+    expect(screen.getByTestId('add-transaction-payment-credit-card-amount-input')).toBeInTheDocument()
+  })
+
+  it('rejects two methods whose amounts do not add up to the total, without calling the server', () => {
+    renderCreate()
+    fillBasicExpenseFields('100')
+    fireEvent.click(screen.getByTestId('add-transaction-payment-credit-card-checkbox'))
+    fireEvent.change(screen.getByTestId('add-transaction-payment-cash-amount-input'), { target: { value: '30' } })
+    fireEvent.change(screen.getByTestId('add-transaction-payment-credit-card-amount-input'), { target: { value: '30' } })
+    fireEvent.click(screen.getByTestId('add-transaction-save-button'))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('transactions:validation.assignedMustEqualTotal')
+    expect(saveTransaction).not.toHaveBeenCalled()
   })
 })
