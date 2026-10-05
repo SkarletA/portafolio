@@ -10,6 +10,7 @@ interface AuthContextValue {
   loading: boolean
   signIn: typeof authService.signIn
   signUp: typeof authService.signUp
+  resendConfirmation: typeof authService.resendConfirmation
   signOut: typeof authService.signOut
   requestPasswordReset: typeof authService.requestPasswordReset
   updatePassword: typeof authService.updatePassword
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn: authService.signIn,
     signUp: authService.signUp,
+    resendConfirmation: authService.resendConfirmation,
     signOut: authService.signOut,
     requestPasswordReset: authService.requestPasswordReset,
     updatePassword: authService.updatePassword,

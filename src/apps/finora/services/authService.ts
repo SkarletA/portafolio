@@ -23,6 +23,18 @@ export function signUp(email: string, password: string, metadata: SignUpMetadata
   })
 }
 
+// Resends the sign-up confirmation email. Supabase rate-limits this per address,
+// so a request sent too soon comes back as an error for the caller to show.
+export function resendConfirmation(email: string) {
+  return supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: {
+      emailRedirectTo: `${window.location.origin}/finora`,
+    },
+  })
+}
+
 export function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email, password })
 }
