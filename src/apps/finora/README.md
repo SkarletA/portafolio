@@ -211,6 +211,23 @@ npm run storybook     # Finora's component workshop at http://localhost:6006
 
 Finora's own Supabase schema (tables, RLS policies, the `delete-account` Edge Function) is managed outside this repository and isn't included here — without a matching project, auth and data calls will fail even though the app boots.
 
+### Supabase auth configuration
+
+The redirects in the email links are set in code (`src/apps/finora/services/authService.ts`) from `window.location.origin`. Supabase only accepts them when the URL is in its dashboard allowlist, and the **Site URL** sets where users land by default. This configuration lives in the Supabase dashboard (Authentication → URL Configuration), not in this repository, so it has to be set per project. A Site URL still set to `localhost:3000` caused a production bug where confirmation links pointed at localhost.
+
+- **Site URL:** `https://portafolio-skarlet-a.vercel.app/finora`
+- **Redirect URLs:**
+
+| Environment | URL | Used by |
+| --- | --- | --- |
+| Production | `https://portafolio-skarlet-a.vercel.app/finora` | `signUp` (`emailRedirectTo`) |
+| Production | `https://portafolio-skarlet-a.vercel.app/finora/reset-password` | `requestPasswordReset` (`redirectTo`) |
+| Local | `http://localhost:5173/finora` | `signUp` (`emailRedirectTo`) |
+| Local | `http://localhost:5173/finora/reset-password` | `requestPasswordReset` (`redirectTo`) |
+| Local | `http://localhost:5173/**` | Any other development route |
+
+*Optional, for Vercel preview deployments:* add `https://*-skarlet-a.vercel.app/**`. Supabase documents this pattern for Vercel previews (`https://*-<team-or-account-slug>.vercel.app/**`). Skip it unless you need auth flows on preview URLs; the production and local entries cover the rest.
+
 ## 9. CI/CD
 
 Every pull request runs through GitHub Actions ([`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml)):
