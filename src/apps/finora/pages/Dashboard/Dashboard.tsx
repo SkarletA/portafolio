@@ -12,6 +12,7 @@ import { useProfile } from '@hooks/useProfile'
 import { useTransactions } from '@hooks/useTransactions'
 import { useBudgets } from '@hooks/useBudgets'
 import { useDashboardSummary } from '@hooks/useDashboardSummary'
+import { getPeriodRange } from '@domain/analytics'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { subtractMoney } from '@domain/money'
@@ -57,6 +58,8 @@ export function Dashboard() {
   // Money still spendable this month: deposits to Goals leave it, too.
   // See docs/adr/004-goal-transfers.md.
   const balance = stats ? subtractMoney(subtractMoney(stats.totalIncome, stats.totalSpent), stats.totalDepositedToGoals) : 0
+  // The month the summary covers: the same local month as useDashboardSummary.
+  const currentMonthLabel = monthFormatter.format(new Date(getPeriodRange('month', new Date()).current.start))
 
   const handleAddTransactionClick = useCallback(() => {
     navigate('/finora/add-transaction')
@@ -81,7 +84,7 @@ export function Dashboard() {
             />
             <span className={s.profileName}>{displayName}</span>
           </Link>
-          <span className={s.periodPill}>{monthFormatter.format(new Date())}</span>
+          <span className={s.periodPill}>{currentMonthLabel}</span>
           <Button
             id="dashboard-add-transaction-button"
             data-testid="dashboard-add-transaction-button"

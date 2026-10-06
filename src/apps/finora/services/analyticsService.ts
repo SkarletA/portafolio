@@ -13,6 +13,7 @@ import {
 } from '@domain/analytics'
 import { getGrossSpendByCategory, getRawGrossSpendByCategory, type Category } from '@domain/category'
 import { expandLedgerRowsInRange, isIncomeFundedExpense, isIncomeFundedReimbursement } from '@domain/installments'
+import { getLocalCalendarDate } from '@domain/date'
 import { addMoney, sumMoney, subtractMoney } from '@domain/money'
 import type { FundingSource, TransactionType } from '@domain/transaction'
 
@@ -37,8 +38,7 @@ function toIsoDate(date: Date): string {
 function daysElapsedInRange({ start, end }: DateRange): number {
   const startDate = new Date(`${start}T00:00:00Z`)
   const endDate = new Date(`${end}T00:00:00Z`)
-  const today = new Date()
-  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+  const todayUtc = getLocalCalendarDate()
   const effectiveEnd = todayUtc < endDate ? todayUtc : endDate
 
   return Math.max(Math.round((effectiveEnd.getTime() - startDate.getTime()) / 86400000) + 1, 0)
@@ -330,8 +330,7 @@ interface TrendWindow {
 // window math in one place, shared by the self-only and household-combined
 // trend (ADR-011) so they can never drift into different bucket boundaries.
 function getTrendWindow(periodType: PeriodType): TrendWindow {
-  const today = new Date()
-  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+  const todayUtc = getLocalCalendarDate()
 
   if (periodType === 'day') {
     const start = new Date(todayUtc)

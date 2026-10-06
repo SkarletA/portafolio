@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getHouseholdSpendingByCategory,
   getHouseholdTrendData,
   getMonthlyStats,
+  getTrendData,
   grossSpendByBucketKey,
   sumLedgerTotals,
 } from './analyticsService'
@@ -179,6 +180,63 @@ describe('getMonthlyStats', () => {
 })
 
 const housingCategory = { id: 'housing', name: 'Housing', icon: null, color: null, parent_id: null, translationKey: null }
+
+describe('local calendar boundary (ADR-013)', () => {
+  // The suite runs in Mexico City (vitest.globalSetup.js): 2026-10-01T00:00Z is
+  // 2026-09-30 18:00 there, so the UTC and local calendar days differ.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    for (const key of Object.keys(tables)) delete tables[key]
+    filterCalls.length = 0
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('runs the suite in Mexico City time, so the boundary cases below are meaningful', () => {
+    expect(new Date(2026, 8, 30, 18).getTimezoneOffset()).toBe(360)
+  })
+
+  it('averages over the days elapsed in the local month', async () => {
+    // 2026-10-02T00:00Z is 2026-10-01 18:00 in Mexico City: one day of October has elapsed.
+    vi.setSystemTime(new Date('2026-10-02T00:00:00Z'))
+    tables.transactions = [{ ...expense(10), date: '2026-10-01', installment_months: 1 }]
+    tables.goal_transfers = []
+
+    const { data } = await getMonthlyStats({ start: '2026-10-01', end: '2026-10-31' })
+
+    expect(data?.avgPerDay).toBe(10)
+  })
+
+  it('ends the day trend on the local day', async () => {
+    vi.setSystemTime(new Date('2026-10-01T00:00:00Z'))
+    tables.transactions = []
+
+    const { data } = await getTrendData('day')
+
+    expect(data?.at(-1)?.date).toBe('2026-09-30')
+  })
+
+  it('ends the month trend on the local month', async () => {
+    vi.setSystemTime(new Date('2026-10-01T00:00:00Z'))
+    tables.transactions = []
+
+    const { data } = await getTrendData('month')
+
+    expect(data?.at(-1)?.date).toBe('2026-09-01')
+  })
+
+  it('ends the year trend on the local year at 31 December', async () => {
+    // 2027-01-01T00:00Z is 2026-12-31 18:00 in Mexico City.
+    vi.setSystemTime(new Date('2027-01-01T00:00:00Z'))
+    tables.transactions = []
+
+    const { data } = await getTrendData('year')
+
+    expect(data?.at(-1)?.date).toBe('2026-01-01')
+  })
+})
 
 describe('getHouseholdSpendingByCategory (ADR-010/011 attribution)', () => {
   beforeEach(() => {

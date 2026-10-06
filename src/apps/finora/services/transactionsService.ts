@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '@domain/transaction'
 import { getHouseholdAttributedAmount } from '@domain/transaction'
+import { getLocalCalendarDate } from '@domain/date'
 import type { DateRange } from '@domain/analytics'
 import type { Category } from '@domain/category'
 import {
@@ -208,14 +209,14 @@ function toIsoDate(date: Date): string {
 }
 
 export function getCurrentMonthRange() {
-  const now = new Date()
-  const year = now.getUTCFullYear()
-  const month = now.getUTCMonth()
+  const today = getLocalCalendarDate()
+  const year = today.getUTCFullYear()
+  const month = today.getUTCMonth()
 
   return {
     start: toIsoDate(new Date(Date.UTC(year, month, 1))),
     end: toIsoDate(new Date(Date.UTC(year, month + 1, 0))),
-    dayOfMonth: now.getUTCDate(),
+    dayOfMonth: today.getUTCDate(),
   }
 }
 

@@ -44,31 +44,59 @@ describe('getCategoryPercentage', () => {
 
 describe('getPeriodRange', () => {
   it('returns the current and previous day for periodType day', () => {
-    const { current, previous } = getPeriodRange('day', new Date(Date.UTC(2026, 8, 11)))
+    const { current, previous } = getPeriodRange('day', new Date(2026, 8, 11))
     expect(current).toEqual({ start: '2026-09-11', end: '2026-09-11' })
     expect(previous).toEqual({ start: '2026-09-10', end: '2026-09-10' })
   })
 
   it('rolls a day range back across a month boundary', () => {
-    const { previous } = getPeriodRange('day', new Date(Date.UTC(2026, 8, 1)))
+    const { previous } = getPeriodRange('day', new Date(2026, 8, 1))
     expect(previous).toEqual({ start: '2026-08-31', end: '2026-08-31' })
   })
 
   it('returns the current and previous calendar month for periodType month', () => {
-    const { current, previous } = getPeriodRange('month', new Date(Date.UTC(2026, 8, 15)))
+    const { current, previous } = getPeriodRange('month', new Date(2026, 8, 15))
     expect(current).toEqual({ start: '2026-09-01', end: '2026-09-30' })
     expect(previous).toEqual({ start: '2026-08-01', end: '2026-08-31' })
   })
 
   it('rolls a month range back across a year boundary', () => {
-    const { previous } = getPeriodRange('month', new Date(Date.UTC(2026, 0, 15)))
+    const { previous } = getPeriodRange('month', new Date(2026, 0, 15))
     expect(previous).toEqual({ start: '2025-12-01', end: '2025-12-31' })
   })
 
   it('returns the current and previous calendar year for periodType year', () => {
-    const { current, previous } = getPeriodRange('year', new Date(Date.UTC(2026, 8, 15)))
+    const { current, previous } = getPeriodRange('year', new Date(2026, 8, 15))
     expect(current).toEqual({ start: '2026-01-01', end: '2026-12-31' })
     expect(previous).toEqual({ start: '2025-01-01', end: '2025-12-31' })
+  })
+})
+
+describe('getPeriodRange at the local midnight boundary', () => {
+  // The suite runs in Mexico City (vitest.globalSetup.js). 2026-10-01T00:00Z is
+  // 2026-09-30 18:00 there: still September for the user, already October in UTC.
+  const lastEveningOfSeptember = new Date('2026-10-01T00:00:00Z')
+
+  it('runs the suite in Mexico City time, so the boundary cases below are meaningful', () => {
+    expect(new Date(2026, 8, 30, 18).getTimezoneOffset()).toBe(360)
+  })
+
+  it('keeps the local month until local midnight', () => {
+    const { current, previous } = getPeriodRange('month', lastEveningOfSeptember)
+    expect(current).toEqual({ start: '2026-09-01', end: '2026-09-30' })
+    expect(previous).toEqual({ start: '2026-08-01', end: '2026-08-31' })
+  })
+
+  it('keeps the local day until local midnight', () => {
+    const { current, previous } = getPeriodRange('day', lastEveningOfSeptember)
+    expect(current).toEqual({ start: '2026-09-30', end: '2026-09-30' })
+    expect(previous).toEqual({ start: '2026-09-29', end: '2026-09-29' })
+  })
+
+  it('keeps the local year until local midnight on 31 December', () => {
+    // 2027-01-01T00:00Z is 2026-12-31 18:00 in Mexico City.
+    const { current } = getPeriodRange('year', new Date('2027-01-01T00:00:00Z'))
+    expect(current).toEqual({ start: '2026-01-01', end: '2026-12-31' })
   })
 })
 
