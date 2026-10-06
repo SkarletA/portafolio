@@ -535,12 +535,27 @@ export type Database = {
     }
     Functions: {
       accept_household_invite: { Args: never; Returns: string }
+      cancel_recurring_expense: {
+        Args: { p_ended_on: string; p_id: string; p_today: string }
+        Returns: undefined
+      }
       create_goal: {
         Args: {
           p_name: string
           p_opening_balance: number
           p_target_amount: number
           p_target_date: string
+          p_today: string
+        }
+        Returns: string
+      }
+      create_recurring_expense: {
+        Args: {
+          p_amount: number
+          p_category_id: string
+          p_day_of_month: number
+          p_description: string
+          p_payment_method: string
           p_today: string
         }
         Returns: string
@@ -559,6 +574,7 @@ export type Database = {
       household_member_ids: { Args: never; Returns: string[] }
       invite_household_member: { Args: { p_email: string }; Returns: string }
       leave_household: { Args: never; Returns: undefined }
+      post_my_recurring_expenses: { Args: { p_today: string }; Returns: number }
       save_transaction: {
         Args: {
           p_amount: number
@@ -585,6 +601,18 @@ export type Database = {
           p_target_date: string
         }
         Returns: undefined
+      }
+      update_recurring_expense: {
+        Args: {
+          p_amount: number
+          p_category_id: string
+          p_description: string
+          p_effective_from: string
+          p_id: string
+          p_payment_method: string
+          p_today: string
+        }
+        Returns: string
       }
     }
     Enums: {
