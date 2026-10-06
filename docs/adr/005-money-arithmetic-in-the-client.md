@@ -4,6 +4,10 @@
 
 Accepted
 
+Amended by the two amendments at the end of this document: the SQL tests
+exist (Amendment 1), and new money columns follow a CHECK-based rule
+(Amendment 2).
+
 Fulfils the note in [ADR-003](./003-installments-and-savings-funding.md)
 ("Money representation"): an end-to-end integer-minor-units representation was
 to be decided in its own ADR. This ADR decides against a full migration and
@@ -208,7 +212,7 @@ Phase 2 (implemented afterwards, one branch):
     `make_interval`, the cents allocation and the category rollup, alongside
     the JavaScript preview in `AddTransaction` that must keep matching them.
     It also loses the unit-testable pure functions ADR-001 to ADR-003 rely on,
-    and the repository has no SQL test setup. Results would still reach the
+    and the repository has no SQL test setup (amended: it does, see Amendment 1). Results would still reach the
     client as `number`.
   - *Reading amounts as text (`amount::text` in the select)*: exact on arrival
     but changes every type and every consumer, with the same reach as integer
@@ -231,3 +235,32 @@ Phase 2 (implemented afterwards, one branch):
 - **Reopen this decision** if a precision bug is reported in production after
   the rule is applied, or if a column that holds money stops being
   `numeric(12,2)`.
+
+## Amendments
+
+### Amendment 1: the SQL tests exist
+
+The statement in the Alternatives section that the repository "has no SQL test
+setup" is out of date. There are five SQL test files in `supabase/tests/*.sql`
+(household expense tag, household partner profile RLS, household RLS, refund
+links on account deletion, and shared-expense split). They are run by hand
+against a database. No runner is declared in `package.json` and no CI job runs
+them, so a regression in them is not caught automatically. This amendment does
+not change any decision in this ADR.
+
+### Amendment 2: rule for new money columns
+
+Applies to money columns added after this amendment. The existing
+`numeric(12,2)` columns stay as they are, and no migration rewrites them.
+
+- Declare the column as unconstrained `numeric` with CHECKs: `amount > 0`,
+  `amount = round(amount, 2)` (a value with more than two decimals is rejected),
+  and `amount < 10000000000` (the same cap `save_transaction` enforces, so an
+  oversized value fails with a clear error and not with `numeric field overflow`).
+- The RPC that writes the row checks the same three conditions before the insert
+  and returns a named error the client can map to a message. The CHECK is the
+  backstop behind it, not the only check.
+- Why: `numeric(12,2)` rounds an excess decimal silently on insert (see Context).
+  A CHECK rejects it instead. That is the behaviour rule 4 of the client rules
+  requires: the database never rounds money.
+- This is the pattern `goal_transfers` already uses (ADR-004).
