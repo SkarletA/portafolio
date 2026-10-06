@@ -60,6 +60,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './vitest.setup.js',
+    globalSetup: './vitest.globalSetup.js',
     // Reuses one jsdom environment per worker instead of recreating it per
     // test file - Vitest's own suggestion when it detects heavy environment
     // setup cost. Reduces the resource contention that caused intermittent
