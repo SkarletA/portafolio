@@ -260,6 +260,145 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_expense_terms: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          description: string
+          effective_from: string
+          id: string
+          payment_method: string
+          recurring_expense_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          description: string
+          effective_from: string
+          id?: string
+          payment_method: string
+          recurring_expense_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          effective_from?: string
+          id?: string
+          payment_method?: string
+          recurring_expense_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expense_terms_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_expense_terms_recurring_expense_id_fkey"
+            columns: ["recurring_expense_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recurring_expenses: {
+        Row: {
+          created_at: string
+          day_of_month: number
+          ended_on: string | null
+          frequency: string
+          id: string
+          last_error: string | null
+          last_error_at: string | null
+          start_on: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_month: number
+          ended_on?: string | null
+          frequency?: string
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          start_on: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_month?: number
+          ended_on?: string | null
+          frequency?: string
+          id?: string
+          last_error?: string | null
+          last_error_at?: string | null
+          start_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recurring_occurrences: {
+        Row: {
+          created_at: string
+          id: string
+          recurring_expense_id: string
+          scheduled_date: string
+          term_version_id: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recurring_expense_id: string
+          scheduled_date: string
+          term_version_id: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recurring_expense_id?: string
+          scheduled_date?: string
+          term_version_id?: string
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_occurrences_recurring_expense_id_fkey"
+            columns: ["recurring_expense_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_occurrences_term_version_id_fkey"
+            columns: ["term_version_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_expense_terms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_occurrences_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: true
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transaction_payments: {
         Row: {
           amount: number
