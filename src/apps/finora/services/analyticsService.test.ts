@@ -215,7 +215,7 @@ describe('local calendar boundary (ADR-013)', () => {
 
     const { data } = await getTrendData('day')
 
-    expect(data?.at(-1)?.date).toBe('2026-09-30')
+    expect(data?.[data.length - 1]?.date).toBe('2026-09-30')
   })
 
   it('ends the month trend on the local month', async () => {
@@ -224,7 +224,7 @@ describe('local calendar boundary (ADR-013)', () => {
 
     const { data } = await getTrendData('month')
 
-    expect(data?.at(-1)?.date).toBe('2026-09-01')
+    expect(data?.[data.length - 1]?.date).toBe('2026-09-01')
   })
 
   it('ends the year trend on the local year at 31 December', async () => {
@@ -234,7 +234,7 @@ describe('local calendar boundary (ADR-013)', () => {
 
     const { data } = await getTrendData('year')
 
-    expect(data?.at(-1)?.date).toBe('2026-01-01')
+    expect(data?.[data.length - 1]?.date).toBe('2026-01-01')
   })
 })
 

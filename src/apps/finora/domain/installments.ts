@@ -33,7 +33,7 @@ export function allocateInstallments(amount: number, months: number): number[] {
   return Array.from({ length: months }, (_, index) => fromMinorUnits(index < remainder ? base + 1 : base))
 }
 
-function getDaysInMonth(year: number, month: number): number {
+export function getDaysInMonth(year: number, month: number): number {
   // Day 0 of the next month is the last day of `month` (1-based here).
   return new Date(Date.UTC(year, month, 0)).getUTCDate()
 }
