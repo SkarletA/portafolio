@@ -140,7 +140,7 @@ export function Transactions() {
   const monthRange = useMemo(() => {
     if (!monthFilter) return null
     const [year, monthNumber] = monthFilter.split('-').map(Number)
-    return getPeriodRange('month', new Date(Date.UTC(year, monthNumber - 1, 1))).current
+    return getPeriodRange('month', new Date(year, monthNumber - 1, 1)).current
   }, [monthFilter])
 
   // "Household" is every expense explicitly tagged as the household's - a

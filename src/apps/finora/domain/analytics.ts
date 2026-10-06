@@ -1,3 +1,4 @@
+import { getLocalCalendarDate } from './date'
 import { subtractMoney, sumToMinorUnits } from './money'
 
 export type PeriodType = 'day' | 'month' | 'year'
@@ -11,18 +12,19 @@ function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
-// Ranges are computed in UTC, consistently with transactionsService's
-// getCurrentMonthRange, so date-only comparisons against the `date` column
-// don't drift across timezones.
+// referenceDate is an instant; its local calendar day decides the period
+// (ADR-013). The ranges are then calendar-day arithmetic in UTC, which never
+// reads the UTC clock, so the period changes at local midnight.
 export function getPeriodRange(
   periodType: PeriodType,
   referenceDate: Date
 ): { current: DateRange; previous: DateRange } {
-  const year = referenceDate.getUTCFullYear()
+  const today = getLocalCalendarDate(referenceDate)
+  const year = today.getUTCFullYear()
 
   if (periodType === 'day') {
-    const day = new Date(Date.UTC(year, referenceDate.getUTCMonth(), referenceDate.getUTCDate()))
-    const previousDay = new Date(Date.UTC(year, referenceDate.getUTCMonth(), referenceDate.getUTCDate() - 1))
+    const day = new Date(Date.UTC(year, today.getUTCMonth(), today.getUTCDate()))
+    const previousDay = new Date(Date.UTC(year, today.getUTCMonth(), today.getUTCDate() - 1))
 
     return {
       current: { start: toIsoDate(day), end: toIsoDate(day) },
@@ -40,7 +42,7 @@ export function getPeriodRange(
     }
   }
 
-  const month = referenceDate.getUTCMonth()
+  const month = today.getUTCMonth()
 
   return {
     current: {
