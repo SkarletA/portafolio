@@ -190,26 +190,27 @@ A valid starting point is:
 src/
 └── apps/
     └── finora/
-        ├── FinoraApp.jsx
-        ├── routes.jsx
+        ├── FinoraApp.tsx
+        ├── routes/
+        │   └── FinoraRoutes.tsx
         │
         ├── pages/
-        │   └── Home.jsx
+        │   └── Home.tsx
         │
         ├── components/
         │   ├── atoms/
         │   │   └── Button/
-        │   │       ├── Button.jsx
-        │   │       ├── Button.stories.jsx
-        │   │       └── Button.test.jsx
+        │   │       ├── Button.tsx
+        │   │       ├── Button.stories.tsx
+        │   │       └── Button.test.tsx
         │   │
         │   ├── molecules/
         │   │
         │   └── organisms/
         │       └── AppShell/
-        │           ├── AppShell.jsx
-        │           ├── AppShell.stories.jsx
-        │           └── AppShell.test.jsx
+        │           ├── AppShell.tsx
+        │           ├── AppShell.stories.tsx
+        │           └── AppShell.test.tsx
         │
         └── styles/
             └── theme.css
@@ -341,9 +342,9 @@ Stories should be colocated with the component:
 
 ```text
 Button/
-├── Button.jsx
-├── Button.stories.jsx
-└── Button.test.jsx
+├── Button.tsx
+├── Button.stories.tsx
+└── Button.test.tsx
 ```
 
 Avoid creating large centralized folders such as:
@@ -376,9 +377,9 @@ Example:
 
 ```text
 Button/
-├── Button.jsx
-├── Button.stories.jsx
-└── Button.test.jsx
+├── Button.tsx
+├── Button.stories.tsx
+└── Button.test.tsx
 ```
 
 Testing priorities:
@@ -442,7 +443,7 @@ When implementing monetary calculations:
 * Keep financial calculations testable and deterministic.
 * Separate presentation formatting from financial calculations.
 
-Amounts are always displayed with exactly 2 decimals, through `formatCurrency` in `domain/currency.ts` and with no per-screen override: every supported currency has 2 decimals and amounts are stored as `numeric(12,2)`, so showing fewer would hide cents the user recorded. Do not format money with `toFixed`, `toLocaleString` or a separate `Intl.NumberFormat`.
+Amounts are always displayed with exactly 2 decimals, through `formatCurrency` in `domain/currency.ts` and with no per-screen override: every supported currency has 2 decimals and the existing amounts are stored as `numeric(12,2)` (new money columns follow ADR-005, Amendment 2), so showing fewer would hide cents the user recorded. Do not format money with `toFixed`, `toLocaleString` or a separate `Intl.NumberFormat`.
 
 ### Arithmetic on amounts in the client (see `docs/adr/005-money-arithmetic-in-the-client.md`)
 
@@ -453,6 +454,7 @@ Amounts stay `number` in the client; Postgres (`numeric`) is the source of truth
 3. Never send a value computed in JavaScript to the database as an amount. Only the user's typed value, after `roundMoneyInput`, is sent.
 4. Money inputs round visibly on blur with `roundMoneyInput` and validate decimals on submit. The database must never be the one that rounds.
 5. Do not add a decimal library or convert the whole app to cents without revisiting ADR-005.
+6. New money columns are `numeric` with CHECKs that reject (positive, at most 2 decimals, capped), never `numeric(12,2)`, which rounds silently. See `docs/adr/005-money-arithmetic-in-the-client.md`, Amendment 2.
 
 Before implementing significant financial calculations, document the chosen money representation and related decisions in an ADR.
 
