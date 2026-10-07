@@ -1,0 +1,29 @@
+@reference '../../../styles/theme.css';
+
+.item {
+  @apply flex flex-1 flex-col items-center gap-1 py-1.5 text-[10.5px] font-semibold transition-colors;
+}
+
+.navIcon {
+  @apply h-5 w-5;
+}
+
+.inactive {
+  @apply text-finora-ink-muted hover:text-finora-ink;
+}
+
+.active {
+  @apply text-finora-primary;
+}
+
+.row {
+  @apply flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-finora-ink transition-colors hover:bg-finora-surface-muted;
+}
+
+.rowLabel {
+  @apply flex-1;
+}
+
+.chevron {
+  @apply h-4 w-4 shrink-0 text-finora-ink-muted;
+}

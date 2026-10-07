@@ -11,6 +11,7 @@ const ICON_NAMES: IconName[] = [
   'goals',
   'recurring',
   'settings',
+  'more',
   'plus',
   'search',
   'edit',

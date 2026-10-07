@@ -11,6 +11,7 @@ export type IconName =
   | 'goals'
   | 'recurring'
   | 'settings'
+  | 'more'
   | 'plus'
   | 'search'
   | 'edit'
@@ -178,6 +179,16 @@ function TrashGlyph() {
   )
 }
 
+function MoreGlyph() {
+  return (
+    <>
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="19" cy="12" r="1.5" />
+    </>
+  )
+}
+
 const GLYPHS: Record<IconName, () => ReactElement> = {
   'brand-mark': BrandMarkGlyph,
   dashboard: DashboardGlyph,
@@ -187,6 +198,7 @@ const GLYPHS: Record<IconName, () => ReactElement> = {
   goals: GoalsGlyph,
   recurring: RecurringGlyph,
   settings: SettingsGlyph,
+  more: MoreGlyph,
   plus: PlusGlyph,
   search: SearchGlyph,
   edit: EditGlyph,
