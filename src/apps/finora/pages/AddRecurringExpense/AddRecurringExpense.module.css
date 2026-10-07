@@ -27,3 +27,7 @@
 .hint {
   @apply text-sm text-finora-ink-muted;
 }
+
+.checkboxLabel {
+  @apply flex items-center gap-2 text-sm font-normal text-finora-ink;
+}

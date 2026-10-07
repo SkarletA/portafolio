@@ -22,7 +22,9 @@
     "overdueHint": "{{count}} cargo(s) no se publicaron en su fecha.",
     "postNow": "Publicar ahora",
     "posting": "Publicando…",
-    "lastErrorHint": "El último intento de publicar un cargo falló. Se reintentará solo, o usa \"Publicar ahora\"."
+    "lastErrorHint": "El último intento de publicar un cargo falló. Se reintentará solo, o usa \"Publicar ahora\".",
+    "sharedWith": "Compartido con {{partner}} · tú pagas {{amount}}",
+    "sharedNoPartnerWarning": "Sin un hogar activo, el próximo cargo se publicará sin el reparto."
   },
   "form": {
     "title": "Nuevo gasto recurrente",
@@ -31,6 +33,11 @@
     "amount": "Monto",
     "category": "Categoría",
     "paymentMethod": "Método de pago",
+    "sharedExpense": "Compartir este gasto",
+    "shareWithPartner": "Dividir el monto con {{partner}}",
+    "sharedHint": "Todos los cargos de esta plantilla se dividen igual, hasta que lo cambies.",
+    "yourSharePart": "Tu parte",
+    "partnerSharePart": "Parte de {{partner}}: {{amount}}",
     "dayOfMonth": "Día del mes",
     "dayOfMonthHint": "Se cobra el día {{day}} de cada mes. Esto no se puede cambiar después.",
     "effectiveFrom": "Aplicar nuevo precio desde",
@@ -49,7 +56,8 @@
     "selectCategory": "Selecciona una categoría",
     "selectPaymentMethod": "Selecciona un método de pago",
     "dayOfMonthRange": "Ingresa un día entre 1 y 31",
-    "effectiveFromMustBeFuture": "Elige una fecha después de hoy"
+    "effectiveFromMustBeFuture": "Elige una fecha después de hoy",
+    "shareAmountRange": "Ingresa un monto mayor a 0 y menor al total"
   },
   "errors": {
     "not_authenticated": "Vuelve a iniciar sesión.",
@@ -64,6 +72,8 @@
     "effective_date_not_future": "Elige una fecha después de hoy",
     "recurring_term_conflict": "Ya existe un cambio con esa misma fecha. Elige otra fecha.",
     "recurring_already_cancelled": "Este gasto recurrente ya está cancelado.",
-    "ended_before_today": "Elige hoy o una fecha posterior"
+    "ended_before_today": "Elige hoy o una fecha posterior",
+    "invalid_share_amount": "Ingresa un monto mayor a 0 y menor al total",
+    "household_required_for_shared_expense": "Compartir un gasto necesita un miembro de hogar aceptado."
   }
 }

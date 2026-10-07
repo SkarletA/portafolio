@@ -17,8 +17,13 @@ import { useCategories } from '@hooks/useCategories'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
 import { getCurrentTerm, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
 import { getTodayLocalDate } from '@domain/date'
-import { roundMoneyInput } from '@domain/money'
+import { roundMoneyInput, subtractMoney } from '@domain/money'
 import { PAYMENT_METHODS } from '@domain/transaction'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
+import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { useCurrency } from '@context/CurrencyContext'
+import { useLanguage } from '@context/LanguageContext'
+import { useHousehold } from '@context/HouseholdContext'
 import s from './AddRecurringExpense.module.css'
 
 const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({ value: method, label: method }))
@@ -102,6 +107,7 @@ interface FormErrors {
   payment_method?: string
   day_of_month?: string
   effective_from?: string
+  share?: string
 }
 
 interface RecurringExpenseFormProps {
@@ -114,6 +120,12 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
   const { t } = useTranslation(['recurring', 'common'])
   const navigate = useNavigate()
   const { categories, loading: categoriesLoading } = useCategories()
+  const { currency } = useCurrency()
+  const { language } = useLanguage()
+  const locale = getLocaleForLanguage(language)
+  const { partnerMember, partner } = useHousehold()
+  const hasAcceptedPartner = partnerMember?.status === 'accepted'
+  const partnerName = getHouseholdPartnerDisplayName(partner)
   const isEdit = mode === 'edit' && !!recurringExpense
   const testIdPrefix = isEdit ? 'edit-recurring-expense' : 'add-recurring-expense'
   const today = getTodayLocalDate()
@@ -126,6 +138,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       amount: term.amount,
       categoryId: term.category_id,
       paymentMethod: term.payment_method,
+      isShared: term.is_shared,
+      ownerShareAmount: term.owner_share_amount,
     }))
     return getCurrentTerm(terms, today)
   }, [recurringExpense, today])
@@ -136,6 +150,12 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
   const [paymentMethod, setPaymentMethod] = useState(currentTerm?.paymentMethod ?? '')
   const [dayOfMonth, setDayOfMonth] = useState('')
   const [effectiveFrom, setEffectiveFrom] = useState('')
+  const [isShared, setIsShared] = useState(currentTerm?.isShared ?? false)
+  const [ownerSharePart, setOwnerSharePart] = useState(
+    currentTerm?.ownerShareAmount !== null && currentTerm?.ownerShareAmount !== undefined
+      ? String(currentTerm.ownerShareAmount)
+      : ''
+  )
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -169,6 +189,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       amount: 0,
       categoryId: null,
       paymentMethod: '',
+      isShared: false,
+      ownerShareAmount: null,
     }
 
     return getUpcomingCharges(schedule, [dummyTerm], effectiveFrom, 1)[0]?.date ?? null
@@ -209,6 +231,20 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
     setErrors((prev) => (prev.effective_from ? { ...prev, effective_from: undefined } : prev))
   }, [])
 
+  const handleSharedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsShared(event.target.checked)
+    setErrors((prev) => (prev.share ? { ...prev, share: undefined } : prev))
+  }, [])
+
+  const handleOwnerSharePartChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setOwnerSharePart(event.target.value)
+    setErrors((prev) => (prev.share ? { ...prev, share: undefined } : prev))
+  }, [])
+
+  const handleOwnerSharePartBlur = useCallback(() => {
+    setOwnerSharePart((prev) => roundMoneyInput(prev))
+  }, [])
+
   const handleSubmit = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
@@ -241,6 +277,23 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         nextErrors.effective_from = t('recurring:validation.effectiveFromMustBeFuture')
       }
 
+      // hasAcceptedPartner gates the whole section away (never checked without
+      // one), but the amount is still validated whenever it's checked.
+      const effectiveIsShared = hasAcceptedPartner && isShared
+      let parsedOwnerShare: number | null = null
+      if (effectiveIsShared) {
+        parsedOwnerShare = Number(ownerSharePart)
+        if (
+          !ownerSharePart ||
+          Number.isNaN(parsedOwnerShare) ||
+          parsedOwnerShare <= 0 ||
+          parsedOwnerShare >= parsedAmount ||
+          roundMoneyInput(ownerSharePart) !== ownerSharePart
+        ) {
+          nextErrors.share = t('recurring:validation.shareAmountRange')
+        }
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -253,6 +306,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         amount: parsedAmount,
         category_id: categoryId,
         payment_method: paymentMethod,
+        is_shared: effectiveIsShared,
+        owner_share_amount: effectiveIsShared ? parsedOwnerShare : null,
       }
 
       const { error } =
@@ -272,14 +327,40 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
           setErrors({ effective_from: t(`recurring:errors.${code}`) })
           return
         }
+        if (code === 'invalid_share_amount' || code === 'household_required_for_shared_expense') {
+          setErrors({ share: t(`recurring:errors.${code}`) })
+          return
+        }
         setSubmitError(code ? t(`recurring:errors.${code}`) : error.message)
         return
       }
 
       navigate('/finora/recurring')
     },
-    [description, amount, categoryId, paymentMethod, dayOfMonth, effectiveFrom, isEdit, recurringExpense, today, navigate, t]
+    [
+      description,
+      amount,
+      categoryId,
+      paymentMethod,
+      dayOfMonth,
+      effectiveFrom,
+      hasAcceptedPartner,
+      isShared,
+      ownerSharePart,
+      isEdit,
+      recurringExpense,
+      today,
+      navigate,
+      t,
+    ]
   )
+
+  // For the in-form preview only (what the partner's part would be); the
+  // database computes its own copy independently and never receives this
+  // client-computed value directly - only ownerSharePart is sent (ADR-005).
+  const totalAmount = Number(amount) || 0
+  const parsedOwnerSharePart = roundMoneyInput(ownerSharePart) === ownerSharePart ? Number(ownerSharePart) || 0 : 0
+  const partnerSharePart = subtractMoney(totalAmount, parsedOwnerSharePart)
 
   return (
     <section className={s.section}>
@@ -423,6 +504,52 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
               </p>
             )}
           </>
+        )}
+
+        {hasAcceptedPartner && (
+          <div className={s.field}>
+            <label className={s.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={isShared}
+                onChange={handleSharedChange}
+                aria-describedby={`${testIdPrefix}-shared-hint`}
+                data-testid={`${testIdPrefix}-shared-checkbox`}
+              />
+              {t('form.shareWithPartner', { partner: partnerName ?? '' })}
+            </label>
+            <p id={`${testIdPrefix}-shared-hint`} className={s.hint}>
+              {t('form.sharedHint')}
+            </p>
+
+            {isShared && (
+              <label className={s.field}>
+                {t('form.yourSharePart')}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={ownerSharePart}
+                  onChange={handleOwnerSharePartChange}
+                  onBlur={handleOwnerSharePartBlur}
+                  className={s.input}
+                  aria-invalid={!!errors.share}
+                  aria-describedby={errors.share ? `${testIdPrefix}-share-error` : `${testIdPrefix}-partner-share-hint`}
+                  data-testid={`${testIdPrefix}-owner-share-input`}
+                />
+                <p id={`${testIdPrefix}-partner-share-hint`} className={s.hint} data-testid={`${testIdPrefix}-partner-share-hint`}>
+                  {t('form.partnerSharePart', { partner: partnerName ?? '', amount: formatCurrency(partnerSharePart, currency, locale) })}
+                </p>
+              </label>
+            )}
+
+            {errors.share && (
+              <p id={`${testIdPrefix}-share-error`} role="alert" className={s.error}>
+                {errors.share}
+              </p>
+            )}
+          </div>
         )}
 
         {submitError && (

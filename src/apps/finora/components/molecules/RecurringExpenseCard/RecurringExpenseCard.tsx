@@ -8,8 +8,10 @@ import { parseRecurringExpenseError } from '@services/recurringExpensesErrors'
 import { getCurrentTerm, getNextTerm, getOverdueDates, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
+import { getHouseholdPartnerDisplayName } from '@domain/household'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
+import { useHousehold } from '@context/HouseholdContext'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '@atoms/Icon/Icon'
 import s from './RecurringExpenseCard.module.css'
@@ -41,6 +43,9 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const { currency } = useCurrency()
   const { language } = useLanguage()
   const locale = getLocaleForLanguage(language)
+  const { partnerMember, partner } = useHousehold()
+  const hasAcceptedPartner = partnerMember?.status === 'accepted'
+  const partnerName = getHouseholdPartnerDisplayName(partner)
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
@@ -62,6 +67,8 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         amount: term.amount,
         categoryId: term.category_id,
         paymentMethod: term.payment_method,
+        isShared: term.is_shared,
+        ownerShareAmount: term.owner_share_amount,
       })),
     [terms]
   )
@@ -195,6 +202,14 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
           <p className={s.amount}>
             {formatCurrency(currentTerm?.amount ?? 0, currency, locale)} · {categoryName}
           </p>
+          {currentTerm?.isShared && (
+            <p className={s.sharedWith} data-testid={`recurring-card-${id}-shared-with`}>
+              {t('card.sharedWith', {
+                partner: partnerName ?? '',
+                amount: formatCurrency(currentTerm.ownerShareAmount ?? 0, currency, locale),
+              })}
+            </p>
+          )}
           {nextCharge && !isFullyStopped && (
             <p className={s.nextCharge}>{t('card.nextCharge', { date: formatCardDate(nextCharge.date) })}</p>
           )}
@@ -249,6 +264,12 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
             {posting ? t('card.posting') : t('card.postNow')}
           </button>
         </div>
+      )}
+
+      {currentTerm?.isShared && !hasAcceptedPartner && !isFullyStopped && (
+        <p className={s.sharedWarning} data-testid={`recurring-card-${id}-shared-no-partner-warning`}>
+          {t('card.sharedNoPartnerWarning')}
+        </p>
       )}
 
       {postError && (

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecurringExpenseCard } from './RecurringExpenseCard'
 import { cancelRecurringExpense, postMyRecurringExpenses } from '@services/recurringExpensesService'
 import type { RecurringExpenseWithDetails } from '@services/recurringExpensesService'
+import { useHousehold } from '@context/HouseholdContext'
 
 vi.mock('@services/recurringExpensesService', () => ({
   cancelRecurringExpense: vi.fn(),
@@ -11,6 +12,10 @@ vi.mock('@services/recurringExpensesService', () => ({
 }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
+
+const ACCEPTED_PARTNER_MEMBER = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
+const PARTNER = { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null }
 
 const CATEGORY = { id: 'c1', name: 'Entertainment', icon: null, color: null, translationKey: null }
 
@@ -32,12 +37,14 @@ function recurringExpense(overrides: Partial<RecurringExpenseWithDetails> = {}):
         amount: 199,
         category_id: 'c1',
         payment_method: 'Credit Card',
+        is_shared: false,
+        owner_share_amount: null,
         category: CATEGORY,
       },
     ],
     occurrences: [
-      { id: 'o1', scheduled_date: '2026-08-15', transaction_id: 'tx1' },
-      { id: 'o2', scheduled_date: '2026-09-15', transaction_id: 'tx2' },
+      { id: 'o1', scheduled_date: '2026-08-15', transaction_id: 'tx1', posted_without_household: false },
+      { id: 'o2', scheduled_date: '2026-09-15', transaction_id: 'tx2', posted_without_household: false },
     ],
     ...overrides,
   }
@@ -55,6 +62,7 @@ describe('RecurringExpenseCard', () => {
   beforeEach(() => {
     vi.mocked(cancelRecurringExpense).mockReset()
     vi.mocked(postMyRecurringExpenses).mockReset()
+    vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
   })
 
   it('renders the current term, category and an active status', () => {
@@ -99,6 +107,8 @@ describe('RecurringExpenseCard', () => {
           amount: 199,
           category_id: 'c1',
           payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
           category: CATEGORY,
         },
       ],
@@ -132,6 +142,8 @@ describe('RecurringExpenseCard', () => {
           amount: 299,
           category_id: 'c1',
           payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
           category: CATEGORY,
         },
       ],
@@ -154,6 +166,8 @@ describe('RecurringExpenseCard', () => {
           amount: 199,
           category_id: 'c1',
           payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
           category: CATEGORY,
         },
         {
@@ -164,6 +178,8 @@ describe('RecurringExpenseCard', () => {
           amount: 249,
           category_id: 'c1',
           payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
           category: CATEGORY,
         },
       ],
@@ -185,7 +201,7 @@ describe('RecurringExpenseCard', () => {
   })
 
   it('shows the overdue banner and posts now when a due date never posted', async () => {
-    const expense = recurringExpense({ occurrences: [{ id: 'o1', scheduled_date: '2026-08-15', transaction_id: 'tx1' }] })
+    const expense = recurringExpense({ occurrences: [{ id: 'o1', scheduled_date: '2026-08-15', transaction_id: 'tx1', posted_without_household: false }] })
     vi.mocked(postMyRecurringExpenses).mockResolvedValue({ data: 1, error: null } as never)
     const { onChanged } = renderCard(expense)
 
@@ -234,5 +250,86 @@ describe('RecurringExpenseCard', () => {
     renderCard(recurringExpense({ last_error: 'insufficient_funds', last_error_at: '2026-10-05T18:00:00Z' }))
 
     expect(screen.getByText('card.lastErrorHint')).toBeInTheDocument()
+  })
+
+  it('shows who it is shared with and the owner\'s part, for a shared term', () => {
+    vi.mocked(useHousehold).mockReturnValue({ partnerMember: ACCEPTED_PARTNER_MEMBER, partner: PARTNER } as never)
+    const expense = recurringExpense({
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          is_shared: true,
+          owner_share_amount: 120,
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    expect(screen.getByTestId('recurring-card-r1-shared-with')).toHaveTextContent(
+      'card.sharedWith:{"partner":"Bel Suarez","amount":"$120.00"}'
+    )
+  })
+
+  it('shows no shared-with line for an unshared term', () => {
+    renderCard(recurringExpense())
+
+    expect(screen.queryByTestId('recurring-card-r1-shared-with')).not.toBeInTheDocument()
+  })
+
+  it('warns when a shared term has no accepted partner right now', () => {
+    const expense = recurringExpense({
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          is_shared: true,
+          owner_share_amount: 120,
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    expect(screen.getByTestId('recurring-card-r1-shared-no-partner-warning')).toHaveTextContent(
+      'card.sharedNoPartnerWarning'
+    )
+  })
+
+  it('shows no no-partner warning for a shared term once a partner is accepted', () => {
+    vi.mocked(useHousehold).mockReturnValue({ partnerMember: ACCEPTED_PARTNER_MEMBER, partner: PARTNER } as never)
+    const expense = recurringExpense({
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          is_shared: true,
+          owner_share_amount: 120,
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    expect(screen.queryByTestId('recurring-card-r1-shared-no-partner-warning')).not.toBeInTheDocument()
   })
 })

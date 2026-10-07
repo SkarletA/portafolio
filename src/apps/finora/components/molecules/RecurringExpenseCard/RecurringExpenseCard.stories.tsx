@@ -1,7 +1,10 @@
+import { authHandlers, MOCK_USER_ID, signInMockUser } from '@storybook-mocks/supabaseAuth'
+import { restHandler, rpcHandler } from '@storybook-mocks/supabaseRest'
 import { RecurringExpenseCard } from './RecurringExpenseCard'
 
 const CATEGORY = { id: 'c1', name: 'Entertainment', icon: null, color: '#7c3aed', translationKey: null }
 const TODAY = '2026-10-06'
+const PARTNER_ID = '00000000-0000-4000-8000-000000000002'
 
 export default {
   title: 'Finora/Molecules/RecurringExpenseCard',
@@ -52,12 +55,14 @@ export const Active = {
           amount: 199,
           category_id: 'c1',
           payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
           category: CATEGORY,
         },
       ],
       occurrences: [
-        { id: 'o1', scheduled_date: '2026-08-15', transaction_id: 'tx1' },
-        { id: 'o2', scheduled_date: '2026-09-15', transaction_id: 'tx2' },
+        { id: 'o1', scheduled_date: '2026-08-15', transaction_id: 'tx1', posted_without_household: false },
+        { id: 'o2', scheduled_date: '2026-09-15', transaction_id: 'tx2', posted_without_household: false },
       ],
     },
   },
@@ -87,5 +92,46 @@ export const Cancelled = {
   args: {
     ...Active.args,
     recurringExpense: { ...Active.args.recurringExpense, id: '4', ended_on: '2026-09-01' },
+  },
+}
+
+// ADR-014: an accepted partner, so the signed-in user's own share and the
+// partner's display name both resolve to something real, the same reason
+// BudgetCard's HouseholdBudget story needs this.
+export const Shared = {
+  args: {
+    ...Active.args,
+    recurringExpense: {
+      ...Active.args.recurringExpense,
+      id: '5',
+      terms: [{ ...Active.args.recurringExpense.terms[0], is_shared: true, owner_share_amount: 120 }],
+    },
+  },
+  loaders: [signInMockUser],
+  parameters: {
+    msw: {
+      handlers: [
+        ...authHandlers,
+        restHandler('household_members', [
+          { id: 'm1', household_id: 'h1', user_id: MOCK_USER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
+          { id: 'm2', household_id: 'h1', user_id: PARTNER_ID, status: 'accepted', invited_by: MOCK_USER_ID },
+        ]),
+        rpcHandler('get_household_partner', { user_id: PARTNER_ID, first_name: 'Maribel', last_name: 'Prueba', avatar_url: null }),
+      ],
+    },
+  },
+}
+
+// Same shared term, but with no accepted partner - the fallback the posting
+// job itself uses (post unshared, mark the occurrence), shown here as the
+// preventive warning before that ever has to happen.
+export const SharedNoPartner = {
+  args: {
+    ...Active.args,
+    recurringExpense: {
+      ...Active.args.recurringExpense,
+      id: '6',
+      terms: [{ ...Active.args.recurringExpense.terms[0], is_shared: true, owner_share_amount: 120 }],
+    },
   },
 }

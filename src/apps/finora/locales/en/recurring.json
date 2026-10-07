@@ -22,7 +22,9 @@
     "overdueHint": "{{count}} charge(s) didn't post on schedule.",
     "postNow": "Post now",
     "posting": "Posting…",
-    "lastErrorHint": "The last attempt to post a charge failed. It will retry automatically, or use \"Post now\"."
+    "lastErrorHint": "The last attempt to post a charge failed. It will retry automatically, or use \"Post now\".",
+    "sharedWith": "Shared with {{partner}} · you pay {{amount}}",
+    "sharedNoPartnerWarning": "No active household - the next charge will post unshared."
   },
   "form": {
     "title": "New recurring expense",
@@ -31,6 +33,11 @@
     "amount": "Amount",
     "category": "Category",
     "paymentMethod": "Payment method",
+    "sharedExpense": "Share this expense",
+    "shareWithPartner": "Split the amount with {{partner}}",
+    "sharedHint": "Every charge this template posts is split the same way, until you change it.",
+    "yourSharePart": "Your part",
+    "partnerSharePart": "{{partner}}'s part: {{amount}}",
     "dayOfMonth": "Day of month",
     "dayOfMonthHint": "Charged on day {{day}} of each month. This can't be changed later.",
     "effectiveFrom": "Apply new price from",
@@ -49,7 +56,8 @@
     "selectCategory": "Select a category",
     "selectPaymentMethod": "Select a payment method",
     "dayOfMonthRange": "Enter a day between 1 and 31",
-    "effectiveFromMustBeFuture": "Choose a date after today"
+    "effectiveFromMustBeFuture": "Choose a date after today",
+    "shareAmountRange": "Enter an amount greater than 0 and less than the total"
   },
   "errors": {
     "not_authenticated": "Please sign in again.",
@@ -64,6 +72,8 @@
     "effective_date_not_future": "Choose a date after today",
     "recurring_term_conflict": "There's already a change starting on that date. Choose a different date.",
     "recurring_already_cancelled": "This recurring expense is already cancelled.",
-    "ended_before_today": "Choose today or a later date"
+    "ended_before_today": "Choose today or a later date",
+    "invalid_share_amount": "Enter an amount greater than 0 and less than the total",
+    "household_required_for_shared_expense": "Sharing an expense needs an accepted household partner."
   }
 }

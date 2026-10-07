@@ -5,6 +5,7 @@ import { AddRecurringExpense } from './AddRecurringExpense'
 import { createRecurringExpense, updateRecurringExpense } from '@services/recurringExpensesService'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
 import { useCategories } from '@hooks/useCategories'
+import { useHousehold } from '@context/HouseholdContext'
 
 vi.mock('@services/recurringExpensesService', () => ({
   createRecurringExpense: vi.fn(),
@@ -13,6 +14,9 @@ vi.mock('@services/recurringExpensesService', () => ({
 vi.mock('@hooks/useRecurringExpenses', () => ({ useRecurringExpenses: vi.fn() }))
 vi.mock('@hooks/useCategories', () => ({ useCategories: vi.fn() }))
 vi.mock('@domain/date', () => ({ getTodayLocalDate: () => '2026-10-06' }))
+vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
+vi.mock('@context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 
 const CATEGORY = { id: 'c1', name: 'Entertainment', icon: null, color: null, parent_id: null, translationKey: null }
 
@@ -33,6 +37,8 @@ const recurringExpense = {
       amount: 199,
       category_id: 'c1',
       payment_method: 'Credit Card',
+      is_shared: false,
+      owner_share_amount: null as number | null,
       category: CATEGORY,
     },
   ],
@@ -81,6 +87,7 @@ describe('AddRecurringExpense', () => {
     vi.mocked(createRecurringExpense).mockReset()
     vi.mocked(updateRecurringExpense).mockReset()
     mockCategories()
+    vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
   })
 
   describe('create mode', () => {
@@ -115,7 +122,14 @@ describe('AddRecurringExpense', () => {
 
       await waitFor(() =>
         expect(createRecurringExpense).toHaveBeenCalledWith(
-          { description: 'Streaming', amount: 199, category_id: 'c1', payment_method: 'Credit Card' },
+          {
+            description: 'Streaming',
+            amount: 199,
+            category_id: 'c1',
+            payment_method: 'Credit Card',
+            is_shared: false,
+            owner_share_amount: null,
+          },
           15,
           '2026-10-06'
         )
@@ -241,7 +255,14 @@ describe('AddRecurringExpense', () => {
         expect(updateRecurringExpense).toHaveBeenCalledWith(
           'r1',
           '2026-11-01',
-          { description: 'Streaming', amount: 249, category_id: 'c1', payment_method: 'Credit Card' },
+          {
+            description: 'Streaming',
+            amount: 249,
+            category_id: 'c1',
+            payment_method: 'Credit Card',
+            is_shared: false,
+            owner_share_amount: null,
+          },
           '2026-10-06'
         )
       )
