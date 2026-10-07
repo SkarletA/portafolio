@@ -2,7 +2,12 @@
 
 ## Status
 
-Proposed
+Accepted. Migrations applied and `database.types.ts` regenerated; the RPCs,
+the posting job and the client (form, card, errors, i18n) are implemented on
+one branch/PR, in commits, per the product owner's call (see Implementation).
+Not independently re-verified against a live household dissolving mid-template
+beyond manual testing of the create/edit/display paths - the SQL regression
+this ADR's Implementation section describes is still to run.
 
 Amends [ADR-012](./012-recurring-expenses.md): fulfils the "Shared expense with
 a split (Case A, ADR-009)" row of its "Interaction with existing features"
@@ -133,10 +138,9 @@ already do in `recurring_expense_terms`.
 
 ## Implementation
 
-Status: implemented in this repository's working tree, commit by commit on one
-branch/PR (schema, then RPC and job, then client), rather than ADR-012's
-staged multiple-PR rollout - the project owner's call, since this ADR's own
-status can simply be updated once the PR lands.
+Shipped commit by commit on one branch/PR (schema, then RPC and job, then
+client), rather than ADR-012's staged multiple-PR rollout - the project
+owner's call.
 
 - Migration `supabase/migrations/20261008090000_recurring_shared_split_schema.sql`
   (schema only, no behaviour change): `recurring_expense_terms.is_shared`,
