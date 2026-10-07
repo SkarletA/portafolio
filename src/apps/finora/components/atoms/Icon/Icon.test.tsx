@@ -9,6 +9,7 @@ const ICON_NAMES: IconName[] = [
   'budgets',
   'analytics',
   'goals',
+  'recurring',
   'settings',
   'plus',
   'search',

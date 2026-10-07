@@ -55,6 +55,7 @@
     "chipYou": "You {{amount}}",
     "chipOther": "{{name}} {{amount}}",
     "householdExpenseTag": "Counts toward household · not split",
+    "recurringChip": "Recurring",
     "chips": {
       "coveredBySavings": "Covered by savings · {{goal}}"
     }

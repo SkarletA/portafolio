@@ -9,6 +9,7 @@ export type IconName =
   | 'budgets'
   | 'analytics'
   | 'goals'
+  | 'recurring'
   | 'settings'
   | 'plus'
   | 'search'
@@ -84,6 +85,17 @@ function GoalsGlyph() {
       <circle cx="12" cy="12" r="9" />
       <circle cx="12" cy="12" r="5" />
       <circle cx="12" cy="12" r="1" />
+    </>
+  )
+}
+
+function RecurringGlyph() {
+  return (
+    <>
+      <path d="M4 7 H15 A4 4 0 0 1 19 11 V13" />
+      <path d="M16 4 L19 7 L16 10" />
+      <path d="M20 17 H9 A4 4 0 0 1 5 13 V11" />
+      <path d="M8 20 L5 17 L8 14" />
     </>
   )
 }
@@ -173,6 +185,7 @@ const GLYPHS: Record<IconName, () => ReactElement> = {
   budgets: BudgetsGlyph,
   analytics: AnalyticsGlyph,
   goals: GoalsGlyph,
+  recurring: RecurringGlyph,
   settings: SettingsGlyph,
   plus: PlusGlyph,
   search: SearchGlyph,

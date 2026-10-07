@@ -102,6 +102,18 @@ describe('TransactionItem', () => {
     expect(screen.queryByText(/item\.householdExpenseTag/)).not.toBeInTheDocument()
   })
 
+  it('shows a gray, non-clickable context chip for a transaction posted by a recurring expense', () => {
+    renderItem({ ...baseTransaction, recurring_occurrence: { recurring_expense_id: 'r1' } })
+
+    expect(screen.getByText('item.recurringChip')).toBeInTheDocument()
+  })
+
+  it('shows no recurring chip for an ordinary expense', () => {
+    renderItem(baseTransaction)
+
+    expect(screen.queryByText('item.recurringChip')).not.toBeInTheDocument()
+  })
+
   it('shows edit and delete for the signed-in user\'s own row', () => {
     renderItem(baseTransaction)
 

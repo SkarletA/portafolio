@@ -1,0 +1,68 @@
+{
+  "title": "Recurring expenses",
+  "subtitle": "Subscriptions and fixed monthly charges that post themselves",
+  "newRecurringExpense": "New recurring expense",
+  "list": {
+    "loading": "Loading recurring expenses…",
+    "error": "We couldn't load your recurring expenses. Please try again later.",
+    "empty": "You don't have any recurring expenses set up yet."
+  },
+  "card": {
+    "uncategorized": "Uncategorized",
+    "status": {
+      "active": "Active",
+      "ending": "Ending on {{date}}",
+      "cancelled": "Cancelled since {{date}}"
+    },
+    "nextCharge": "Next charge: {{date}}",
+    "editAriaLabel": "Edit {{description}}",
+    "cancelAriaLabel": "Cancel {{description}}",
+    "confirmCancel": "Cancel \"{{description}}\"? Charges already due still post; nothing posts after today.",
+    "overdueHint": "{{count}} charge(s) didn't post on schedule.",
+    "postNow": "Post now",
+    "posting": "Posting…",
+    "lastErrorHint": "The last attempt to post a charge failed. It will retry automatically, or use \"Post now\"."
+  },
+  "form": {
+    "title": "New recurring expense",
+    "editTitle": "Edit recurring expense",
+    "description": "Description",
+    "amount": "Amount",
+    "category": "Category",
+    "paymentMethod": "Payment method",
+    "dayOfMonth": "Day of month",
+    "dayOfMonthHint": "Charged on day {{day}} of each month. This can't be changed later.",
+    "effectiveFrom": "Apply new price from",
+    "effectiveFromHint": "Charges already due keep their current price. This one applies from the date you choose.",
+    "firstChargeWithNewPrice": "The new price first applies to the charge on {{date}}.",
+    "saveRecurringExpense": "Save recurring expense",
+    "saveChanges": "Save changes",
+    "backToRecurring": "Back to recurring expenses",
+    "loadingTemplate": "Loading recurring expense…",
+    "loadError": "We couldn't load this recurring expense. Please try again later.",
+    "notFound": "We couldn't find this recurring expense.",
+    "cannotEditCancelled": "This recurring expense was already cancelled and can't be edited."
+  },
+  "validation": {
+    "amountMaxDecimals": "Amounts can have at most 2 decimals",
+    "selectCategory": "Select a category",
+    "selectPaymentMethod": "Select a payment method",
+    "dayOfMonthRange": "Enter a day between 1 and 31",
+    "effectiveFromMustBeFuture": "Choose a date after today"
+  },
+  "errors": {
+    "not_authenticated": "Please sign in again.",
+    "invalid_date": "Your device's clock looks off. Please reload and try again.",
+    "invalid_description": "Description is required",
+    "invalid_amount": "Amounts can have at most 2 decimals",
+    "invalid_payment_method": "Select a payment method",
+    "invalid_category": "Select a category",
+    "invalid_day_of_month": "Enter a day between 1 and 31",
+    "recurring_not_found": "We couldn't find this recurring expense.",
+    "recurring_ended": "This recurring expense was already cancelled and can't be edited.",
+    "effective_date_not_future": "Choose a date after today",
+    "recurring_term_conflict": "There's already a change starting on that date. Choose a different date.",
+    "recurring_already_cancelled": "This recurring expense is already cancelled.",
+    "ended_before_today": "Choose today or a later date"
+  }
+}

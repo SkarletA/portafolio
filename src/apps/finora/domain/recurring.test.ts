@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getCurrentTerm,
+  getOverdueDates,
   getPostingAvailableAt,
   getScheduledDate,
   getScheduledDatesThrough,
   getTermInForce,
   getUpcomingCharges,
+  type RecurringSchedule,
   type RecurringTerm,
 } from '@domain/recurring'
 
@@ -78,6 +81,30 @@ describe('getTermInForce', () => {
   })
 })
 
+describe('getCurrentTerm', () => {
+  it('matches getTermInForce once a term is actually in force', () => {
+    const terms = [term('2026-01-01', 100), term('2026-06-01', 150)]
+    expect(getCurrentTerm(terms, '2026-06-01')?.amount).toBe(150)
+  })
+
+  // create_recurring_expense never backfills: a brand-new template's only term
+  // has effectiveFrom = today + 1, so on creation day nothing is in force yet.
+  // The card and the edit form must still show that term, not blank fields.
+  it('falls back to the only term on the day the template was created, before its first charge', () => {
+    const terms = [term('2026-10-07', 199)]
+    expect(getCurrentTerm(terms, '2026-10-06')?.amount).toBe(199)
+  })
+
+  it('falls back to the earliest term when several are all still in the future', () => {
+    const terms = [term('2026-11-01', 250), term('2026-10-07', 199)]
+    expect(getCurrentTerm(terms, '2026-10-06')?.amount).toBe(199)
+  })
+
+  it('returns null for a template with no terms at all', () => {
+    expect(getCurrentTerm([], '2026-10-06')).toBeNull()
+  })
+})
+
 describe('getUpcomingCharges', () => {
   const schedule = { startOn: '2026-10-07', endedOn: null, dayOfMonth: 15 }
   const terms = [term('2026-10-07', 100)]
@@ -124,5 +151,27 @@ describe('getPostingAvailableAt', () => {
 
   it('crosses the year boundary', () => {
     expect(getPostingAvailableAt('2026-12-31')).toBe('2027-01-01T00:00:00.000Z')
+  })
+})
+
+describe('getOverdueDates', () => {
+  const schedule: RecurringSchedule = { startOn: '2026-07-15', endedOn: null, dayOfMonth: 15 }
+
+  it('returns nothing when every due date has posted', () => {
+    const posted = ['2026-07-15', '2026-08-15', '2026-09-15']
+    expect(getOverdueDates(schedule, posted, '2026-10-06')).toEqual([])
+  })
+
+  it('flags a due date with no occurrence, as if a paused cron had not resumed', () => {
+    const posted = ['2026-07-15', '2026-09-15']
+    expect(getOverdueDates(schedule, posted, '2026-10-06')).toEqual(['2026-08-15'])
+  })
+
+  it('does not count today as overdue - it still waits for the scheduled run', () => {
+    expect(getOverdueDates(schedule, [], '2026-07-15')).toEqual([])
+  })
+
+  it('counts yesterday as overdue once nothing has posted for it', () => {
+    expect(getOverdueDates(schedule, [], '2026-08-16')).toEqual(['2026-07-15', '2026-08-15'])
   })
 })

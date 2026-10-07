@@ -63,6 +63,21 @@ export function getTermInForce(terms: RecurringTerm[], date: string): RecurringT
   return inForce
 }
 
+// The term that describes the template "right now", for display and as the
+// edit form's starting values: the one in force today, or - before a
+// brand-new template's first charge, since create_recurring_expense never
+// backfills and sets its only term's effectiveFrom to tomorrow - the
+// earliest term, because nothing has applied yet but it's still what the
+// template says. getTermInForce alone is for a specific historical date
+// (what the posting job and the rollup math need); this is for "now."
+export function getCurrentTerm(terms: RecurringTerm[], today: string): RecurringTerm | null {
+  const inForce = getTermInForce(terms, today)
+  if (inForce) return inForce
+  if (terms.length === 0) return null
+
+  return [...terms].sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom))[0]
+}
+
 // Every scheduled date from startOn through the earlier of asOf and endedOn,
 // in order. A date before startOn is not charged, and a date after endedOn
 // never is.
@@ -117,4 +132,21 @@ export function getPostingAvailableAt(scheduledDate: string): string {
   const next = new Date(`${scheduledDate}T00:00:00Z`)
   next.setUTCDate(next.getUTCDate() + 1)
   return next.toISOString()
+}
+
+function addDays(date: string, delta: number): string {
+  const result = new Date(`${date}T00:00:00Z`)
+  result.setUTCDate(result.getUTCDate() + delta)
+  return result.toISOString().slice(0, 10)
+}
+
+// A scheduled date is due once `post_my_recurring_expenses` would post it (its
+// cutoff is today - 1, the same one the UI's "post now" action calls) but has
+// no occurrence with a transaction yet. This is the overdue state ADR-012's
+// decision 1 shows when pg_cron did not resume after a pause: a due date the
+// cron should already have posted and did not.
+export function getOverdueDates(schedule: RecurringSchedule, postedDates: string[], today: string): string[] {
+  const cutoff = addDays(today, -1)
+  const posted = new Set(postedDates)
+  return getScheduledDatesThrough(schedule, cutoff).filter((date) => !posted.has(date))
 }

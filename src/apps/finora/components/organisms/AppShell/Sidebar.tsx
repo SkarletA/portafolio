@@ -18,6 +18,7 @@ const NAV_ITEM_DEFS = [
   { labelKey: 'nav.budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
   { labelKey: 'nav.analytics', to: '/finora/analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
   { labelKey: 'nav.goals', to: '/finora/goals', icon: <Icon name="goals" className={s.navIcon} /> },
+  { labelKey: 'nav.recurring', to: '/finora/recurring', icon: <Icon name="recurring" className={s.navIcon} /> },
   { labelKey: 'nav.settings', to: '/finora/settings', icon: <Icon name="settings" className={s.navIcon} /> },
 ] as const
 

@@ -55,6 +55,7 @@
     "chipYou": "Tú {{amount}}",
     "chipOther": "{{name}} {{amount}}",
     "householdExpenseTag": "Cuenta para el hogar · sin dividir",
+    "recurringChip": "Recurrente",
     "chips": {
       "coveredBySavings": "Cubierto con ahorros · {{goal}}"
     }
