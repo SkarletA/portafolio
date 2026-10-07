@@ -21,6 +21,7 @@ const input: RecurringExpenseInput = {
   payment_method: 'Credit Card',
   is_shared: false,
   owner_share_amount: null,
+  is_household_expense: false,
 }
 
 describe('recurringExpensesService', () => {
@@ -40,6 +41,7 @@ describe('recurringExpensesService', () => {
       p_today: '2026-10-06',
       p_is_shared: false,
       p_owner_share_amount: undefined,
+      p_is_household_expense: false,
     })
   })
 
@@ -49,6 +51,15 @@ describe('recurringExpensesService', () => {
     expect(supabase.rpc).toHaveBeenCalledWith(
       'create_recurring_expense',
       expect.objectContaining({ p_is_shared: true, p_owner_share_amount: 120 })
+    )
+  })
+
+  it('createRecurringExpense sends the household tag', async () => {
+    await createRecurringExpense({ ...input, is_household_expense: true }, 15, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'create_recurring_expense',
+      expect.objectContaining({ p_is_household_expense: true })
     )
   })
 
@@ -65,6 +76,7 @@ describe('recurringExpensesService', () => {
       p_today: '2026-10-06',
       p_is_shared: false,
       p_owner_share_amount: undefined,
+      p_is_household_expense: false,
     })
   })
 
@@ -74,6 +86,15 @@ describe('recurringExpensesService', () => {
     expect(supabase.rpc).toHaveBeenCalledWith(
       'update_recurring_expense',
       expect.objectContaining({ p_is_shared: true, p_owner_share_amount: 120 })
+    )
+  })
+
+  it('updateRecurringExpense sends the household tag', async () => {
+    await updateRecurringExpense('r1', '2026-11-01', { ...input, is_household_expense: true }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'update_recurring_expense',
+      expect.objectContaining({ p_is_household_expense: true })
     )
   })
 

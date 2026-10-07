@@ -14,6 +14,8 @@ export interface RecurringExpenseTermRow {
   is_shared: boolean
   /** The owner's own part; present if and only if is_shared. */
   owner_share_amount: number | null
+  /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with is_shared. */
+  is_household_expense: boolean
 }
 
 export interface RecurringExpenseOccurrenceRow {
@@ -38,7 +40,7 @@ export interface RecurringExpenseWithDetails {
 }
 
 const RECURRING_EXPENSE_SELECT =
-  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, is_shared, owner_share_amount, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id, posted_without_household)'
+  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, is_shared, owner_share_amount, is_household_expense, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id, posted_without_household)'
 
 // Only the caller's own templates (ADR-012, decision 10: the v1 UI shows no
 // one else's, even though the household can read them through RLS).
@@ -64,6 +66,8 @@ export interface RecurringExpenseInput {
   is_shared: boolean
   /** The owner's own part; present if and only if is_shared. */
   owner_share_amount: number | null
+  /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with is_shared. */
+  is_household_expense: boolean
 }
 
 // day_of_month and start_on are not inputs here: start_on is p_today + 1
@@ -79,6 +83,7 @@ export function createRecurringExpense(input: RecurringExpenseInput, dayOfMonth:
     p_today: today,
     p_is_shared: input.is_shared,
     p_owner_share_amount: input.owner_share_amount ?? undefined,
+    p_is_household_expense: input.is_household_expense,
   })
 }
 
@@ -100,6 +105,7 @@ export function updateRecurringExpense(
     p_today: today,
     p_is_shared: input.is_shared,
     p_owner_share_amount: input.owner_share_amount ?? undefined,
+    p_is_household_expense: input.is_household_expense,
   })
 }
 

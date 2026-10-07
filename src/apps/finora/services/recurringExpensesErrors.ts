@@ -21,6 +21,8 @@ const CODES = [
   'ended_before_today',
   'invalid_share_amount',
   'household_required_for_shared_expense',
+  'invalid_share_plan',
+  'household_required_for_household_expense',
 ] as const
 
 export type RecurringExpenseErrorCode = (typeof CODES)[number]
