@@ -39,6 +39,7 @@ function recurringExpense(overrides: Partial<RecurringExpenseWithDetails> = {}):
         payment_method: 'Credit Card',
         is_shared: false,
         owner_share_amount: null,
+        is_household_expense: false,
         category: CATEGORY,
       },
     ],
@@ -109,6 +110,7 @@ describe('RecurringExpenseCard', () => {
           payment_method: 'Credit Card',
           is_shared: false,
           owner_share_amount: null,
+          is_household_expense: false,
           category: CATEGORY,
         },
       ],
@@ -144,6 +146,7 @@ describe('RecurringExpenseCard', () => {
           payment_method: 'Credit Card',
           is_shared: false,
           owner_share_amount: null,
+          is_household_expense: false,
           category: CATEGORY,
         },
       ],
@@ -168,6 +171,7 @@ describe('RecurringExpenseCard', () => {
           payment_method: 'Credit Card',
           is_shared: false,
           owner_share_amount: null,
+          is_household_expense: false,
           category: CATEGORY,
         },
         {
@@ -180,6 +184,7 @@ describe('RecurringExpenseCard', () => {
           payment_method: 'Credit Card',
           is_shared: false,
           owner_share_amount: null,
+          is_household_expense: false,
           category: CATEGORY,
         },
       ],
@@ -266,6 +271,7 @@ describe('RecurringExpenseCard', () => {
           payment_method: 'Credit Card',
           is_shared: true,
           owner_share_amount: 120,
+          is_household_expense: false,
           category: CATEGORY,
         },
       ],
@@ -297,6 +303,7 @@ describe('RecurringExpenseCard', () => {
           payment_method: 'Credit Card',
           is_shared: true,
           owner_share_amount: 120,
+          is_household_expense: false,
           category: CATEGORY,
         },
       ],
@@ -323,6 +330,7 @@ describe('RecurringExpenseCard', () => {
           payment_method: 'Credit Card',
           is_shared: true,
           owner_share_amount: 120,
+          is_household_expense: false,
           category: CATEGORY,
         },
       ],
@@ -331,5 +339,53 @@ describe('RecurringExpenseCard', () => {
     renderCard(expense)
 
     expect(screen.queryByTestId('recurring-card-r1-shared-no-partner-warning')).not.toBeInTheDocument()
+  })
+
+  it('shows the household tag for a term covered entirely by the owner', () => {
+    const expense = recurringExpense({
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
+          is_household_expense: true,
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    expect(screen.getByTestId('recurring-card-r1-household-expense')).toHaveTextContent('card.householdExpenseTag')
+  })
+
+  it('warns when a household-tagged term has no accepted partner right now', () => {
+    const expense = recurringExpense({
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
+          is_household_expense: true,
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    expect(screen.getByTestId('recurring-card-r1-shared-no-partner-warning')).toBeInTheDocument()
   })
 })

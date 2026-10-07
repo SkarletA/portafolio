@@ -57,6 +57,7 @@ export const Active = {
           payment_method: 'Credit Card',
           is_shared: false,
           owner_share_amount: null,
+          is_household_expense: false,
           category: CATEGORY,
         },
       ],
@@ -132,6 +133,19 @@ export const SharedNoPartner = {
       ...Active.args.recurringExpense,
       id: '6',
       terms: [{ ...Active.args.recurringExpense.terms[0], is_shared: true, owner_share_amount: 120 }],
+    },
+  },
+}
+
+// ADR-015: the household tag, no split - the full amount posts to the owner
+// every time, just tagged as counting toward the household.
+export const HouseholdExpense = {
+  args: {
+    ...Active.args,
+    recurringExpense: {
+      ...Active.args.recurringExpense,
+      id: '7',
+      terms: [{ ...Active.args.recurringExpense.terms[0], is_household_expense: true }],
     },
   },
 }

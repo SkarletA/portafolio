@@ -24,6 +24,7 @@
     "posting": "Publicando…",
     "lastErrorHint": "El último intento de publicar un cargo falló. Se reintentará solo, o usa \"Publicar ahora\".",
     "sharedWith": "Compartido con {{partner}} · tú pagas {{amount}}",
+    "householdExpenseTag": "Cuenta para el hogar · sin dividir",
     "sharedNoPartnerWarning": "Sin un hogar activo, el próximo cargo se publicará sin el reparto."
   },
   "form": {
@@ -38,6 +39,10 @@
     "sharedHint": "Todos los cargos de esta plantilla se dividen igual, hasta que lo cambies.",
     "yourSharePart": "Tu parte",
     "partnerSharePart": "Parte de {{partner}}: {{amount}}",
+    "sharedDisabledHint": "No se puede combinar con marcarlo como gasto del hogar.",
+    "householdExpense": "Es 100% mío, pero cuenta para el hogar",
+    "householdExpenseHint": "El monto completo se registra siempre a tu nombre. Esto solo lo marca como gasto del hogar — no se reparte nada.",
+    "householdExpenseDisabledHint": "No se puede combinar con dividir el monto.",
     "dayOfMonth": "Día del mes",
     "dayOfMonthHint": "Se cobra el día {{day}} de cada mes. Esto no se puede cambiar después.",
     "effectiveFrom": "Aplicar nuevo precio desde",
@@ -74,6 +79,8 @@
     "recurring_already_cancelled": "Este gasto recurrente ya está cancelado.",
     "ended_before_today": "Elige hoy o una fecha posterior",
     "invalid_share_amount": "Ingresa un monto mayor a 0 y menor al total",
-    "household_required_for_shared_expense": "Compartir un gasto necesita un miembro de hogar aceptado."
+    "household_required_for_shared_expense": "Compartir un gasto necesita un miembro de hogar aceptado.",
+    "invalid_share_plan": "Elige dividir el monto o marcarlo como gasto del hogar, no ambos.",
+    "household_required_for_household_expense": "Marcar un gasto como del hogar necesita un miembro de hogar aceptado."
   }
 }

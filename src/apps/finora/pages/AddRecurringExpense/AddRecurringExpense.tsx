@@ -140,6 +140,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       paymentMethod: term.payment_method,
       isShared: term.is_shared,
       ownerShareAmount: term.owner_share_amount,
+      isHouseholdExpense: term.is_household_expense,
     }))
     return getCurrentTerm(terms, today)
   }, [recurringExpense, today])
@@ -156,6 +157,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       ? String(currentTerm.ownerShareAmount)
       : ''
   )
+  const [isHouseholdExpense, setIsHouseholdExpense] = useState(currentTerm?.isHouseholdExpense ?? false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -191,6 +193,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       paymentMethod: '',
       isShared: false,
       ownerShareAmount: null,
+      isHouseholdExpense: false,
     }
 
     return getUpcomingCharges(schedule, [dummyTerm], effectiveFrom, 1)[0]?.date ?? null
@@ -245,6 +248,11 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
     setOwnerSharePart((prev) => roundMoneyInput(prev))
   }, [])
 
+  const handleHouseholdExpenseChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsHouseholdExpense(event.target.checked)
+    setErrors((prev) => (prev.share ? { ...prev, share: undefined } : prev))
+  }, [])
+
   const handleSubmit = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
@@ -294,6 +302,11 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         }
       }
 
+      // Mutually exclusive, enforced by disabling each checkbox while the
+      // other is checked (below) - effectiveIsHouseholdExpense can never be
+      // true at the same time as effectiveIsShared in practice.
+      const effectiveIsHouseholdExpense = hasAcceptedPartner && isHouseholdExpense && !effectiveIsShared
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -308,6 +321,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         payment_method: paymentMethod,
         is_shared: effectiveIsShared,
         owner_share_amount: effectiveIsShared ? parsedOwnerShare : null,
+        is_household_expense: effectiveIsHouseholdExpense,
       }
 
       const { error } =
@@ -327,7 +341,12 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
           setErrors({ effective_from: t(`recurring:errors.${code}`) })
           return
         }
-        if (code === 'invalid_share_amount' || code === 'household_required_for_shared_expense') {
+        if (
+          code === 'invalid_share_amount' ||
+          code === 'household_required_for_shared_expense' ||
+          code === 'invalid_share_plan' ||
+          code === 'household_required_for_household_expense'
+        ) {
           setErrors({ share: t(`recurring:errors.${code}`) })
           return
         }
@@ -347,6 +366,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       hasAcceptedPartner,
       isShared,
       ownerSharePart,
+      isHouseholdExpense,
       isEdit,
       recurringExpense,
       today,
@@ -513,13 +533,14 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
                 type="checkbox"
                 checked={isShared}
                 onChange={handleSharedChange}
+                disabled={isHouseholdExpense}
                 aria-describedby={`${testIdPrefix}-shared-hint`}
                 data-testid={`${testIdPrefix}-shared-checkbox`}
               />
               {t('form.shareWithPartner', { partner: partnerName ?? '' })}
             </label>
             <p id={`${testIdPrefix}-shared-hint`} className={s.hint}>
-              {t('form.sharedHint')}
+              {isHouseholdExpense ? t('form.sharedDisabledHint') : t('form.sharedHint')}
             </p>
 
             {isShared && (
@@ -543,6 +564,21 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
                 </p>
               </label>
             )}
+
+            <label className={s.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={isHouseholdExpense}
+                onChange={handleHouseholdExpenseChange}
+                disabled={isShared}
+                aria-describedby={`${testIdPrefix}-household-expense-hint`}
+                data-testid={`${testIdPrefix}-household-expense-checkbox`}
+              />
+              {t('form.householdExpense')}
+            </label>
+            <p id={`${testIdPrefix}-household-expense-hint`} className={s.hint}>
+              {isShared ? t('form.householdExpenseDisabledHint') : t('form.householdExpenseHint')}
+            </p>
 
             {errors.share && (
               <p id={`${testIdPrefix}-share-error`} role="alert" className={s.error}>

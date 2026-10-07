@@ -69,6 +69,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         paymentMethod: term.payment_method,
         isShared: term.is_shared,
         ownerShareAmount: term.owner_share_amount,
+        isHouseholdExpense: term.is_household_expense,
       })),
     [terms]
   )
@@ -210,6 +211,11 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
               })}
             </p>
           )}
+          {currentTerm?.isHouseholdExpense && (
+            <p className={s.sharedWith} data-testid={`recurring-card-${id}-household-expense`}>
+              {t('card.householdExpenseTag')}
+            </p>
+          )}
           {nextCharge && !isFullyStopped && (
             <p className={s.nextCharge}>{t('card.nextCharge', { date: formatCardDate(nextCharge.date) })}</p>
           )}
@@ -266,7 +272,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         </div>
       )}
 
-      {currentTerm?.isShared && !hasAcceptedPartner && !isFullyStopped && (
+      {(currentTerm?.isShared || currentTerm?.isHouseholdExpense) && !hasAcceptedPartner && !isFullyStopped && (
         <p className={s.sharedWarning} data-testid={`recurring-card-${id}-shared-no-partner-warning`}>
           {t('card.sharedNoPartnerWarning')}
         </p>
