@@ -5,7 +5,7 @@ import cn from 'clsx'
 import type { RecurringExpenseWithDetails } from '@services/recurringExpensesService'
 import { cancelRecurringExpense, postMyRecurringExpenses } from '@services/recurringExpensesService'
 import { parseRecurringExpenseError } from '@services/recurringExpensesErrors'
-import { getOverdueDates, getTermInForce, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
+import { getCurrentTerm, getOverdueDates, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { useCurrency } from '@context/CurrencyContext'
@@ -66,7 +66,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
     [terms]
   )
 
-  const currentTerm = useMemo(() => getTermInForce(scheduleTerms, today), [scheduleTerms, today])
+  const currentTerm = useMemo(() => getCurrentTerm(scheduleTerms, today), [scheduleTerms, today])
   const currentTermRow = terms.find((term) => term.effective_from === currentTerm?.effectiveFrom) ?? terms[0]
   const nextCharge = useMemo(() => getUpcomingCharges(schedule, scheduleTerms, today, 1)[0] ?? null, [schedule, scheduleTerms, today])
 

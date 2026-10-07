@@ -85,6 +85,32 @@ describe('RecurringExpenseCard', () => {
     expect(screen.getByText('card.status.ending:{"date":"Dec 1, 2026"}')).toBeInTheDocument()
   })
 
+  it('shows the term on the creation day, before its first charge is even due', () => {
+    // create_recurring_expense never backfills: the only term's effective_from
+    // is today + 1, so nothing is "in force" yet on creation day.
+    const expense = recurringExpense({
+      start_on: '2026-10-07',
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-10-07',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          category: CATEGORY,
+        },
+      ],
+      occurrences: [],
+    })
+
+    renderCard(expense, '2026-10-06')
+
+    expect(screen.getByText('Streaming')).toBeInTheDocument()
+    expect(screen.getByText('$199.00 · Entertainment')).toBeInTheDocument()
+  })
+
   it('shows no overdue banner when every due date has posted', () => {
     renderCard(recurringExpense())
 

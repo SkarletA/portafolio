@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getCurrentTerm,
   getOverdueDates,
   getPostingAvailableAt,
   getScheduledDate,
@@ -77,6 +78,30 @@ describe('getTermInForce', () => {
 
   it('finds the latest version even when the terms are not sorted', () => {
     expect(getTermInForce([term('2026-06-01', 150), term('2026-01-01', 100)], '2026-07-01')?.amount).toBe(150)
+  })
+})
+
+describe('getCurrentTerm', () => {
+  it('matches getTermInForce once a term is actually in force', () => {
+    const terms = [term('2026-01-01', 100), term('2026-06-01', 150)]
+    expect(getCurrentTerm(terms, '2026-06-01')?.amount).toBe(150)
+  })
+
+  // create_recurring_expense never backfills: a brand-new template's only term
+  // has effectiveFrom = today + 1, so on creation day nothing is in force yet.
+  // The card and the edit form must still show that term, not blank fields.
+  it('falls back to the only term on the day the template was created, before its first charge', () => {
+    const terms = [term('2026-10-07', 199)]
+    expect(getCurrentTerm(terms, '2026-10-06')?.amount).toBe(199)
+  })
+
+  it('falls back to the earliest term when several are all still in the future', () => {
+    const terms = [term('2026-11-01', 250), term('2026-10-07', 199)]
+    expect(getCurrentTerm(terms, '2026-10-06')?.amount).toBe(199)
+  })
+
+  it('returns null for a template with no terms at all', () => {
+    expect(getCurrentTerm([], '2026-10-06')).toBeNull()
   })
 })
 

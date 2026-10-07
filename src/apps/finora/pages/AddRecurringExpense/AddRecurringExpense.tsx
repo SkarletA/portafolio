@@ -15,7 +15,7 @@ import { parseRecurringExpenseError } from '@services/recurringExpensesErrors'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
 import { useCategories } from '@hooks/useCategories'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
-import { getTermInForce, type RecurringTerm } from '@domain/recurring'
+import { getCurrentTerm, type RecurringTerm } from '@domain/recurring'
 import { getTodayLocalDate } from '@domain/date'
 import { roundMoneyInput } from '@domain/money'
 import { PAYMENT_METHODS } from '@domain/transaction'
@@ -110,7 +110,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       categoryId: term.category_id,
       paymentMethod: term.payment_method,
     }))
-    return getTermInForce(terms, today)
+    return getCurrentTerm(terms, today)
   }, [recurringExpense, today])
 
   const [description, setDescription] = useState(currentTerm?.description ?? '')

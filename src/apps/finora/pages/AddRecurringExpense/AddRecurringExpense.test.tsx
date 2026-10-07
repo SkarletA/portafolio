@@ -164,6 +164,22 @@ describe('AddRecurringExpense', () => {
       expect(screen.queryByTestId('edit-recurring-expense-day-of-month-input')).not.toBeInTheDocument()
     })
 
+    it('preloads the term on the creation day, before its first charge is due', () => {
+      // create_recurring_expense never backfills: effective_from is today + 1
+      // ('2026-10-06' is mocked as today), so nothing is "in force" yet.
+      mockRecurringExpenses([
+        {
+          ...recurringExpense,
+          start_on: '2026-10-07',
+          terms: [{ ...recurringExpense.terms[0], effective_from: '2026-10-07' }],
+        },
+      ])
+      renderEdit()
+
+      expect(screen.getByTestId('edit-recurring-expense-description-input')).toHaveValue('Streaming')
+      expect(screen.getByTestId('edit-recurring-expense-amount-input')).toHaveValue(199)
+    })
+
     it('rejects an effective date that is not after today, without calling the server', () => {
       mockRecurringExpenses([recurringExpense])
       renderEdit()

@@ -63,6 +63,21 @@ export function getTermInForce(terms: RecurringTerm[], date: string): RecurringT
   return inForce
 }
 
+// The term that describes the template "right now", for display and as the
+// edit form's starting values: the one in force today, or - before a
+// brand-new template's first charge, since create_recurring_expense never
+// backfills and sets its only term's effectiveFrom to tomorrow - the
+// earliest term, because nothing has applied yet but it's still what the
+// template says. getTermInForce alone is for a specific historical date
+// (what the posting job and the rollup math need); this is for "now."
+export function getCurrentTerm(terms: RecurringTerm[], today: string): RecurringTerm | null {
+  const inForce = getTermInForce(terms, today)
+  if (inForce) return inForce
+  if (terms.length === 0) return null
+
+  return [...terms].sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom))[0]
+}
+
 // Every scheduled date from startOn through the earlier of asOf and endedOn,
 // in order. A date before startOn is not charged, and a date after endedOn
 // never is.
