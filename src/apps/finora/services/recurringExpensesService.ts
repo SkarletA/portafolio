@@ -35,6 +35,9 @@ export interface RecurringExpenseWithDetails {
   day_of_month: number
   start_on: string
   ended_on: string | null
+  /** ADR-016: a planned end, by date or by charge count (display label only). */
+  planned_end_on: string | null
+  planned_charges: number | null
   last_error: string | null
   last_error_at: string | null
   terms: RecurringExpenseTermRow[]
@@ -94,10 +97,23 @@ export interface RecurringExpenseInput {
   savings_goal_id: string | null
 }
 
+// ADR-016: a planned end set at creation time. planned_charges is a display
+// label only - the client (getNthScheduledDate) is what translates a charge
+// count into planned_end_on; the server never derives one from the other.
+export interface RecurringExpensePlannedEndInput {
+  planned_end_on: string | null
+  planned_charges: number | null
+}
+
 // day_of_month and start_on are not inputs here: start_on is p_today + 1
 // (nothing is backfilled) and day_of_month is fixed for the template's life
 // (ADR-012, decisions 5 and 6).
-export function createRecurringExpense(input: RecurringExpenseInput, dayOfMonth: number, today: string) {
+export function createRecurringExpense(
+  input: RecurringExpenseInput,
+  dayOfMonth: number,
+  today: string,
+  plannedEnd?: RecurringExpensePlannedEndInput
+) {
   return supabase.rpc('create_recurring_expense', {
     p_description: input.description,
     p_amount: input.amount,
@@ -109,6 +125,8 @@ export function createRecurringExpense(input: RecurringExpenseInput, dayOfMonth:
     p_owner_share_amount: input.owner_share_amount ?? undefined,
     p_is_household_expense: input.is_household_expense,
     p_savings_goal_id: input.savings_goal_id ?? undefined,
+    p_planned_end_on: plannedEnd?.planned_end_on ?? undefined,
+    p_planned_charges: plannedEnd?.planned_charges ?? undefined,
   })
 }
 
@@ -139,6 +157,21 @@ export function updateRecurringExpense(
 // (ADR-012, decision 7). No reactivation in v1.
 export function cancelRecurringExpense(id: string, endedOn: string, today: string) {
   return supabase.rpc('cancel_recurring_expense', { p_id: id, p_ended_on: endedOn, p_today: today })
+}
+
+// ADR-016: sets or clears a planned end, independent of update_recurring_expense
+// (a planned end is not a financial term). Passing both as null removes it.
+export function setRecurringExpensePlannedEnd(
+  id: string,
+  plannedEnd: RecurringExpensePlannedEndInput,
+  today: string
+) {
+  return supabase.rpc('set_recurring_expense_planned_end', {
+    p_id: id,
+    p_planned_end_on: plannedEnd.planned_end_on ?? undefined,
+    p_planned_charges: plannedEnd.planned_charges ?? undefined,
+    p_today: today,
+  })
 }
 
 // Publishes the caller's own overdue charges now, instead of waiting for the

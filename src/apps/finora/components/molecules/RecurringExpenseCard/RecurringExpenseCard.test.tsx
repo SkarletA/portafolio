@@ -28,6 +28,8 @@ function recurringExpense(overrides: Partial<RecurringExpenseWithDetails> = {}):
     day_of_month: 15,
     start_on: '2026-08-15',
     ended_on: null,
+    planned_end_on: null,
+    planned_charges: null,
     last_error: null,
     last_error_at: null,
     terms: [

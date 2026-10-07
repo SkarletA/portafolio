@@ -57,6 +57,31 @@ export function getScheduledDate(year: number, month: number, dayOfMonth: number
   return `${year}-${pad(month)}-${pad(day)}`
 }
 
+// ADR-016: the date of the count-th charge (1-based) from startOn - the
+// client's side of translating a planned end given as a charge count into
+// the planned_end_on date the server actually enforces. Replicates
+// private.post_due_recurring_occurrences's own skip rule ("continue when
+// v_date < start_on"): the first month's candidate doesn't count as a charge
+// when dayOfMonth falls earlier in the month than startOn's own day, so
+// counting starts the month after. Every month after the first is
+// chronologically later than startOn by construction, so at most one month
+// is ever skipped - count + 1 scans are always enough.
+export function getNthScheduledDate(startOn: string, dayOfMonth: number, count: number): string {
+  let [year, month] = parseYearMonth(startOn)
+  let remaining = count
+
+  for (let scanned = 0; scanned <= count; scanned++) {
+    const date = getScheduledDate(year, month, dayOfMonth)
+    if (date >= startOn) {
+      remaining -= 1
+      if (remaining === 0) return date
+    }
+    ;[year, month] = nextMonth(year, month)
+  }
+
+  throw new Error(`getNthScheduledDate: could not resolve charge ${count} from ${startOn}`)
+}
+
 // The version in force on a date: the latest term whose effectiveFrom is on or
 // before that date. Null before the first version.
 export function getTermInForce(terms: RecurringTerm[], date: string): RecurringTerm | null {
