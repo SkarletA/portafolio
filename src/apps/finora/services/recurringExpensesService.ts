@@ -10,6 +10,10 @@ export interface RecurringExpenseTermRow {
   category_id: string | null
   payment_method: string
   category: Pick<Category, 'id' | 'name' | 'icon' | 'color' | 'translationKey'> | null
+  /** ADR-014: whether this term's charge is split with a household partner. */
+  is_shared: boolean
+  /** The owner's own part; present if and only if is_shared. */
+  owner_share_amount: number | null
 }
 
 export interface RecurringExpenseOccurrenceRow {
@@ -17,6 +21,8 @@ export interface RecurringExpenseOccurrenceRow {
   scheduled_date: string
   /** null until the posting job (or "post now") writes the transaction. */
   transaction_id: string | null
+  /** ADR-014: set when a shared term's charge posted without a household partner. */
+  posted_without_household: boolean
 }
 
 export interface RecurringExpenseWithDetails {
@@ -32,7 +38,7 @@ export interface RecurringExpenseWithDetails {
 }
 
 const RECURRING_EXPENSE_SELECT =
-  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id)'
+  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, is_shared, owner_share_amount, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id, posted_without_household)'
 
 // Only the caller's own templates (ADR-012, decision 10: the v1 UI shows no
 // one else's, even though the household can read them through RLS).
@@ -54,6 +60,10 @@ export interface RecurringExpenseInput {
   amount: number
   category_id: string
   payment_method: string
+  /** ADR-014: whether this term's charge is split with a household partner. */
+  is_shared: boolean
+  /** The owner's own part; present if and only if is_shared. */
+  owner_share_amount: number | null
 }
 
 // day_of_month and start_on are not inputs here: start_on is p_today + 1
@@ -67,6 +77,8 @@ export function createRecurringExpense(input: RecurringExpenseInput, dayOfMonth:
     p_payment_method: input.payment_method,
     p_day_of_month: dayOfMonth,
     p_today: today,
+    p_is_shared: input.is_shared,
+    p_owner_share_amount: input.owner_share_amount ?? undefined,
   })
 }
 
@@ -86,6 +98,8 @@ export function updateRecurringExpense(
     p_category_id: input.category_id,
     p_payment_method: input.payment_method,
     p_today: today,
+    p_is_shared: input.is_shared,
+    p_owner_share_amount: input.owner_share_amount ?? undefined,
   })
 }
 

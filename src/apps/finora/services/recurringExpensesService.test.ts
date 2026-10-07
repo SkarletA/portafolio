@@ -19,6 +19,8 @@ const input: RecurringExpenseInput = {
   amount: 199,
   category_id: 'c1',
   payment_method: 'Credit Card',
+  is_shared: false,
+  owner_share_amount: null,
 }
 
 describe('recurringExpensesService', () => {
@@ -36,7 +38,18 @@ describe('recurringExpensesService', () => {
       p_payment_method: 'Credit Card',
       p_day_of_month: 15,
       p_today: '2026-10-06',
+      p_is_shared: false,
+      p_owner_share_amount: undefined,
     })
+  })
+
+  it('createRecurringExpense sends the split when the term is shared', async () => {
+    await createRecurringExpense({ ...input, is_shared: true, owner_share_amount: 120 }, 15, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'create_recurring_expense',
+      expect.objectContaining({ p_is_shared: true, p_owner_share_amount: 120 })
+    )
   })
 
   it('updateRecurringExpense sends the new term with its effective date', async () => {
@@ -50,7 +63,18 @@ describe('recurringExpensesService', () => {
       p_category_id: 'c1',
       p_payment_method: 'Credit Card',
       p_today: '2026-10-06',
+      p_is_shared: false,
+      p_owner_share_amount: undefined,
     })
+  })
+
+  it('updateRecurringExpense sends the split when the term is shared', async () => {
+    await updateRecurringExpense('r1', '2026-11-01', { ...input, is_shared: true, owner_share_amount: 120 }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'update_recurring_expense',
+      expect.objectContaining({ p_is_shared: true, p_owner_share_amount: 120 })
+    )
   })
 
   it('cancelRecurringExpense sends the end date', async () => {
