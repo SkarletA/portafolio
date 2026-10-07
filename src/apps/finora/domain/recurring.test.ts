@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getOverdueDates,
   getPostingAvailableAt,
   getScheduledDate,
   getScheduledDatesThrough,
   getTermInForce,
   getUpcomingCharges,
+  type RecurringSchedule,
   type RecurringTerm,
 } from '@domain/recurring'
 
@@ -124,5 +126,27 @@ describe('getPostingAvailableAt', () => {
 
   it('crosses the year boundary', () => {
     expect(getPostingAvailableAt('2026-12-31')).toBe('2027-01-01T00:00:00.000Z')
+  })
+})
+
+describe('getOverdueDates', () => {
+  const schedule: RecurringSchedule = { startOn: '2026-07-15', endedOn: null, dayOfMonth: 15 }
+
+  it('returns nothing when every due date has posted', () => {
+    const posted = ['2026-07-15', '2026-08-15', '2026-09-15']
+    expect(getOverdueDates(schedule, posted, '2026-10-06')).toEqual([])
+  })
+
+  it('flags a due date with no occurrence, as if a paused cron had not resumed', () => {
+    const posted = ['2026-07-15', '2026-09-15']
+    expect(getOverdueDates(schedule, posted, '2026-10-06')).toEqual(['2026-08-15'])
+  })
+
+  it('does not count today as overdue - it still waits for the scheduled run', () => {
+    expect(getOverdueDates(schedule, [], '2026-07-15')).toEqual([])
+  })
+
+  it('counts yesterday as overdue once nothing has posted for it', () => {
+    expect(getOverdueDates(schedule, [], '2026-08-16')).toEqual(['2026-07-15', '2026-08-15'])
   })
 })

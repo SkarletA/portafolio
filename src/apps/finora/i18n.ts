@@ -10,6 +10,7 @@ import enTransactions from './locales/en/transactions.json'
 import enBudgets from './locales/en/budgets.json'
 import enAnalytics from './locales/en/analytics.json'
 import enGoals from './locales/en/goals.json'
+import enRecurring from './locales/en/recurring.json'
 import enSettings from './locales/en/settings.json'
 import enHousehold from './locales/en/household.json'
 
@@ -21,6 +22,7 @@ import esTransactions from './locales/es/transactions.json'
 import esBudgets from './locales/es/budgets.json'
 import esAnalytics from './locales/es/analytics.json'
 import esGoals from './locales/es/goals.json'
+import esRecurring from './locales/es/recurring.json'
 import esSettings from './locales/es/settings.json'
 import esHousehold from './locales/es/household.json'
 
@@ -44,6 +46,7 @@ i18n
         budgets: enBudgets,
         analytics: enAnalytics,
         goals: enGoals,
+        recurring: enRecurring,
         settings: enSettings,
         household: enHousehold,
       },
@@ -56,6 +59,7 @@ i18n
         budgets: esBudgets,
         analytics: esAnalytics,
         goals: esGoals,
+        recurring: esRecurring,
         settings: esSettings,
         household: esHousehold,
       },
@@ -72,6 +76,7 @@ i18n
       'budgets',
       'analytics',
       'goals',
+      'recurring',
       'settings',
       'household',
     ],

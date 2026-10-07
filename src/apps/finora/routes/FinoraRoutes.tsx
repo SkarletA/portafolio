@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import { AddBudget } from '../pages/AddBudget/AddBudget'
 import { AddGoal } from '../pages/AddGoal/AddGoal'
+import { AddRecurringExpense } from '../pages/AddRecurringExpense/AddRecurringExpense'
 import { AddTransaction } from '../pages/AddTransaction/AddTransaction'
 import { Analytics } from '../pages/Analytics/Analytics'
 import { Budgets } from '../pages/Budgets/Budgets'
@@ -9,6 +10,7 @@ import { ForgotPassword } from '../pages/ForgotPassword/ForgotPassword'
 import { Goals } from '../pages/Goals/Goals'
 import { Login } from '../pages/Login/Login'
 import { NotFound } from '../pages/NotFound/NotFound'
+import { RecurringExpenses } from '../pages/RecurringExpenses/RecurringExpenses'
 import { Register } from '../pages/Register/Register'
 import { ResetPassword } from '../pages/ResetPassword/ResetPassword'
 import { Settings } from '../pages/Settings/Settings'
@@ -103,6 +105,30 @@ export function FinoraRoutes() {
         element={
           <ProtectedRoute>
             <AddGoal mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="recurring"
+        element={
+          <ProtectedRoute>
+            <RecurringExpenses />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="add-recurring-expense"
+        element={
+          <ProtectedRoute>
+            <AddRecurringExpense mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="recurring/:id/edit"
+        element={
+          <ProtectedRoute>
+            <AddRecurringExpense mode="edit" />
           </ProtectedRoute>
         }
       />

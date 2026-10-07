@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Implemented in four PRs: the schema (PR 1, `20261006120000`), the single writer (PR 2, `20261006130000`), the posting job and RPCs (PR 3, `20261006140000`), and the module interface (PR 4, pending).
+Accepted. Implemented in four PRs: the schema (PR 1, `20261006120000`), the single writer (PR 2, `20261006130000`), the posting job and RPCs (PR 3, `20261006140000`), and the module interface (PR 4, `/finora/recurring`).
 
 Replaces the earlier draft of this ADR number (options A/B/C). It keeps that
 draft's option A (real transactions created from templates) and settles its open

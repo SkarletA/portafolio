@@ -45,6 +45,18 @@ export interface Transaction {
    * docs/adr/010-household-expense-tag-and-household-budget.md.
    */
   is_household_expense: boolean
+  /**
+   * Present when this transaction was posted by a recurring expense template
+   * (ADR-012), to show a "Recurring" chip in its history. Optional, unlike the
+   * fields above: adding it as required would touch every existing
+   * `Transaction` fixture across the test suite for a context-only chip.
+   */
+  recurring_occurrence?: TransactionRecurringOccurrence | null
+}
+
+/** transaction_id is unique in recurring_occurrences, so there is at most one. */
+export interface TransactionRecurringOccurrence {
+  recurring_expense_id: string
 }
 
 // The Goal transfer tied to this transaction: a 'withdrawal' for a

@@ -118,3 +118,20 @@ export function getPostingAvailableAt(scheduledDate: string): string {
   next.setUTCDate(next.getUTCDate() + 1)
   return next.toISOString()
 }
+
+function addDays(date: string, delta: number): string {
+  const result = new Date(`${date}T00:00:00Z`)
+  result.setUTCDate(result.getUTCDate() + delta)
+  return result.toISOString().slice(0, 10)
+}
+
+// A scheduled date is due once `post_my_recurring_expenses` would post it (its
+// cutoff is today - 1, the same one the UI's "post now" action calls) but has
+// no occurrence with a transaction yet. This is the overdue state ADR-012's
+// decision 1 shows when pg_cron did not resume after a pause: a due date the
+// cron should already have posted and did not.
+export function getOverdueDates(schedule: RecurringSchedule, postedDates: string[], today: string): string[] {
+  const cutoff = addDays(today, -1)
+  const posted = new Set(postedDates)
+  return getScheduledDatesThrough(schedule, cutoff).filter((date) => !posted.has(date))
+}

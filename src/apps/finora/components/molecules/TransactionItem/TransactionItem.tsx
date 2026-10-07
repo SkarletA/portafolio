@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { PiggyBank, Undo2, Users } from 'lucide-react'
+import { PiggyBank, Repeat, Undo2, Users } from 'lucide-react'
 import cn from 'clsx'
 import type { TransactionWithCategory } from '@services/transactionsService'
 import { deleteTransaction } from '@services/transactionsService'
@@ -127,6 +127,9 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
   // no split amount to show, only that this expense counts toward the
   // household. See the CONTEXT_CHIP rule above handleRefundChipClick.
   const householdExpenseLabel = transaction.is_household_expense ? t('item.householdExpenseTag') : null
+  // Context only, never a click target: there is no single screen a recurring
+  // charge should jump to (unlike the refund/savings chips below).
+  const isRecurring = !!transaction.recurring_occurrence
 
   const handleEditClick = useCallback(() => {
     navigate(`/finora/transactions/${transaction.id}/edit`)
@@ -261,7 +264,7 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
               </Badge>
             </div>
           )}
-          {(refundOfLabel || savingsChipLabel || householdExpenseLabel) && (
+          {(refundOfLabel || savingsChipLabel || householdExpenseLabel || isRecurring) && (
             <div className={s.contextChips}>
               {refundOfLabel && (
                 <button
@@ -300,6 +303,12 @@ export function TransactionItem({ transaction, onDeleted, refundedPurchase = nul
                 <Badge variant="context">
                   <Users className={s.contextChipIcon} aria-hidden="true" />
                   {householdExpenseLabel}
+                </Badge>
+              )}
+              {isRecurring && (
+                <Badge variant="context">
+                  <Repeat className={s.contextChipIcon} aria-hidden="true" />
+                  {t('item.recurringChip')}
                 </Badge>
               )}
             </div>

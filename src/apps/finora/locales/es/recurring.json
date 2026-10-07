@@ -1,0 +1,67 @@
+{
+  "title": "Gastos recurrentes",
+  "subtitle": "Suscripciones y pagos fijos mensuales que se registran solos",
+  "newRecurringExpense": "Nuevo gasto recurrente",
+  "list": {
+    "loading": "Cargando gastos recurrentes…",
+    "error": "No pudimos cargar tus gastos recurrentes. Intenta de nuevo más tarde.",
+    "empty": "Todavía no tienes gastos recurrentes configurados."
+  },
+  "card": {
+    "uncategorized": "Sin categoría",
+    "status": {
+      "active": "Activo",
+      "ending": "Termina el {{date}}",
+      "cancelled": "Cancelado desde el {{date}}"
+    },
+    "nextCharge": "Próximo cargo: {{date}}",
+    "editAriaLabel": "Editar {{description}}",
+    "cancelAriaLabel": "Cancelar {{description}}",
+    "confirmCancel": "¿Cancelar \"{{description}}\"? Los cargos ya vencidos igual se publican; después de hoy no se publica ninguno.",
+    "overdueHint": "{{count}} cargo(s) no se publicaron en su fecha.",
+    "postNow": "Publicar ahora",
+    "posting": "Publicando…",
+    "lastErrorHint": "El último intento de publicar un cargo falló. Se reintentará solo, o usa \"Publicar ahora\"."
+  },
+  "form": {
+    "title": "Nuevo gasto recurrente",
+    "editTitle": "Editar gasto recurrente",
+    "description": "Descripción",
+    "amount": "Monto",
+    "category": "Categoría",
+    "paymentMethod": "Método de pago",
+    "dayOfMonth": "Día del mes",
+    "dayOfMonthHint": "Se cobra el día {{day}} de cada mes. Esto no se puede cambiar después.",
+    "effectiveFrom": "Aplicar nuevo precio desde",
+    "effectiveFromHint": "Los cargos ya vencidos mantienen su precio actual. Este aplica desde la fecha que elijas.",
+    "saveRecurringExpense": "Guardar gasto recurrente",
+    "saveChanges": "Guardar cambios",
+    "backToRecurring": "Volver a gastos recurrentes",
+    "loadingTemplate": "Cargando gasto recurrente…",
+    "loadError": "No pudimos cargar este gasto recurrente. Intenta de nuevo más tarde.",
+    "notFound": "No pudimos encontrar este gasto recurrente.",
+    "cannotEditCancelled": "Este gasto recurrente ya fue cancelado y no se puede editar."
+  },
+  "validation": {
+    "amountMaxDecimals": "Los montos pueden tener máximo 2 decimales",
+    "selectCategory": "Selecciona una categoría",
+    "selectPaymentMethod": "Selecciona un método de pago",
+    "dayOfMonthRange": "Ingresa un día entre 1 y 31",
+    "effectiveFromMustBeFuture": "Elige una fecha después de hoy"
+  },
+  "errors": {
+    "not_authenticated": "Vuelve a iniciar sesión.",
+    "invalid_date": "El reloj de tu dispositivo parece estar mal. Recarga la página e intenta de nuevo.",
+    "invalid_description": "La descripción es obligatoria",
+    "invalid_amount": "Los montos pueden tener máximo 2 decimales",
+    "invalid_payment_method": "Selecciona un método de pago",
+    "invalid_category": "Selecciona una categoría",
+    "invalid_day_of_month": "Ingresa un día entre 1 y 31",
+    "recurring_not_found": "No pudimos encontrar este gasto recurrente.",
+    "recurring_ended": "Este gasto recurrente ya fue cancelado y no se puede editar.",
+    "effective_date_not_future": "Elige una fecha después de hoy",
+    "recurring_term_conflict": "Ya existe un cambio con esa misma fecha. Elige otra fecha.",
+    "recurring_already_cancelled": "Este gasto recurrente ya está cancelado.",
+    "ended_before_today": "Elige hoy o una fecha posterior"
+  }
+}

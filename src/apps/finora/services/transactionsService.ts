@@ -25,7 +25,7 @@ export type TransactionWithCategory = Transaction & {
 }
 
 const TRANSACTION_SELECT =
-  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), goal_transfer:goal_transfers(kind, goal_id, amount, goal:goals(name)), shares:transaction_shares(id, transaction_id, user_id, amount)'
+  '*, category:categories(id, name, icon, color, translationKey:translation_key), payments:transaction_payments(id, transaction_id, payment_method, amount), goal_transfer:goal_transfers(kind, goal_id, amount, goal:goals(name)), shares:transaction_shares(id, transaction_id, user_id, amount), recurring_occurrence:recurring_occurrences(recurring_expense_id)'
 
 // householdMemberIds: when given (both members accepted - see
 // docs/adr/007-household-foundations.md), widens the list to every member's
