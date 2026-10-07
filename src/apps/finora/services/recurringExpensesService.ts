@@ -57,6 +57,26 @@ export async function getRecurringExpenses() {
     .order('created_at', { ascending: true })
 }
 
+export interface HouseholdLinkedRecurringExpenseRow {
+  id: string
+  ended_on: string | null
+  terms: Pick<RecurringExpenseTermRow, 'effective_from' | 'description' | 'is_shared' | 'is_household_expense'>[]
+}
+
+// ADR-018: templates that are still active and shared or household-tagged -
+// the caller's own, or their accepted partner's - before leaving a
+// household. No owner filter, unlike getRecurringExpenses above (which
+// deliberately limits to the caller's own templates, ADR-012 decision 10):
+// this relies on the same household select policy (ADR-007) to read the
+// partner's templates too. Informative only; the no-partner fallback
+// (ADR-014/015) already protects the money without this.
+export function getActiveHouseholdLinkedRecurringExpenses() {
+  return supabase
+    .from('recurring_expenses')
+    .select('id, ended_on, terms:recurring_expense_terms(effective_from, description, is_shared, is_household_expense)')
+    .is('ended_on', null)
+}
+
 export interface RecurringExpenseInput {
   description: string
   amount: number

@@ -120,6 +120,10 @@
   @apply mt-2 mb-4 text-sm text-finora-ink-muted;
 }
 
+.modalList {
+  @apply mb-4 list-disc space-y-1 pl-5 text-sm text-finora-ink;
+}
+
 .modalActions {
   @apply mt-4 flex justify-end gap-3;
 }

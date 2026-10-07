@@ -22,6 +22,8 @@
     "declineButton": "Rechazar invitación",
     "cancelInviteButton": "Cancelar invitación",
     "leaveButton": "Salir del hogar",
+    "leaveWarningTitle": "Esto afecta a gastos recurrentes activos",
+    "leaveWarningText": "Estos gastos recurrentes están compartidos o etiquetados como del hogar. Al salir, su próximo cargo se publicará sin eso, y seguirá así hasta que se forme un hogar de nuevo.",
     "inviteSuccess": "Invitación enviada."
   },
   "errors": {
