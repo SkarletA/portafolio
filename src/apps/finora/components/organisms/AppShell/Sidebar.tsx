@@ -61,12 +61,12 @@ export function Sidebar() {
 
   return (
     <aside className={s.sidebar}>
-      <div className={s.brand}>
+      <Link to="/finora" className={s.brand} data-testid="sidebar-brand-link">
         <div className={s.brandMark}>
           <Icon name="brand-mark" className={s.brandMarkIcon} />
         </div>
         <span className={s.brandName}>Finora</span>
-      </div>
+      </Link>
 
       <nav className={s.nav}>
         {NAV_ITEM_DEFS.map((item) => (

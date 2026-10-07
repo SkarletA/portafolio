@@ -37,6 +37,12 @@ function renderSidebar() {
 }
 
 describe('Sidebar', () => {
+  it('links the brand mark to the dashboard', () => {
+    renderSidebar()
+
+    expect(screen.getByTestId('sidebar-brand-link')).toHaveAttribute('href', '/finora')
+  })
+
   it('includes Settings as the last item of the main nav group', () => {
     renderSidebar()
 

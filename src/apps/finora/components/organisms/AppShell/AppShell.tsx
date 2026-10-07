@@ -1,5 +1,5 @@
 import { useCallback, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Sidebar } from './Sidebar'
 import { NavItem } from '@molecules/NavItem/NavItem'
@@ -54,10 +54,12 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
 
       <header className={s.mobileHeader}>
-        <span className={s.brandMark}>
-          <Icon name="brand-mark" className={s.brandMarkIcon} />
-        </span>
-        <span className={s.brandName}>Finora</span>
+        <Link to="/finora" className={s.brandLink} data-testid="mobile-header-brand-link">
+          <span className={s.brandMark}>
+            <Icon name="brand-mark" className={s.brandMarkIcon} />
+          </span>
+          <span>Finora</span>
+        </Link>
         <LocaleBadge />
       </header>
 

@@ -58,6 +58,12 @@ describe('AppShell', () => {
     expect(bottomNav.queryByRole('link', { name: /^recurring$/i })).not.toBeInTheDocument()
   })
 
+  it('links the mobile header brand to the dashboard', () => {
+    renderShell()
+
+    expect(screen.getByTestId('mobile-header-brand-link')).toHaveAttribute('href', '/finora')
+  })
+
   it('renders the page content passed as children', () => {
     renderShell()
 
