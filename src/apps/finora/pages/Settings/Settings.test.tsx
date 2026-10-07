@@ -9,6 +9,7 @@ import { useCurrency } from '@context/CurrencyContext'
 import { useProfile } from '@hooks/useProfile'
 import { useHousehold } from '@context/HouseholdContext'
 import { updateProfile } from '@services/profilesService'
+import { getActiveHouseholdLinkedRecurringExpenses } from '@services/recurringExpensesService'
 
 vi.mock('@context/AuthContext', () => ({ useAuth: vi.fn() }))
 vi.mock('@context/ThemeContext', () => ({ useTheme: vi.fn() }))
@@ -19,6 +20,9 @@ vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 vi.mock('@services/profilesService', () => ({
   updateProfile: vi.fn(),
   uploadAvatar: vi.fn(),
+}))
+vi.mock('@services/recurringExpensesService', () => ({
+  getActiveHouseholdLinkedRecurringExpenses: vi.fn(),
 }))
 
 const profile = {
@@ -89,6 +93,7 @@ function renderSettings() {
 describe('Settings', () => {
   beforeEach(() => {
     vi.mocked(updateProfile).mockReset()
+    vi.mocked(getActiveHouseholdLinkedRecurringExpenses).mockResolvedValue({ data: [], error: null } as never)
   })
 
   it('renders the profile form pre-filled from useProfile', () => {
@@ -281,7 +286,7 @@ describe('Settings', () => {
       expect(decline).toHaveBeenCalled()
     })
 
-    it('shows the accepted state with a leave action once both members have accepted', () => {
+    it('shows the accepted state with a leave action once both members have accepted', async () => {
       const leave = vi.fn()
       mockHooks({
         household: {
@@ -297,10 +302,12 @@ describe('Settings', () => {
       expect(screen.queryByTestId('settings-household-invite-email-input')).not.toBeInTheDocument()
 
       fireEvent.click(screen.getByTestId('settings-household-leave-button'))
-      expect(leave).toHaveBeenCalled()
+
+      // No active shared/tagged templates (the mocked default): leaves right away.
+      await waitFor(() => expect(leave).toHaveBeenCalled())
     })
 
-    it('shows a waiting state with a cancel action while the invitee has not accepted yet', () => {
+    it('shows a waiting state with a cancel action while the invitee has not accepted yet', async () => {
       const leave = vi.fn()
       mockHooks({
         household: {
@@ -315,7 +322,83 @@ describe('Settings', () => {
       expect(screen.getByText('household:settings.invitedWaiting:{"name":"Bel Suarez"}')).toBeInTheDocument()
 
       fireEvent.click(screen.getByTestId('settings-household-cancel-invite-button'))
-      expect(leave).toHaveBeenCalled()
+      await waitFor(() => expect(leave).toHaveBeenCalled())
+    })
+
+    it('warns about active shared/tagged templates before leaving, and only leaves on confirm', async () => {
+      const leave = vi.fn()
+      vi.mocked(getActiveHouseholdLinkedRecurringExpenses).mockResolvedValue({
+        data: [
+          {
+            id: 'r1',
+            ended_on: null,
+            terms: [
+              {
+                effective_from: '2026-08-15',
+                description: 'Rent',
+                is_shared: true,
+                is_household_expense: false,
+              },
+            ],
+          },
+        ],
+        error: null,
+      } as never)
+      mockHooks({
+        household: {
+          ownMember: { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted', invited_by: 'u1' },
+          partnerMember: { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted', invited_by: 'u1' },
+          partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+          leave,
+        },
+      })
+      renderSettings()
+
+      fireEvent.click(screen.getByTestId('settings-household-leave-button'))
+
+      expect(await screen.findByTestId('settings-leave-household-affected-list')).toHaveTextContent('Rent')
+      expect(leave).not.toHaveBeenCalled()
+
+      fireEvent.click(screen.getByTestId('settings-leave-household-confirm-button'))
+      await waitFor(() => expect(leave).toHaveBeenCalled())
+    })
+
+    it('leaving the warning dialog without confirming does not leave the household', async () => {
+      vi.mocked(getActiveHouseholdLinkedRecurringExpenses).mockResolvedValue({
+        data: [
+          {
+            id: 'r1',
+            ended_on: null,
+            terms: [
+              {
+                effective_from: '2026-08-15',
+                description: 'Rent',
+                is_shared: true,
+                is_household_expense: false,
+              },
+            ],
+          },
+        ],
+        error: null,
+      } as never)
+      const leave = vi.fn()
+      mockHooks({
+        household: {
+          ownMember: { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted', invited_by: 'u1' },
+          partnerMember: { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted', invited_by: 'u1' },
+          partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+          leave,
+        },
+      })
+      renderSettings()
+
+      fireEvent.click(screen.getByTestId('settings-household-leave-button'))
+      await screen.findByTestId('settings-leave-household-affected-list')
+
+      fireEvent.click(screen.getByTestId('settings-leave-household-cancel-button'))
+
+      expect(screen.queryByTestId('settings-leave-household-affected-list')).not.toBeInTheDocument()
+      expect(leave).not.toHaveBeenCalled()
     })
   })
 })

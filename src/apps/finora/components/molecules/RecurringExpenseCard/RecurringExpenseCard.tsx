@@ -9,9 +9,11 @@ import { getCurrentTerm, getNextTerm, getOverdueDates, getUpcomingCharges, type 
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
+import { getAvailableForExpense } from '@domain/goal'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
 import { useHousehold } from '@context/HouseholdContext'
+import { useGoals } from '@hooks/useGoals'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '@atoms/Icon/Icon'
 import s from './RecurringExpenseCard.module.css'
@@ -46,17 +48,24 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const { partnerMember, partner } = useHousehold()
   const hasAcceptedPartner = partnerMember?.status === 'accepted'
   const partnerName = getHouseholdPartnerDisplayName(partner)
+  const { goals } = useGoals()
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const [postError, setPostError] = useState<string | null>(null)
 
-  const { id, ended_on: endedOn, last_error: lastError, terms, occurrences } = recurringExpense
+  const { id, ended_on: endedOn, planned_end_on: plannedEndOn, last_error: lastError, terms, occurrences } = recurringExpense
+
+  // ADR-016: whichever end is sooner governs - the same least() the job
+  // itself applies to v_limit - so "next charge" and the overdue count
+  // never show a date past a planned end the job will never actually reach.
+  const effectiveScheduleEnd =
+    endedOn !== null && plannedEndOn !== null ? (endedOn < plannedEndOn ? endedOn : plannedEndOn) : endedOn ?? plannedEndOn
 
   const schedule: RecurringSchedule = useMemo(
-    () => ({ startOn: recurringExpense.start_on, endedOn, dayOfMonth: recurringExpense.day_of_month }),
-    [recurringExpense.start_on, endedOn, recurringExpense.day_of_month]
+    () => ({ startOn: recurringExpense.start_on, endedOn: effectiveScheduleEnd, dayOfMonth: recurringExpense.day_of_month }),
+    [recurringExpense.start_on, effectiveScheduleEnd, recurringExpense.day_of_month]
   )
 
   const scheduleTerms: RecurringTerm[] = useMemo(
@@ -70,6 +79,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         isShared: term.is_shared,
         ownerShareAmount: term.owner_share_amount,
         isHouseholdExpense: term.is_household_expense,
+        savingsGoalId: term.savings_goal_id,
       })),
     [terms]
   )
@@ -99,6 +109,18 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const isEnded = endedOn !== null
   const isFullyStopped = isEnded && endedOn! < today
 
+  // ADR-016: a planned end is reached once today is past it - the job never
+  // writes anything to mark it (v_limit's own least() clamp is what actually
+  // stops new occurrences), so this is purely a display computation.
+  const isPlannedEndSet = plannedEndOn !== null
+  const isPlannedEndCompleted = isPlannedEndSet && plannedEndOn! < today
+
+  const fundingGoal = currentTerm?.savingsGoalId ? goals.find((goal) => goal.id === currentTerm.savingsGoalId) ?? null : null
+  const isInsufficientGoalFunds = lastError === 'insufficient_goal_funds' && fundingGoal !== null
+  const missingGoalAmount = isInsufficientGoalFunds
+    ? Math.max(0, (currentTerm?.amount ?? 0) - getAvailableForExpense(fundingGoal, null))
+    : 0
+
   const categoryName = currentTermRow?.category ? getCategoryDisplayName(currentTermRow.category, t) : t('card.uncategorized')
   const fallbackIcon = categoryName[0] || '•'
   const iconStyle = currentTermRow?.category?.color ? { backgroundColor: currentTermRow.category.color } : undefined
@@ -107,7 +129,11 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
     ? t('card.status.cancelled', { date: formatCardDate(endedOn!) })
     : isEnded
       ? t('card.status.ending', { date: formatCardDate(endedOn!) })
-      : t('card.status.active')
+      : isPlannedEndCompleted
+        ? t('card.status.completed', { date: formatCardDate(plannedEndOn!) })
+        : isPlannedEndSet
+          ? t('card.status.endsOn', { date: formatCardDate(plannedEndOn!) })
+          : t('card.status.active')
 
   const handleEditClick = useCallback(() => {
     navigate(`/finora/recurring/${id}/edit`)
@@ -216,6 +242,11 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
               {t('card.householdExpenseTag')}
             </p>
           )}
+          {fundingGoal && (
+            <p className={s.sharedWith} data-testid={`recurring-card-${id}-funded-from`}>
+              {t('card.fundedFrom', { goal: fundingGoal.name })}
+            </p>
+          )}
           {nextCharge && !isFullyStopped && (
             <p className={s.nextCharge}>{t('card.nextCharge', { date: formatCardDate(nextCharge.date) })}</p>
           )}
@@ -229,7 +260,16 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
           )}
         </div>
         <div className={s.headerEnd}>
-          <span className={cn(s.statusBadge, isFullyStopped ? s.statusCancelled : isEnded ? s.statusEnding : s.statusActive)}>
+          <span
+            className={cn(
+              s.statusBadge,
+              isFullyStopped || isPlannedEndCompleted
+                ? s.statusCancelled
+                : isEnded || isPlannedEndSet
+                  ? s.statusEnding
+                  : s.statusActive
+            )}
+          >
             {statusLabel}
           </span>
           {!isEnded && (
@@ -284,7 +324,16 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         </p>
       )}
 
-      {lastError && <p className={s.lastErrorHint}>{t('card.lastErrorHint')}</p>}
+      {lastError && (
+        <p className={s.lastErrorHint} data-testid={`recurring-card-${id}-last-error-hint`}>
+          {isInsufficientGoalFunds
+            ? t('card.insufficientGoalFundsHint', {
+                goal: fundingGoal!.name,
+                amount: formatCurrency(missingGoalAmount, currency, locale),
+              })
+            : t('card.lastErrorHint')}
+        </p>
+      )}
     </div>
   )
 }

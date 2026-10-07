@@ -22,6 +22,8 @@
     "declineButton": "Decline invitation",
     "cancelInviteButton": "Cancel invitation",
     "leaveButton": "Leave household",
+  "leaveWarningTitle": "Active recurring expenses will be affected",
+  "leaveWarningText": "These recurring expenses are shared or tagged as the household's. Once you leave, their next charge will post unshared, and they will keep posting that way unless a household is formed again.",
     "inviteSuccess": "Invitation sent."
   },
   "errors": {

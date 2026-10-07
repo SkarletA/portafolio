@@ -4,6 +4,7 @@ import {
   cancelRecurringExpense,
   createRecurringExpense,
   postMyRecurringExpenses,
+  setRecurringExpensePlannedEnd,
   updateRecurringExpense,
   type RecurringExpenseInput,
 } from '@services/recurringExpensesService'
@@ -22,6 +23,7 @@ const input: RecurringExpenseInput = {
   is_shared: false,
   owner_share_amount: null,
   is_household_expense: false,
+  savings_goal_id: null,
 }
 
 describe('recurringExpensesService', () => {
@@ -42,6 +44,9 @@ describe('recurringExpensesService', () => {
       p_is_shared: false,
       p_owner_share_amount: undefined,
       p_is_household_expense: false,
+      p_savings_goal_id: undefined,
+      p_planned_end_on: undefined,
+      p_planned_charges: undefined,
     })
   })
 
@@ -63,6 +68,24 @@ describe('recurringExpensesService', () => {
     )
   })
 
+  it('createRecurringExpense sends the savings goal', async () => {
+    await createRecurringExpense({ ...input, savings_goal_id: 'g1' }, 15, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'create_recurring_expense',
+      expect.objectContaining({ p_savings_goal_id: 'g1' })
+    )
+  })
+
+  it('createRecurringExpense sends a planned end', async () => {
+    await createRecurringExpense(input, 15, '2026-10-06', { planned_end_on: '2027-10-15', planned_charges: 12 })
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'create_recurring_expense',
+      expect.objectContaining({ p_planned_end_on: '2027-10-15', p_planned_charges: 12 })
+    )
+  })
+
   it('updateRecurringExpense sends the new term with its effective date', async () => {
     await updateRecurringExpense('r1', '2026-11-01', input, '2026-10-06')
 
@@ -77,6 +100,7 @@ describe('recurringExpensesService', () => {
       p_is_shared: false,
       p_owner_share_amount: undefined,
       p_is_household_expense: false,
+      p_savings_goal_id: undefined,
     })
   })
 
@@ -98,12 +122,43 @@ describe('recurringExpensesService', () => {
     )
   })
 
+  it('updateRecurringExpense sends the savings goal', async () => {
+    await updateRecurringExpense('r1', '2026-11-01', { ...input, savings_goal_id: 'g1' }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'update_recurring_expense',
+      expect.objectContaining({ p_savings_goal_id: 'g1' })
+    )
+  })
+
   it('cancelRecurringExpense sends the end date', async () => {
     await cancelRecurringExpense('r1', '2026-10-06', '2026-10-06')
 
     expect(supabase.rpc).toHaveBeenCalledWith('cancel_recurring_expense', {
       p_id: 'r1',
       p_ended_on: '2026-10-06',
+      p_today: '2026-10-06',
+    })
+  })
+
+  it('setRecurringExpensePlannedEnd sends the date and count', async () => {
+    await setRecurringExpensePlannedEnd('r1', { planned_end_on: '2027-10-15', planned_charges: 12 }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith('set_recurring_expense_planned_end', {
+      p_id: 'r1',
+      p_planned_end_on: '2027-10-15',
+      p_planned_charges: 12,
+      p_today: '2026-10-06',
+    })
+  })
+
+  it('setRecurringExpensePlannedEnd sends undefined for both to remove a planned end', async () => {
+    await setRecurringExpensePlannedEnd('r1', { planned_end_on: null, planned_charges: null }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith('set_recurring_expense_planned_end', {
+      p_id: 'r1',
+      p_planned_end_on: undefined,
+      p_planned_charges: undefined,
       p_today: '2026-10-06',
     })
   })

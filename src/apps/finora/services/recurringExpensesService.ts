@@ -16,6 +16,8 @@ export interface RecurringExpenseTermRow {
   owner_share_amount: number | null
   /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with is_shared. */
   is_household_expense: boolean
+  /** ADR-017: the Goal this term's charge is withdrawn from. Mutually exclusive with is_shared. */
+  savings_goal_id: string | null
 }
 
 export interface RecurringExpenseOccurrenceRow {
@@ -33,6 +35,9 @@ export interface RecurringExpenseWithDetails {
   day_of_month: number
   start_on: string
   ended_on: string | null
+  /** ADR-016: a planned end, by date or by charge count (display label only). */
+  planned_end_on: string | null
+  planned_charges: number | null
   last_error: string | null
   last_error_at: string | null
   terms: RecurringExpenseTermRow[]
@@ -40,7 +45,7 @@ export interface RecurringExpenseWithDetails {
 }
 
 const RECURRING_EXPENSE_SELECT =
-  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, is_shared, owner_share_amount, is_household_expense, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id, posted_without_household)'
+  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, is_shared, owner_share_amount, is_household_expense, savings_goal_id, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id, posted_without_household)'
 
 // Only the caller's own templates (ADR-012, decision 10: the v1 UI shows no
 // one else's, even though the household can read them through RLS).
@@ -57,6 +62,26 @@ export async function getRecurringExpenses() {
     .order('created_at', { ascending: true })
 }
 
+export interface HouseholdLinkedRecurringExpenseRow {
+  id: string
+  ended_on: string | null
+  terms: Pick<RecurringExpenseTermRow, 'effective_from' | 'description' | 'is_shared' | 'is_household_expense'>[]
+}
+
+// ADR-018: templates that are still active and shared or household-tagged -
+// the caller's own, or their accepted partner's - before leaving a
+// household. No owner filter, unlike getRecurringExpenses above (which
+// deliberately limits to the caller's own templates, ADR-012 decision 10):
+// this relies on the same household select policy (ADR-007) to read the
+// partner's templates too. Informative only; the no-partner fallback
+// (ADR-014/015) already protects the money without this.
+export function getActiveHouseholdLinkedRecurringExpenses() {
+  return supabase
+    .from('recurring_expenses')
+    .select('id, ended_on, terms:recurring_expense_terms(effective_from, description, is_shared, is_household_expense)')
+    .is('ended_on', null)
+}
+
 export interface RecurringExpenseInput {
   description: string
   amount: number
@@ -68,12 +93,27 @@ export interface RecurringExpenseInput {
   owner_share_amount: number | null
   /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with is_shared. */
   is_household_expense: boolean
+  /** ADR-017: the Goal this term's charge is withdrawn from. Mutually exclusive with is_shared. */
+  savings_goal_id: string | null
+}
+
+// ADR-016: a planned end set at creation time. planned_charges is a display
+// label only - the client (getNthScheduledDate) is what translates a charge
+// count into planned_end_on; the server never derives one from the other.
+export interface RecurringExpensePlannedEndInput {
+  planned_end_on: string | null
+  planned_charges: number | null
 }
 
 // day_of_month and start_on are not inputs here: start_on is p_today + 1
 // (nothing is backfilled) and day_of_month is fixed for the template's life
 // (ADR-012, decisions 5 and 6).
-export function createRecurringExpense(input: RecurringExpenseInput, dayOfMonth: number, today: string) {
+export function createRecurringExpense(
+  input: RecurringExpenseInput,
+  dayOfMonth: number,
+  today: string,
+  plannedEnd?: RecurringExpensePlannedEndInput
+) {
   return supabase.rpc('create_recurring_expense', {
     p_description: input.description,
     p_amount: input.amount,
@@ -84,6 +124,9 @@ export function createRecurringExpense(input: RecurringExpenseInput, dayOfMonth:
     p_is_shared: input.is_shared,
     p_owner_share_amount: input.owner_share_amount ?? undefined,
     p_is_household_expense: input.is_household_expense,
+    p_savings_goal_id: input.savings_goal_id ?? undefined,
+    p_planned_end_on: plannedEnd?.planned_end_on ?? undefined,
+    p_planned_charges: plannedEnd?.planned_charges ?? undefined,
   })
 }
 
@@ -106,6 +149,7 @@ export function updateRecurringExpense(
     p_is_shared: input.is_shared,
     p_owner_share_amount: input.owner_share_amount ?? undefined,
     p_is_household_expense: input.is_household_expense,
+    p_savings_goal_id: input.savings_goal_id ?? undefined,
   })
 }
 
@@ -113,6 +157,21 @@ export function updateRecurringExpense(
 // (ADR-012, decision 7). No reactivation in v1.
 export function cancelRecurringExpense(id: string, endedOn: string, today: string) {
   return supabase.rpc('cancel_recurring_expense', { p_id: id, p_ended_on: endedOn, p_today: today })
+}
+
+// ADR-016: sets or clears a planned end, independent of update_recurring_expense
+// (a planned end is not a financial term). Passing both as null removes it.
+export function setRecurringExpensePlannedEnd(
+  id: string,
+  plannedEnd: RecurringExpensePlannedEndInput,
+  today: string
+) {
+  return supabase.rpc('set_recurring_expense_planned_end', {
+    p_id: id,
+    p_planned_end_on: plannedEnd.planned_end_on ?? undefined,
+    p_planned_charges: plannedEnd.planned_charges ?? undefined,
+    p_today: today,
+  })
 }
 
 // Publishes the caller's own overdue charges now, instead of waiting for the

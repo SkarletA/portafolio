@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
 import { Select } from '@atoms/Select/Select'
@@ -7,19 +7,23 @@ import { GroupedSelect, type GroupedSelectGroup } from '@atoms/Select/GroupedSel
 import { BackLink } from '@molecules/BackLink/BackLink'
 import {
   createRecurringExpense,
+  setRecurringExpensePlannedEnd,
   updateRecurringExpense,
   type RecurringExpenseInput,
+  type RecurringExpensePlannedEndInput,
   type RecurringExpenseWithDetails,
 } from '@services/recurringExpensesService'
 import { parseRecurringExpenseError } from '@services/recurringExpensesErrors'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
 import { useCategories } from '@hooks/useCategories'
+import { useGoals } from '@hooks/useGoals'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
-import { getCurrentTerm, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
+import { getCurrentTerm, getNthScheduledDate, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
 import { getTodayLocalDate } from '@domain/date'
 import { roundMoneyInput, subtractMoney } from '@domain/money'
 import { PAYMENT_METHODS } from '@domain/transaction'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
+import { getAvailableForExpense } from '@domain/goal'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
@@ -108,7 +112,11 @@ interface FormErrors {
   day_of_month?: string
   effective_from?: string
   share?: string
+  savingsGoal?: string
+  plannedEnd?: string
 }
+
+type PlannedEndMode = 'never' | 'count' | 'date'
 
 interface RecurringExpenseFormProps {
   mode: 'create' | 'edit'
@@ -126,6 +134,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
   const { partnerMember, partner } = useHousehold()
   const hasAcceptedPartner = partnerMember?.status === 'accepted'
   const partnerName = getHouseholdPartnerDisplayName(partner)
+  const { goals, loading: goalsLoading } = useGoals()
   const isEdit = mode === 'edit' && !!recurringExpense
   const testIdPrefix = isEdit ? 'edit-recurring-expense' : 'add-recurring-expense'
   const today = getTodayLocalDate()
@@ -141,6 +150,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       isShared: term.is_shared,
       ownerShareAmount: term.owner_share_amount,
       isHouseholdExpense: term.is_household_expense,
+      savingsGoalId: term.savings_goal_id,
     }))
     return getCurrentTerm(terms, today)
   }, [recurringExpense, today])
@@ -158,6 +168,21 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       : ''
   )
   const [isHouseholdExpense, setIsHouseholdExpense] = useState(currentTerm?.isHouseholdExpense ?? false)
+  const [isSavingsFunded, setIsSavingsFunded] = useState(currentTerm?.savingsGoalId !== null && currentTerm?.savingsGoalId !== undefined)
+  const [savingsGoalId, setSavingsGoalId] = useState(currentTerm?.savingsGoalId ?? '')
+  const [plannedEndMode, setPlannedEndMode] = useState<PlannedEndMode>(
+    recurringExpense?.planned_charges !== null && recurringExpense?.planned_charges !== undefined
+      ? 'count'
+      : recurringExpense?.planned_end_on !== null && recurringExpense?.planned_end_on !== undefined
+        ? 'date'
+        : 'never'
+  )
+  const [plannedCharges, setPlannedCharges] = useState(
+    recurringExpense?.planned_charges !== null && recurringExpense?.planned_charges !== undefined
+      ? String(recurringExpense.planned_charges)
+      : ''
+  )
+  const [plannedEndOn, setPlannedEndOn] = useState(recurringExpense?.planned_end_on ?? '')
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -170,6 +195,18 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         children: group.children.map((child) => ({ value: child.id, label: getCategoryDisplayName(child, t) })),
       })),
     [categories, t]
+  )
+
+  const savingsGoalOptions = useMemo(
+    () =>
+      goals.map((goal) => ({
+        value: goal.id,
+        label: t('recurring:form.savingsGoalOption', {
+          name: goal.name,
+          available: formatCurrency(getAvailableForExpense(goal, null), currency, locale),
+        }),
+      })),
+    [goals, currency, locale, t]
   )
 
   // Which scheduled charge will be the first to use the new price - answers
@@ -194,6 +231,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       isShared: false,
       ownerShareAmount: null,
       isHouseholdExpense: false,
+      savingsGoalId: null,
     }
 
     return getUpcomingCharges(schedule, [dummyTerm], effectiveFrom, 1)[0]?.date ?? null
@@ -253,6 +291,31 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
     setErrors((prev) => (prev.share ? { ...prev, share: undefined } : prev))
   }, [])
 
+  const handleSavingsFundedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsSavingsFunded(event.target.checked)
+    setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
+  }, [])
+
+  const handleSavingsGoalChange = useCallback((value: string) => {
+    setSavingsGoalId(value)
+    setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
+  }, [])
+
+  const handlePlannedEndModeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setPlannedEndMode(event.target.value as PlannedEndMode)
+    setErrors((prev) => (prev.plannedEnd ? { ...prev, plannedEnd: undefined } : prev))
+  }, [])
+
+  const handlePlannedChargesChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setPlannedCharges(event.target.value)
+    setErrors((prev) => (prev.plannedEnd ? { ...prev, plannedEnd: undefined } : prev))
+  }, [])
+
+  const handlePlannedEndOnChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setPlannedEndOn(event.target.value)
+    setErrors((prev) => (prev.plannedEnd ? { ...prev, plannedEnd: undefined } : prev))
+  }, [])
+
   const handleSubmit = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
@@ -287,7 +350,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
 
       // hasAcceptedPartner gates the whole section away (never checked without
       // one), but the amount is still validated whenever it's checked.
-      const effectiveIsShared = hasAcceptedPartner && isShared
+      // Also mutually exclusive with funding it from savings (ADR-017).
+      const effectiveIsShared = hasAcceptedPartner && isShared && !isSavingsFunded
       let parsedOwnerShare: number | null = null
       if (effectiveIsShared) {
         parsedOwnerShare = Number(ownerSharePart)
@@ -307,6 +371,38 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       // true at the same time as effectiveIsShared in practice.
       const effectiveIsHouseholdExpense = hasAcceptedPartner && isHouseholdExpense && !effectiveIsShared
 
+      // Mutually exclusive with sharing only (ADR-017, decision 2) - allowed
+      // together with the household tag, same as a one-off transaction.
+      const effectiveIsSavingsFunded = isSavingsFunded && !effectiveIsShared
+      if (effectiveIsSavingsFunded && !savingsGoalId) {
+        nextErrors.savingsGoal = t('recurring:validation.selectSavingsGoal')
+      }
+
+      // ADR-016: start_on and day_of_month are what the date is anchored on -
+      // the template's own once created (immutable), or, before creation,
+      // what this same submission is about to set them to.
+      const plannedEndEarliest = isEdit && recurringExpense ? recurringExpense.start_on : addOneDay(today)
+      const plannedEndDayOfMonth = isEdit && recurringExpense ? recurringExpense.day_of_month : Number(dayOfMonth)
+      let effectivePlannedEnd: RecurringExpensePlannedEndInput = { planned_end_on: null, planned_charges: null }
+
+      if (plannedEndMode === 'count') {
+        const parsedCharges = Number(plannedCharges)
+        if (!plannedCharges || !Number.isInteger(parsedCharges) || parsedCharges < 1 || parsedCharges > 600) {
+          nextErrors.plannedEnd = t('recurring:validation.plannedChargesRange')
+        } else if (!nextErrors.day_of_month) {
+          effectivePlannedEnd = {
+            planned_end_on: getNthScheduledDate(plannedEndEarliest, plannedEndDayOfMonth, parsedCharges),
+            planned_charges: parsedCharges,
+          }
+        }
+      } else if (plannedEndMode === 'date') {
+        if (!plannedEndOn || plannedEndOn < plannedEndEarliest) {
+          nextErrors.plannedEnd = t('recurring:validation.plannedEndBeforeStart')
+        } else {
+          effectivePlannedEnd = { planned_end_on: plannedEndOn, planned_charges: null }
+        }
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -322,16 +418,16 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         is_shared: effectiveIsShared,
         owner_share_amount: effectiveIsShared ? parsedOwnerShare : null,
         is_household_expense: effectiveIsHouseholdExpense,
+        savings_goal_id: effectiveIsSavingsFunded ? savingsGoalId : null,
       }
 
       const { error } =
         isEdit && recurringExpense
           ? await updateRecurringExpense(recurringExpense.id, effectiveFrom, input, today)
-          : await createRecurringExpense(input, Number(dayOfMonth), today)
-
-      setSubmitting(false)
+          : await createRecurringExpense(input, Number(dayOfMonth), today, effectivePlannedEnd)
 
       if (error) {
+        setSubmitting(false)
         const code = parseRecurringExpenseError(error)
         if (code === 'invalid_amount') {
           setErrors({ amount: t('recurring:validation.amountMaxDecimals') })
@@ -350,8 +446,37 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
           setErrors({ share: t(`recurring:errors.${code}`) })
           return
         }
+        if (code === 'goal_not_found') {
+          setErrors({ savingsGoal: t(`recurring:errors.${code}`) })
+          return
+        }
+        if (code === 'invalid_planned_end') {
+          setErrors({ plannedEnd: t(`recurring:errors.${code}`) })
+          return
+        }
         setSubmitError(code ? t(`recurring:errors.${code}`) : error.message)
         return
+      }
+
+      // ADR-016: a planned end is not a financial term - it takes effect
+      // immediately and has no effective_from, so it's its own call rather
+      // than folded into the term version update_recurring_expense just sent.
+      if (isEdit && recurringExpense) {
+        const { error: plannedEndError } = await setRecurringExpensePlannedEnd(
+          recurringExpense.id,
+          effectivePlannedEnd,
+          today
+        )
+
+        setSubmitting(false)
+
+        if (plannedEndError) {
+          const code = parseRecurringExpenseError(plannedEndError)
+          setErrors({ plannedEnd: code ? t(`recurring:errors.${code}`) : plannedEndError.message })
+          return
+        }
+      } else {
+        setSubmitting(false)
       }
 
       navigate('/finora/recurring')
@@ -367,6 +492,11 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       isShared,
       ownerSharePart,
       isHouseholdExpense,
+      isSavingsFunded,
+      savingsGoalId,
+      plannedEndMode,
+      plannedCharges,
+      plannedEndOn,
       isEdit,
       recurringExpense,
       today,
@@ -533,14 +663,18 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
                 type="checkbox"
                 checked={isShared}
                 onChange={handleSharedChange}
-                disabled={isHouseholdExpense}
+                disabled={isHouseholdExpense || isSavingsFunded}
                 aria-describedby={`${testIdPrefix}-shared-hint`}
                 data-testid={`${testIdPrefix}-shared-checkbox`}
               />
               {t('form.shareWithPartner', { partner: partnerName ?? '' })}
             </label>
             <p id={`${testIdPrefix}-shared-hint`} className={s.hint}>
-              {isHouseholdExpense ? t('form.sharedDisabledHint') : t('form.sharedHint')}
+              {isHouseholdExpense
+                ? t('form.sharedDisabledHint')
+                : isSavingsFunded
+                  ? t('form.sharedDisabledHintSavings')
+                  : t('form.sharedHint')}
             </p>
 
             {isShared && (
@@ -587,6 +721,127 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
             )}
           </div>
         )}
+
+        <div className={s.field}>
+          <label className={s.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={isSavingsFunded}
+              onChange={handleSavingsFundedChange}
+              disabled={isShared}
+              aria-describedby={`${testIdPrefix}-savings-funded-hint`}
+              data-testid={`${testIdPrefix}-savings-funded-checkbox`}
+            />
+            {t('form.savingsFunded')}
+          </label>
+          <p id={`${testIdPrefix}-savings-funded-hint`} className={s.hint}>
+            {isShared ? t('form.savingsFundedDisabledHint') : t('form.savingsFundedHint')}
+          </p>
+
+          {isSavingsFunded && (
+            <label className={s.field}>
+              {t('form.savingsGoal')}
+              <Select
+                options={savingsGoalOptions}
+                value={savingsGoalId}
+                onChange={handleSavingsGoalChange}
+                placeholder={goalsLoading ? t('form.loadingGoals') : t('form.selectSavingsGoal')}
+                disabled={goalsLoading || goals.length === 0}
+                ariaInvalid={!!errors.savingsGoal}
+                ariaDescribedBy={errors.savingsGoal ? `${testIdPrefix}-savings-goal-error` : undefined}
+                testId={`${testIdPrefix}-savings-goal-select`}
+              />
+              {!goalsLoading && goals.length === 0 && (
+                <p className={s.hint}>
+                  {t('form.noGoalsYet')}{' '}
+                  <Link to="/finora/add-goal" className={s.link} data-testid={`${testIdPrefix}-create-goal-link`}>
+                    {t('form.createGoal')}
+                  </Link>
+                </p>
+              )}
+              {errors.savingsGoal && (
+                <p id={`${testIdPrefix}-savings-goal-error`} role="alert" className={s.error}>
+                  {errors.savingsGoal}
+                </p>
+              )}
+            </label>
+          )}
+        </div>
+
+        <fieldset className={s.field}>
+          <legend>{t('form.plannedEndLabel')}</legend>
+          <label className={s.checkboxLabel}>
+            <input
+              type="radio"
+              name={`${testIdPrefix}-planned-end-mode`}
+              value="never"
+              checked={plannedEndMode === 'never'}
+              onChange={handlePlannedEndModeChange}
+              data-testid={`${testIdPrefix}-planned-end-never-radio`}
+            />
+            {t('form.plannedEndNever')}
+          </label>
+          <label className={s.checkboxLabel}>
+            <input
+              type="radio"
+              name={`${testIdPrefix}-planned-end-mode`}
+              value="count"
+              checked={plannedEndMode === 'count'}
+              onChange={handlePlannedEndModeChange}
+              data-testid={`${testIdPrefix}-planned-end-count-radio`}
+            />
+            {t('form.plannedEndAfterCharges')}
+          </label>
+          {plannedEndMode === 'count' && (
+            <label className={s.field}>
+              {t('form.plannedChargesLabel')}
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                max="600"
+                step="1"
+                value={plannedCharges}
+                onChange={handlePlannedChargesChange}
+                className={s.input}
+                aria-invalid={!!errors.plannedEnd}
+                aria-describedby={errors.plannedEnd ? `${testIdPrefix}-planned-end-error` : undefined}
+                data-testid={`${testIdPrefix}-planned-charges-input`}
+              />
+            </label>
+          )}
+          <label className={s.checkboxLabel}>
+            <input
+              type="radio"
+              name={`${testIdPrefix}-planned-end-mode`}
+              value="date"
+              checked={plannedEndMode === 'date'}
+              onChange={handlePlannedEndModeChange}
+              data-testid={`${testIdPrefix}-planned-end-date-radio`}
+            />
+            {t('form.plannedEndOnDate')}
+          </label>
+          {plannedEndMode === 'date' && (
+            <label className={s.field}>
+              {t('form.plannedEndOnLabel')}
+              <input
+                type="date"
+                min={isEdit && recurringExpense ? recurringExpense.start_on : addOneDay(today)}
+                value={plannedEndOn}
+                onChange={handlePlannedEndOnChange}
+                className={s.input}
+                aria-invalid={!!errors.plannedEnd}
+                aria-describedby={errors.plannedEnd ? `${testIdPrefix}-planned-end-error` : undefined}
+                data-testid={`${testIdPrefix}-planned-end-on-input`}
+              />
+            </label>
+          )}
+          {errors.plannedEnd && (
+            <p id={`${testIdPrefix}-planned-end-error`} role="alert" className={s.error}>
+              {errors.plannedEnd}
+            </p>
+          )}
+        </fieldset>
 
         {submitError && (
           <p role="alert" className={s.error}>

@@ -31,3 +31,7 @@
 .checkboxLabel {
   @apply flex items-center gap-2 text-sm font-normal text-finora-ink;
 }
+
+.link {
+  @apply font-medium text-finora-primary underline;
+}

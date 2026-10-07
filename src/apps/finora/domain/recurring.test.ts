@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getCurrentTerm,
   getNextTerm,
+  getNthScheduledDate,
   getOverdueDates,
   getPostingAvailableAt,
   getScheduledDate,
@@ -21,6 +22,7 @@ const term = (effectiveFrom: string, amount: number): RecurringTerm => ({
   isShared: false,
   ownerShareAmount: null,
   isHouseholdExpense: false,
+  savingsGoalId: null,
 })
 
 describe('getScheduledDate', () => {
@@ -35,6 +37,24 @@ describe('getScheduledDate', () => {
   it('clamps the 31st to 28 February and 29 February in a leap year', () => {
     expect(getScheduledDate(2026, 2, 31)).toBe('2026-02-28')
     expect(getScheduledDate(2028, 2, 31)).toBe('2028-02-29')
+  })
+})
+
+describe('getNthScheduledDate', () => {
+  it('counts the first charge as the start month when dayOfMonth is on or after startOn', () => {
+    expect(getNthScheduledDate('2026-10-07', 15, 1)).toBe('2026-10-15')
+    expect(getNthScheduledDate('2026-10-07', 15, 3)).toBe('2026-12-15')
+  })
+
+  it('skips the start month when dayOfMonth falls before startOn, matching the job', () => {
+    // startOn the 20th, dayOfMonth the 5th: October's 5th is before startOn,
+    // so the first charge is November's.
+    expect(getNthScheduledDate('2026-10-20', 5, 1)).toBe('2026-11-05')
+    expect(getNthScheduledDate('2026-10-20', 5, 12)).toBe('2027-10-05')
+  })
+
+  it('clamps a short month the same way getScheduledDate does', () => {
+    expect(getNthScheduledDate('2026-01-31', 31, 2)).toBe('2026-02-28')
   })
 })
 

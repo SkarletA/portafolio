@@ -26,6 +26,9 @@ import { PhoneInput } from '@molecules/PhoneInput/PhoneInput'
 import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '@domain/profile'
 import type { Currency, Language } from '@domain/profile'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
+import { getActiveHouseholdLinkedRecurringExpenses } from '@services/recurringExpensesService'
+import { getCurrentTerm, type RecurringTerm } from '@domain/recurring'
+import { getTodayLocalDate } from '@domain/date'
 import s from './Settings.module.css'
 
 const DELETE_CONFIRMATION_KEYWORD = 'DELETE'
@@ -109,6 +112,10 @@ export function Settings() {
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('')
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  // ADR-018: informative only - checked right before leaving, never blocking.
+  const [leaveHouseholdWarningNames, setLeaveHouseholdWarningNames] = useState<string[] | null>(null)
+  const [checkingLeaveHousehold, setCheckingLeaveHousehold] = useState(false)
 
   const canConfirmDelete =
     deleteConfirmationText.trim() === DELETE_CONFIRMATION_KEYWORD ||
@@ -365,8 +372,53 @@ export function Settings() {
     declineHouseholdInvite()
   }, [declineHouseholdInvite])
 
-  const handleLeaveHousehold = useCallback(() => {
-    leaveHousehold()
+  // ADR-018: checks for active shared/household-tagged templates (the
+  // caller's own or their partner's) before leaving. Purely informative -
+  // the no-partner fallback (ADR-014/015) already protects the money, so a
+  // failed check never blocks leaving; it only skips straight to it.
+  const handleLeaveHousehold = useCallback(async () => {
+    setCheckingLeaveHousehold(true)
+
+    const { data, error } = await getActiveHouseholdLinkedRecurringExpenses()
+
+    setCheckingLeaveHousehold(false)
+
+    const today = getTodayLocalDate()
+    const affectedNames = !error
+      ? (data ?? [])
+          .map((row) => {
+            const terms: RecurringTerm[] = row.terms.map((term) => ({
+              effectiveFrom: term.effective_from,
+              description: term.description,
+              amount: 0,
+              categoryId: null,
+              paymentMethod: '',
+              isShared: term.is_shared,
+              ownerShareAmount: null,
+              isHouseholdExpense: term.is_household_expense,
+              savingsGoalId: null,
+            }))
+            const current = getCurrentTerm(terms, today)
+            return current && (current.isShared || current.isHouseholdExpense) ? current.description : null
+          })
+          .filter((name): name is string => name !== null)
+      : []
+
+    if (affectedNames.length === 0) {
+      leaveHousehold()
+      return
+    }
+
+    setLeaveHouseholdWarningNames(affectedNames)
+  }, [leaveHousehold])
+
+  const handleCancelLeaveHouseholdWarning = useCallback(() => {
+    setLeaveHouseholdWarningNames(null)
+  }, [])
+
+  const handleConfirmLeaveHousehold = useCallback(async () => {
+    await leaveHousehold()
+    setLeaveHouseholdWarningNames(null)
   }, [leaveHousehold])
 
   const householdPartnerName = getHouseholdPartnerDisplayName(householdPartner)
@@ -603,7 +655,7 @@ export function Settings() {
                 data-testid="settings-household-cancel-invite-button"
                 variant="secondary"
                 onClick={handleLeaveHousehold}
-                disabled={householdActionPending}
+                disabled={householdActionPending || checkingLeaveHousehold}
               >
                 {t('household:settings.cancelInviteButton')}
               </Button>
@@ -630,7 +682,7 @@ export function Settings() {
                 variant="secondary"
                 className={s.dangerButton}
                 onClick={handleLeaveHousehold}
-                disabled={householdActionPending}
+                disabled={householdActionPending || checkingLeaveHousehold}
               >
                 {t('household:settings.leaveButton')}
               </Button>
@@ -817,6 +869,42 @@ export function Settings() {
                 disabled={!canConfirmDelete || deletingAccount}
               >
                 {deletingAccount ? t('common:buttons.deleting') : t('settings:dangerZone.deleteMyAccount')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {leaveHouseholdWarningNames && (
+        <div className={s.modalOverlay}>
+          <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="leave-household-modal-title">
+            <h3 id="leave-household-modal-title" className={s.modalTitle}>
+              {t('household:settings.leaveWarningTitle')}
+            </h3>
+            <p className={s.modalText}>{t('household:settings.leaveWarningText')}</p>
+            <ul className={s.modalList} data-testid="settings-leave-household-affected-list">
+              {leaveHouseholdWarningNames.map((name, index) => (
+                <li key={`${name}-${index}`}>{name}</li>
+              ))}
+            </ul>
+            <div className={s.modalActions}>
+              <Button
+                id="settings-leave-household-cancel-button"
+                data-testid="settings-leave-household-cancel-button"
+                variant="secondary"
+                onClick={handleCancelLeaveHouseholdWarning}
+                disabled={householdActionPending}
+              >
+                {t('common:buttons.cancel')}
+              </Button>
+              <Button
+                id="settings-leave-household-confirm-button"
+                data-testid="settings-leave-household-confirm-button"
+                className={s.dangerButton}
+                onClick={handleConfirmLeaveHousehold}
+                disabled={householdActionPending}
+              >
+                {t('household:settings.leaveButton')}
               </Button>
             </div>
           </div>
