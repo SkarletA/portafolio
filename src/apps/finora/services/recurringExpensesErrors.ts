@@ -1,9 +1,10 @@
 // The stable error codes raised by create_recurring_expense,
 // update_recurring_expense, cancel_recurring_expense and
 // post_my_recurring_expenses - see
-// supabase/migrations/20261006140000_recurring_posting.sql and
-// docs/adr/012-recurring-expenses.md. Callers map them to their own messages,
-// the same pattern as householdErrors.ts.
+// supabase/migrations/20261006140000_recurring_posting.sql,
+// supabase/migrations/20261008100000_recurring_shared_split_rpc.sql,
+// docs/adr/012-recurring-expenses.md and docs/adr/014-recurring-shared-expenses.md.
+// Callers map them to their own messages, the same pattern as householdErrors.ts.
 const CODES = [
   'not_authenticated',
   'invalid_date',
@@ -18,6 +19,10 @@ const CODES = [
   'recurring_term_conflict',
   'recurring_already_cancelled',
   'ended_before_today',
+  'invalid_share_amount',
+  'household_required_for_shared_expense',
+  'invalid_share_plan',
+  'household_required_for_household_expense',
 ] as const
 
 export type RecurringExpenseErrorCode = (typeof CODES)[number]

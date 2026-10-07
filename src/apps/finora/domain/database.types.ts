@@ -268,6 +268,9 @@ export type Database = {
           description: string
           effective_from: string
           id: string
+          is_household_expense: boolean
+          is_shared: boolean
+          owner_share_amount: number | null
           payment_method: string
           recurring_expense_id: string
           user_id: string
@@ -279,6 +282,9 @@ export type Database = {
           description: string
           effective_from: string
           id?: string
+          is_household_expense?: boolean
+          is_shared?: boolean
+          owner_share_amount?: number | null
           payment_method: string
           recurring_expense_id: string
           user_id: string
@@ -290,6 +296,9 @@ export type Database = {
           description?: string
           effective_from?: string
           id?: string
+          is_household_expense?: boolean
+          is_shared?: boolean
+          owner_share_amount?: number | null
           payment_method?: string
           recurring_expense_id?: string
           user_id?: string
@@ -351,6 +360,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          posted_without_household: boolean
           recurring_expense_id: string
           scheduled_date: string
           term_version_id: string
@@ -360,6 +370,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          posted_without_household?: boolean
           recurring_expense_id: string
           scheduled_date: string
           term_version_id: string
@@ -369,6 +380,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          posted_without_household?: boolean
           recurring_expense_id?: string
           scheduled_date?: string
           term_version_id?: string
@@ -549,17 +561,45 @@ export type Database = {
         }
         Returns: string
       }
-      create_recurring_expense: {
-        Args: {
-          p_amount: number
-          p_category_id: string
-          p_day_of_month: number
-          p_description: string
-          p_payment_method: string
-          p_today: string
-        }
-        Returns: string
-      }
+      create_recurring_expense:
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_day_of_month: number
+              p_description: string
+              p_payment_method: string
+              p_today: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_day_of_month: number
+              p_description: string
+              p_is_shared?: boolean
+              p_owner_share_amount?: number
+              p_payment_method: string
+              p_today: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_day_of_month: number
+              p_description: string
+              p_is_household_expense?: boolean
+              p_is_shared?: boolean
+              p_owner_share_amount?: number
+              p_payment_method: string
+              p_today: string
+            }
+            Returns: string
+          }
       current_household_id: { Args: never; Returns: string }
       decline_household_invite: { Args: never; Returns: undefined }
       get_household_partner: {
@@ -602,18 +642,48 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_recurring_expense: {
-        Args: {
-          p_amount: number
-          p_category_id: string
-          p_description: string
-          p_effective_from: string
-          p_id: string
-          p_payment_method: string
-          p_today: string
-        }
-        Returns: string
-      }
+      update_recurring_expense:
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_description: string
+              p_effective_from: string
+              p_id: string
+              p_payment_method: string
+              p_today: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_description: string
+              p_effective_from: string
+              p_id: string
+              p_is_shared?: boolean
+              p_owner_share_amount?: number
+              p_payment_method: string
+              p_today: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_description: string
+              p_effective_from: string
+              p_id: string
+              p_is_household_expense?: boolean
+              p_is_shared?: boolean
+              p_owner_share_amount?: number
+              p_payment_method: string
+              p_today: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       [_ in never]: never

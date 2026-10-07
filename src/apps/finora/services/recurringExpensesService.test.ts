@@ -19,6 +19,9 @@ const input: RecurringExpenseInput = {
   amount: 199,
   category_id: 'c1',
   payment_method: 'Credit Card',
+  is_shared: false,
+  owner_share_amount: null,
+  is_household_expense: false,
 }
 
 describe('recurringExpensesService', () => {
@@ -36,7 +39,28 @@ describe('recurringExpensesService', () => {
       p_payment_method: 'Credit Card',
       p_day_of_month: 15,
       p_today: '2026-10-06',
+      p_is_shared: false,
+      p_owner_share_amount: undefined,
+      p_is_household_expense: false,
     })
+  })
+
+  it('createRecurringExpense sends the split when the term is shared', async () => {
+    await createRecurringExpense({ ...input, is_shared: true, owner_share_amount: 120 }, 15, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'create_recurring_expense',
+      expect.objectContaining({ p_is_shared: true, p_owner_share_amount: 120 })
+    )
+  })
+
+  it('createRecurringExpense sends the household tag', async () => {
+    await createRecurringExpense({ ...input, is_household_expense: true }, 15, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'create_recurring_expense',
+      expect.objectContaining({ p_is_household_expense: true })
+    )
   })
 
   it('updateRecurringExpense sends the new term with its effective date', async () => {
@@ -50,7 +74,28 @@ describe('recurringExpensesService', () => {
       p_category_id: 'c1',
       p_payment_method: 'Credit Card',
       p_today: '2026-10-06',
+      p_is_shared: false,
+      p_owner_share_amount: undefined,
+      p_is_household_expense: false,
     })
+  })
+
+  it('updateRecurringExpense sends the split when the term is shared', async () => {
+    await updateRecurringExpense('r1', '2026-11-01', { ...input, is_shared: true, owner_share_amount: 120 }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'update_recurring_expense',
+      expect.objectContaining({ p_is_shared: true, p_owner_share_amount: 120 })
+    )
+  })
+
+  it('updateRecurringExpense sends the household tag', async () => {
+    await updateRecurringExpense('r1', '2026-11-01', { ...input, is_household_expense: true }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'update_recurring_expense',
+      expect.objectContaining({ p_is_household_expense: true })
+    )
   })
 
   it('cancelRecurringExpense sends the end date', async () => {

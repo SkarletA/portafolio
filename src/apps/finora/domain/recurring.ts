@@ -16,6 +16,12 @@ export interface RecurringTerm {
   amount: number
   categoryId: string | null
   paymentMethod: string
+  /** ADR-014: whether this term's charge is split with a household partner. */
+  isShared: boolean
+  /** The owner's own part; present if and only if isShared. */
+  ownerShareAmount: number | null
+  /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with isShared. */
+  isHouseholdExpense: boolean
 }
 
 export interface UpcomingCharge {

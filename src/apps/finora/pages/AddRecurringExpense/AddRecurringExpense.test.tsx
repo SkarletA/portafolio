@@ -5,6 +5,7 @@ import { AddRecurringExpense } from './AddRecurringExpense'
 import { createRecurringExpense, updateRecurringExpense } from '@services/recurringExpensesService'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
 import { useCategories } from '@hooks/useCategories'
+import { useHousehold } from '@context/HouseholdContext'
 
 vi.mock('@services/recurringExpensesService', () => ({
   createRecurringExpense: vi.fn(),
@@ -13,6 +14,9 @@ vi.mock('@services/recurringExpensesService', () => ({
 vi.mock('@hooks/useRecurringExpenses', () => ({ useRecurringExpenses: vi.fn() }))
 vi.mock('@hooks/useCategories', () => ({ useCategories: vi.fn() }))
 vi.mock('@domain/date', () => ({ getTodayLocalDate: () => '2026-10-06' }))
+vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
+vi.mock('@context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
+vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
 
 const CATEGORY = { id: 'c1', name: 'Entertainment', icon: null, color: null, parent_id: null, translationKey: null }
 
@@ -33,6 +37,9 @@ const recurringExpense = {
       amount: 199,
       category_id: 'c1',
       payment_method: 'Credit Card',
+      is_shared: false,
+      owner_share_amount: null as number | null,
+      is_household_expense: false,
       category: CATEGORY,
     },
   ],
@@ -81,6 +88,7 @@ describe('AddRecurringExpense', () => {
     vi.mocked(createRecurringExpense).mockReset()
     vi.mocked(updateRecurringExpense).mockReset()
     mockCategories()
+    vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
   })
 
   describe('create mode', () => {
@@ -115,7 +123,15 @@ describe('AddRecurringExpense', () => {
 
       await waitFor(() =>
         expect(createRecurringExpense).toHaveBeenCalledWith(
-          { description: 'Streaming', amount: 199, category_id: 'c1', payment_method: 'Credit Card' },
+          {
+            description: 'Streaming',
+            amount: 199,
+            category_id: 'c1',
+            payment_method: 'Credit Card',
+            is_shared: false,
+            owner_share_amount: null,
+            is_household_expense: false,
+          },
           15,
           '2026-10-06'
         )
@@ -241,7 +257,15 @@ describe('AddRecurringExpense', () => {
         expect(updateRecurringExpense).toHaveBeenCalledWith(
           'r1',
           '2026-11-01',
-          { description: 'Streaming', amount: 249, category_id: 'c1', payment_method: 'Credit Card' },
+          {
+            description: 'Streaming',
+            amount: 249,
+            category_id: 'c1',
+            payment_method: 'Credit Card',
+            is_shared: false,
+            owner_share_amount: null,
+            is_household_expense: false,
+          },
           '2026-10-06'
         )
       )
@@ -263,6 +287,71 @@ describe('AddRecurringExpense', () => {
 
       expect(screen.getByRole('alert')).toHaveTextContent('form.cannotEditCancelled')
       expect(screen.queryByTestId('edit-recurring-expense-description-input')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('share and household tag', () => {
+    const ACCEPTED_PARTNER_MEMBER = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
+    const PARTNER = { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null }
+
+    beforeEach(() => {
+      vi.mocked(useHousehold).mockReturnValue({ partnerMember: ACCEPTED_PARTNER_MEMBER, partner: PARTNER } as never)
+    })
+
+    it('shows no share or household section without an accepted partner', () => {
+      vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
+      renderCreate()
+
+      expect(screen.queryByTestId('add-recurring-expense-shared-checkbox')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('add-recurring-expense-household-expense-checkbox')).not.toBeInTheDocument()
+    })
+
+    it('disables each checkbox while the other is checked', () => {
+      renderCreate()
+
+      fireEvent.click(screen.getByTestId('add-recurring-expense-household-expense-checkbox'))
+      expect(screen.getByTestId('add-recurring-expense-shared-checkbox')).toBeDisabled()
+
+      fireEvent.click(screen.getByTestId('add-recurring-expense-household-expense-checkbox'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-shared-checkbox'))
+      expect(screen.getByTestId('add-recurring-expense-household-expense-checkbox')).toBeDisabled()
+    })
+
+    it('creates the template tagged for the household, with no split', async () => {
+      vi.mocked(createRecurringExpense).mockResolvedValue({ data: 'r2', error: null } as never)
+      renderCreate()
+
+      fireEvent.change(screen.getByTestId('add-recurring-expense-description-input'), { target: { value: 'Rent' } })
+      fireEvent.change(screen.getByTestId('add-recurring-expense-amount-input'), { target: { value: '500' } })
+      fillCategoryAndPayment('add-recurring-expense')
+      fireEvent.change(screen.getByTestId('add-recurring-expense-day-of-month-input'), { target: { value: '1' } })
+      fireEvent.click(screen.getByTestId('add-recurring-expense-household-expense-checkbox'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-save-button'))
+
+      await waitFor(() =>
+        expect(createRecurringExpense).toHaveBeenCalledWith(
+          expect.objectContaining({ is_shared: false, owner_share_amount: null, is_household_expense: true }),
+          1,
+          '2026-10-06'
+        )
+      )
+    })
+
+    it('maps a server plan conflict to the share section', async () => {
+      vi.mocked(createRecurringExpense).mockResolvedValue({
+        data: null,
+        error: { code: 'P0001', message: 'household_required_for_household_expense' },
+      } as never)
+      renderCreate()
+
+      fireEvent.change(screen.getByTestId('add-recurring-expense-description-input'), { target: { value: 'Rent' } })
+      fireEvent.change(screen.getByTestId('add-recurring-expense-amount-input'), { target: { value: '500' } })
+      fillCategoryAndPayment('add-recurring-expense')
+      fireEvent.change(screen.getByTestId('add-recurring-expense-day-of-month-input'), { target: { value: '1' } })
+      fireEvent.click(screen.getByTestId('add-recurring-expense-household-expense-checkbox'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-save-button'))
+
+      expect(await screen.findByText('recurring:errors.household_required_for_household_expense')).toBeInTheDocument()
     })
   })
 })

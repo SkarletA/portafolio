@@ -18,6 +18,9 @@ const term = (effectiveFrom: string, amount: number): RecurringTerm => ({
   amount,
   categoryId: null,
   paymentMethod: 'card',
+  isShared: false,
+  ownerShareAmount: null,
+  isHouseholdExpense: false,
 })
 
 describe('getScheduledDate', () => {
