@@ -34,6 +34,7 @@
     "dayOfMonthHint": "Charged on day {{day}} of each month. This can't be changed later.",
     "effectiveFrom": "Apply new price from",
     "effectiveFromHint": "Charges already due keep their current price. This one applies from the date you choose.",
+    "firstChargeWithNewPrice": "The new price first applies to the charge on {{date}}.",
     "saveRecurringExpense": "Save recurring expense",
     "saveChanges": "Save changes",
     "backToRecurring": "Back to recurring expenses",

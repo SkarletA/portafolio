@@ -34,6 +34,7 @@
     "dayOfMonthHint": "Se cobra el día {{day}} de cada mes. Esto no se puede cambiar después.",
     "effectiveFrom": "Aplicar nuevo precio desde",
     "effectiveFromHint": "Los cargos ya vencidos mantienen su precio actual. Este aplica desde la fecha que elijas.",
+    "firstChargeWithNewPrice": "El nuevo precio aplica por primera vez al cargo del {{date}}.",
     "saveRecurringExpense": "Guardar gasto recurrente",
     "saveChanges": "Guardar cambios",
     "backToRecurring": "Volver a gastos recurrentes",

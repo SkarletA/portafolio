@@ -164,6 +164,44 @@ describe('AddRecurringExpense', () => {
       expect(screen.queryByTestId('edit-recurring-expense-day-of-month-input')).not.toBeInTheDocument()
     })
 
+    it("does not offer today in the date picker - the server always rejects it", () => {
+      mockRecurringExpenses([recurringExpense])
+      renderEdit()
+
+      // today is mocked as '2026-10-06'; the picker must start at the 7th.
+      expect(screen.getByTestId('edit-recurring-expense-effective-from-input')).toHaveAttribute('min', '2026-10-07')
+    })
+
+    it('shows which charge will be the first to use the new price', () => {
+      mockRecurringExpenses([recurringExpense])
+      renderEdit()
+
+      expect(screen.queryByTestId('edit-recurring-expense-first-charge-with-new-price-hint')).not.toBeInTheDocument()
+
+      // day_of_month is 15 and October's charge (the 15th) hasn't happened yet
+      // relative to "today" (the 6th), so a date right after today still lands
+      // in the October cycle.
+      fireEvent.change(screen.getByTestId('edit-recurring-expense-effective-from-input'), { target: { value: '2026-10-07' } })
+
+      expect(screen.getByTestId('edit-recurring-expense-first-charge-with-new-price-hint')).toHaveTextContent(
+        'form.firstChargeWithNewPrice:{"date":"Oct 15, 2026"}'
+      )
+    })
+
+    it('shows November, not October, once the chosen date is past this cycle\'s charge day', () => {
+      mockRecurringExpenses([recurringExpense])
+      renderEdit()
+
+      // Past the 15th: October's charge date is behind the chosen date, so the
+      // new price can only reach November's - exactly why it "doesn't take" for
+      // the month in transit.
+      fireEvent.change(screen.getByTestId('edit-recurring-expense-effective-from-input'), { target: { value: '2026-10-16' } })
+
+      expect(screen.getByTestId('edit-recurring-expense-first-charge-with-new-price-hint')).toHaveTextContent(
+        'form.firstChargeWithNewPrice:{"date":"Nov 15, 2026"}'
+      )
+    })
+
     it('preloads the term on the creation day, before its first charge is due', () => {
       // create_recurring_expense never backfills: effective_from is today + 1
       // ('2026-10-06' is mocked as today), so nothing is "in force" yet.

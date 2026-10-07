@@ -15,13 +15,30 @@ import { parseRecurringExpenseError } from '@services/recurringExpensesErrors'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
 import { useCategories } from '@hooks/useCategories'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
-import { getCurrentTerm, type RecurringTerm } from '@domain/recurring'
+import { getCurrentTerm, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
 import { getTodayLocalDate } from '@domain/date'
 import { roundMoneyInput } from '@domain/money'
 import { PAYMENT_METHODS } from '@domain/transaction'
 import s from './AddRecurringExpense.module.css'
 
 const PAYMENT_METHOD_OPTIONS = PAYMENT_METHODS.map((method) => ({ value: method, label: method }))
+
+// Hardcoded 'en-US' like TransactionItem's own date formatting - a formatted
+// date value, not static UI copy (see CLAUDE.md's UI Language section).
+const formDateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+
+function formatFormDate(date: string): string {
+  return formDateFormatter.format(new Date(`${date}T00:00:00Z`))
+}
+
+// update_recurring_expense requires effective_from strictly after today
+// (charges already due keep their price - ADR-012, decision 5), so the date
+// picker must not offer today itself: that would always be rejected on submit.
+function addOneDay(date: string): string {
+  const next = new Date(`${date}T00:00:00Z`)
+  next.setUTCDate(next.getUTCDate() + 1)
+  return next.toISOString().slice(0, 10)
+}
 
 interface AddRecurringExpenseProps {
   mode: 'create' | 'edit'
@@ -132,6 +149,30 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       })),
     [categories, t]
   )
+
+  // Which scheduled charge will be the first to use the new price - answers
+  // "why didn't it apply to this month's charge" when effectiveFrom lands
+  // after the current cycle's date (a charge already due keeps its price,
+  // ADR-012 decision 5). Only the date matters, so the dummy term's own
+  // amount/description are never read, only its effectiveFrom.
+  const firstChargeWithNewPrice = useMemo(() => {
+    if (!isEdit || !recurringExpense || !effectiveFrom) return null
+
+    const schedule: RecurringSchedule = {
+      startOn: recurringExpense.start_on,
+      endedOn: recurringExpense.ended_on,
+      dayOfMonth: recurringExpense.day_of_month,
+    }
+    const dummyTerm: RecurringTerm = {
+      effectiveFrom,
+      description: '',
+      amount: 0,
+      categoryId: null,
+      paymentMethod: '',
+    }
+
+    return getUpcomingCharges(schedule, [dummyTerm], effectiveFrom, 1)[0]?.date ?? null
+  }, [isEdit, recurringExpense, effectiveFrom])
 
   const handleDescriptionChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setDescription(event.target.value)
@@ -361,7 +402,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
               <input
                 type="date"
                 required
-                min={today}
+                min={addOneDay(today)}
                 value={effectiveFrom}
                 onChange={handleEffectiveFromChange}
                 className={s.input}
@@ -376,6 +417,11 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
               )}
             </label>
             <p className={s.hint}>{t('form.effectiveFromHint')}</p>
+            {firstChargeWithNewPrice && (
+              <p className={s.hint} data-testid={`${testIdPrefix}-first-charge-with-new-price-hint`}>
+                {t('form.firstChargeWithNewPrice', { date: formatFormDate(firstChargeWithNewPrice) })}
+              </p>
+            )}
           </>
         )}
 
