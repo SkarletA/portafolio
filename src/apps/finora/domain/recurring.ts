@@ -78,6 +78,16 @@ export function getCurrentTerm(terms: RecurringTerm[], today: string): Recurring
   return [...terms].sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom))[0]
 }
 
+// The soonest term that is not in force yet (effectiveFrom after today) - a
+// price change an edit has scheduled but that hasn't reached its first charge.
+// Null when there is none, which is the common case.
+export function getNextTerm(terms: RecurringTerm[], today: string): RecurringTerm | null {
+  const upcoming = terms.filter((term) => term.effectiveFrom > today)
+  if (upcoming.length === 0) return null
+
+  return [...upcoming].sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom))[0]
+}
+
 // Every scheduled date from startOn through the earlier of asOf and endedOn,
 // in order. A date before startOn is not charged, and a date after endedOn
 // never is.

@@ -111,6 +111,47 @@ describe('RecurringExpenseCard', () => {
     expect(screen.getByText('$199.00 · Entertainment')).toBeInTheDocument()
   })
 
+  it('shows no price-change hint when there is only the current term', () => {
+    renderCard(recurringExpense())
+
+    expect(screen.queryByTestId('recurring-card-r1-price-change-hint')).not.toBeInTheDocument()
+  })
+
+  it('shows which charge a scheduled price change will first reach', () => {
+    const expense = recurringExpense({
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          category: CATEGORY,
+        },
+        {
+          id: 't2',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-11-01',
+          description: 'Streaming',
+          amount: 249,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    // Still $199 today - the edit does not rewrite what's already in force.
+    expect(screen.getByText('$199.00 · Entertainment')).toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-price-change-hint')).toHaveTextContent(
+      'card.priceChangeHint:{"amount":"$249.00","date":"Nov 15, 2026"}'
+    )
+  })
+
   it('shows no overdue banner when every due date has posted', () => {
     renderCard(recurringExpense())
 

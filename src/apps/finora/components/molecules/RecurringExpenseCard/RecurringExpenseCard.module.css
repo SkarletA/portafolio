@@ -36,6 +36,10 @@
   @apply truncate text-xs text-finora-ink-muted;
 }
 
+.priceChangeHint {
+  @apply truncate text-xs text-finora-primary;
+}
+
 .headerEnd {
   @apply flex shrink-0 flex-col items-end gap-1;
 }
