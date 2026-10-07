@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted. Implemented in four PRs: the schema (PR 1, `20261006120000`), the single writer (PR 2, `20261006130000`), the posting job and RPCs (PR 3, `20261006140000`), and the module interface (PR 4, pending).
 
 Replaces the earlier draft of this ADR number (options A/B/C). It keeps that
 draft's option A (real transactions created from templates) and settles its open
@@ -176,6 +176,32 @@ Only after this ADR is accepted and the timezone and pause checks are complete.
 - New SQL tests: a second run posts nothing; deleting a charge leaves a tombstone; an
   edit does not rewrite posted rows; a cancelled template stops; a failure rolls back
   and retries; a run after a simulated outage posts every missed date.
+
+## Implementation notes (PR 3)
+
+Decisions taken while implementing the posting job and the RPCs. They refine the
+ADR; they do not change its rules.
+
+- **Writer and partner lookup.** The writer is `private.write_transaction(p_owner, ...)`.
+  The partner lookup goes through `private.household_member_ids(p_owner)`, a small
+  private function with the same result as `public.household_member_ids()` for a
+  session caller. Decision 9 says "queries household_members by p_owner"; this is
+  that query, kept in one place.
+- **Category is required** for create and update, although the term column is nullable
+  (it matches `transactions`, which allows a null category for other expenses).
+- **Editing a cancelled template is refused** (`recurring_ended`). The event table
+  does not say so; the cancel row is final.
+- **A failed date does not stop the others.** Each date runs in its own block; the
+  template's later dates are still attempted, and `last_error` shows the last failure.
+- **The client's date is checked against the UTC date** (within one day either way,
+  `invalid_date` otherwise). This is a guard the ADR did not name. Without it a client
+  could claim a later date and publish charges early.
+- **"Post now"** publishes the caller's own dates before the local today (cutoff
+  `p_today - 1`). Today's charge waits for the scheduled run.
+- **Schedules:** `post-recurring-occurrences` at `0 * * * *`, and
+  `cleanup-recurring-cron-history` weekly, which keeps seven days of
+  `cron.job_run_details`. Reverting a schedule is `cron.unschedule(name)`; the extension
+  is never dropped (decision 1 and Implementation).
 
 ## Consequences
 
