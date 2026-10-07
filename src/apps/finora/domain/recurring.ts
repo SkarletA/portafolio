@@ -78,11 +78,15 @@ export function getCurrentTerm(terms: RecurringTerm[], today: string): Recurring
   return [...terms].sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom))[0]
 }
 
-// The soonest term that is not in force yet (effectiveFrom after today) - a
-// price change an edit has scheduled but that hasn't reached its first charge.
-// Null when there is none, which is the common case.
-export function getNextTerm(terms: RecurringTerm[], today: string): RecurringTerm | null {
-  const upcoming = terms.filter((term) => term.effectiveFrom > today)
+// The soonest term after whichever one getCurrentTerm resolved to - a real
+// price change still to come. Takes currentTerm, not today: a brand-new
+// template's only term can itself have effectiveFrom after today (nothing
+// has applied yet, getCurrentTerm falls back to it), and that term must
+// never be echoed back here as if it were a separate pending change.
+export function getNextTerm(terms: RecurringTerm[], currentTerm: RecurringTerm | null): RecurringTerm | null {
+  if (!currentTerm) return null
+
+  const upcoming = terms.filter((term) => term.effectiveFrom > currentTerm.effectiveFrom)
   if (upcoming.length === 0) return null
 
   return [...upcoming].sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom))[0]

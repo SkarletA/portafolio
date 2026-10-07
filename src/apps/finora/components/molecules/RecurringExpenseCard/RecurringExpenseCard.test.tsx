@@ -117,6 +117,32 @@ describe('RecurringExpenseCard', () => {
     expect(screen.queryByTestId('recurring-card-r1-price-change-hint')).not.toBeInTheDocument()
   })
 
+  it('shows no price-change hint for a brand-new template, before its only term has applied', () => {
+    // Reported bug: create_recurring_expense never backfills, so the only
+    // term's effective_from is today + 1. getCurrentTerm falls back to it,
+    // and it must not also be echoed back as a "price change" of itself.
+    const expense = recurringExpense({
+      start_on: '2026-10-12',
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-10-12',
+          description: 'Netflix',
+          amount: 299,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          category: CATEGORY,
+        },
+      ],
+      occurrences: [],
+    })
+
+    renderCard(expense, '2026-10-07')
+
+    expect(screen.queryByTestId('recurring-card-r1-price-change-hint')).not.toBeInTheDocument()
+  })
+
   it('shows which charge a scheduled price change will first reach', () => {
     const expense = recurringExpense({
       terms: [
