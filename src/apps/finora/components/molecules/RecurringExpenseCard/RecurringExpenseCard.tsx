@@ -73,7 +73,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   // A price change an edit scheduled for later, invisible otherwise once the
   // form closes (AddRecurringExpense only shows it while editing). Null in
   // the common case of no pending change.
-  const nextTerm = useMemo(() => getNextTerm(scheduleTerms, today), [scheduleTerms, today])
+  const nextTerm = useMemo(() => getNextTerm(scheduleTerms, currentTerm), [scheduleTerms, currentTerm])
   const nextTermChargeDate = useMemo(() => {
     if (!nextTerm) return null
     return getUpcomingCharges(schedule, [nextTerm], nextTerm.effectiveFrom, 1)[0]?.date ?? null

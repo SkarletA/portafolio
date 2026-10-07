@@ -107,19 +107,34 @@ describe('getCurrentTerm', () => {
 })
 
 describe('getNextTerm', () => {
-  it('returns null when there is no term scheduled after today', () => {
-    const terms = [term('2026-08-15', 199)]
-    expect(getNextTerm(terms, '2026-10-06')).toBeNull()
+  it('returns null when there is no term after the current one', () => {
+    const current = term('2026-08-15', 199)
+    expect(getNextTerm([current], current)).toBeNull()
   })
 
-  it('returns the soonest term that is not in force yet', () => {
-    const terms = [term('2026-08-15', 199), term('2026-11-01', 249)]
-    expect(getNextTerm(terms, '2026-10-06')?.amount).toBe(249)
+  it('returns the soonest term after the current one', () => {
+    const current = term('2026-08-15', 199)
+    const terms = [current, term('2026-11-01', 249)]
+    expect(getNextTerm(terms, current)?.amount).toBe(249)
   })
 
-  it('picks the soonest of several future terms, not the latest', () => {
-    const terms = [term('2026-08-15', 199), term('2027-01-01', 299), term('2026-11-01', 249)]
-    expect(getNextTerm(terms, '2026-10-06')?.amount).toBe(249)
+  it('picks the soonest of several terms after the current one, not the latest', () => {
+    const current = term('2026-08-15', 199)
+    const terms = [current, term('2027-01-01', 299), term('2026-11-01', 249)]
+    expect(getNextTerm(terms, current)?.amount).toBe(249)
+  })
+
+  // The exact bug reported: a brand-new template's only term has
+  // effectiveFrom after today (create_recurring_expense never backfills),
+  // so getCurrentTerm falls back to it (ADR-012). getNextTerm must not echo
+  // that same term back as if it were a separate pending price change.
+  it('never returns the current term itself, even when nothing has applied yet', () => {
+    const onlyTerm = term('2026-10-12', 299)
+    expect(getNextTerm([onlyTerm], onlyTerm)).toBeNull()
+  })
+
+  it('returns null when there is no current term to compare against', () => {
+    expect(getNextTerm([], null)).toBeNull()
   })
 })
 
