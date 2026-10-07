@@ -14,6 +14,7 @@ import s from './AppShell.module.css'
 const BOTTOM_NAV_LEFT_DEFS = [
   { labelKey: 'nav.dashboard', to: '/finora', icon: <Icon name="dashboard" className={s.navIcon} /> },
   { labelKey: 'nav.transactions', to: '/finora/transactions', icon: <Icon name="transactions" className={s.navIcon} /> },
+  { labelKey: 'nav.recurring', to: '/finora/recurring', icon: <Icon name="recurring" className={s.navIcon} /> },
 ] as const
 
 const BOTTOM_NAV_RIGHT_DEFS = [
