@@ -12,7 +12,9 @@
     "status": {
       "active": "Activo",
       "ending": "Termina el {{date}}",
-      "cancelled": "Cancelado desde el {{date}}"
+      "cancelled": "Cancelado desde el {{date}}",
+      "endsOn": "Termina el {{date}}",
+      "completed": "Completado el {{date}}"
     },
     "nextCharge": "Próximo cargo: {{date}}",
     "priceChangeHint": "Cambia a {{amount}} el {{date}}",
@@ -55,6 +57,12 @@
     "loadingGoals": "Cargando metas…",
     "noGoalsYet": "Todavía no tienes metas.",
     "createGoal": "Crea una meta primero",
+    "plannedEndLabel": "Termina",
+    "plannedEndNever": "Nunca",
+    "plannedEndAfterCharges": "Después de un número de cargos",
+    "plannedChargesLabel": "Número de cargos",
+    "plannedEndOnDate": "En una fecha",
+    "plannedEndOnLabel": "Fecha de fin",
     "dayOfMonth": "Día del mes",
     "dayOfMonthHint": "Se cobra el día {{day}} de cada mes. Esto no se puede cambiar después.",
     "effectiveFrom": "Aplicar nuevo precio desde",
@@ -75,7 +83,9 @@
     "dayOfMonthRange": "Ingresa un día entre 1 y 31",
     "effectiveFromMustBeFuture": "Elige una fecha después de hoy",
     "shareAmountRange": "Ingresa un monto mayor a 0 y menor al total",
-    "selectSavingsGoal": "Selecciona la meta de la que sale este gasto"
+    "selectSavingsGoal": "Selecciona la meta de la que sale este gasto",
+    "plannedChargesRange": "Ingresa un número de cargos entre 1 y 600",
+    "plannedEndBeforeStart": "Elige una fecha en o después del primer cargo"
   },
   "errors": {
     "not_authenticated": "Vuelve a iniciar sesión.",

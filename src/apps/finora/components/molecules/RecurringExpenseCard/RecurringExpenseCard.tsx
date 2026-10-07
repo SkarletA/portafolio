@@ -55,11 +55,17 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const [posting, setPosting] = useState(false)
   const [postError, setPostError] = useState<string | null>(null)
 
-  const { id, ended_on: endedOn, last_error: lastError, terms, occurrences } = recurringExpense
+  const { id, ended_on: endedOn, planned_end_on: plannedEndOn, last_error: lastError, terms, occurrences } = recurringExpense
+
+  // ADR-016: whichever end is sooner governs - the same least() the job
+  // itself applies to v_limit - so "next charge" and the overdue count
+  // never show a date past a planned end the job will never actually reach.
+  const effectiveScheduleEnd =
+    endedOn !== null && plannedEndOn !== null ? (endedOn < plannedEndOn ? endedOn : plannedEndOn) : endedOn ?? plannedEndOn
 
   const schedule: RecurringSchedule = useMemo(
-    () => ({ startOn: recurringExpense.start_on, endedOn, dayOfMonth: recurringExpense.day_of_month }),
-    [recurringExpense.start_on, endedOn, recurringExpense.day_of_month]
+    () => ({ startOn: recurringExpense.start_on, endedOn: effectiveScheduleEnd, dayOfMonth: recurringExpense.day_of_month }),
+    [recurringExpense.start_on, effectiveScheduleEnd, recurringExpense.day_of_month]
   )
 
   const scheduleTerms: RecurringTerm[] = useMemo(
@@ -103,6 +109,12 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const isEnded = endedOn !== null
   const isFullyStopped = isEnded && endedOn! < today
 
+  // ADR-016: a planned end is reached once today is past it - the job never
+  // writes anything to mark it (v_limit's own least() clamp is what actually
+  // stops new occurrences), so this is purely a display computation.
+  const isPlannedEndSet = plannedEndOn !== null
+  const isPlannedEndCompleted = isPlannedEndSet && plannedEndOn! < today
+
   const fundingGoal = currentTerm?.savingsGoalId ? goals.find((goal) => goal.id === currentTerm.savingsGoalId) ?? null : null
   const isInsufficientGoalFunds = lastError === 'insufficient_goal_funds' && fundingGoal !== null
   const missingGoalAmount = isInsufficientGoalFunds
@@ -117,7 +129,11 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
     ? t('card.status.cancelled', { date: formatCardDate(endedOn!) })
     : isEnded
       ? t('card.status.ending', { date: formatCardDate(endedOn!) })
-      : t('card.status.active')
+      : isPlannedEndCompleted
+        ? t('card.status.completed', { date: formatCardDate(plannedEndOn!) })
+        : isPlannedEndSet
+          ? t('card.status.endsOn', { date: formatCardDate(plannedEndOn!) })
+          : t('card.status.active')
 
   const handleEditClick = useCallback(() => {
     navigate(`/finora/recurring/${id}/edit`)
@@ -244,7 +260,16 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
           )}
         </div>
         <div className={s.headerEnd}>
-          <span className={cn(s.statusBadge, isFullyStopped ? s.statusCancelled : isEnded ? s.statusEnding : s.statusActive)}>
+          <span
+            className={cn(
+              s.statusBadge,
+              isFullyStopped || isPlannedEndCompleted
+                ? s.statusCancelled
+                : isEnded || isPlannedEndSet
+                  ? s.statusEnding
+                  : s.statusActive
+            )}
+          >
             {statusLabel}
           </span>
           {!isEnded && (

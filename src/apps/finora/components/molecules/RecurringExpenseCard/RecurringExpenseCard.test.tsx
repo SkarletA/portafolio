@@ -100,6 +100,30 @@ describe('RecurringExpenseCard', () => {
     expect(screen.getByText('card.status.ending:{"date":"Dec 1, 2026"}')).toBeInTheDocument()
   })
 
+  it('shows "ends on" for a planned end still ahead, with edit and cancel still available', () => {
+    renderCard(recurringExpense({ planned_end_on: '2026-12-15', planned_charges: 4 }))
+
+    expect(screen.getByText('card.status.endsOn:{"date":"Dec 15, 2026"}')).toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-edit-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-cancel-icon')).toBeInTheDocument()
+  })
+
+  it('shows "completed" once a planned end has passed, and clamps the next charge', () => {
+    renderCard(recurringExpense({ planned_end_on: '2026-09-15', planned_charges: 2 }))
+
+    expect(screen.getByText('card.status.completed:{"date":"Sep 15, 2026"}')).toBeInTheDocument()
+    expect(screen.queryByText(/card\.nextCharge/)).not.toBeInTheDocument()
+  })
+
+  it('hides a next charge that falls after a still-upcoming planned end, matching the job\'s own clamp', () => {
+    // dayOfMonth 15's next charge is Oct 15, but the planned end (Oct 10)
+    // falls before it - the job's v_limit would never reach Oct 15 either.
+    renderCard(recurringExpense({ planned_end_on: '2026-10-10', planned_charges: 3 }))
+
+    expect(screen.getByText('card.status.endsOn:{"date":"Oct 10, 2026"}')).toBeInTheDocument()
+    expect(screen.queryByText(/card\.nextCharge/)).not.toBeInTheDocument()
+  })
+
   it('shows the term on the creation day, before its first charge is even due', () => {
     // create_recurring_expense never backfills: the only term's effective_from
     // is today + 1, so nothing is "in force" yet on creation day.

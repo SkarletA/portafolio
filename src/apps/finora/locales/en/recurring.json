@@ -12,7 +12,9 @@
     "status": {
       "active": "Active",
       "ending": "Ending on {{date}}",
-      "cancelled": "Cancelled since {{date}}"
+      "cancelled": "Cancelled since {{date}}",
+      "endsOn": "Ends on {{date}}",
+      "completed": "Completed on {{date}}"
     },
     "nextCharge": "Next charge: {{date}}",
     "priceChangeHint": "Changes to {{amount}} on {{date}}",
@@ -55,6 +57,12 @@
     "loadingGoals": "Loading goals…",
     "noGoalsYet": "You don't have any goals yet.",
     "createGoal": "Create a goal first",
+    "plannedEndLabel": "Ends",
+    "plannedEndNever": "Never",
+    "plannedEndAfterCharges": "After a number of charges",
+    "plannedChargesLabel": "Number of charges",
+    "plannedEndOnDate": "On a date",
+    "plannedEndOnLabel": "End date",
     "dayOfMonth": "Day of month",
     "dayOfMonthHint": "Charged on day {{day}} of each month. This can't be changed later.",
     "effectiveFrom": "Apply new price from",
@@ -75,7 +83,9 @@
     "dayOfMonthRange": "Enter a day between 1 and 31",
     "effectiveFromMustBeFuture": "Choose a date after today",
     "shareAmountRange": "Enter an amount greater than 0 and less than the total",
-    "selectSavingsGoal": "Select the goal this comes from"
+    "selectSavingsGoal": "Select the goal this comes from",
+    "plannedChargesRange": "Enter a number of charges between 1 and 600",
+    "plannedEndBeforeStart": "Choose a date on or after the first charge"
   },
   "errors": {
     "not_authenticated": "Please sign in again.",
