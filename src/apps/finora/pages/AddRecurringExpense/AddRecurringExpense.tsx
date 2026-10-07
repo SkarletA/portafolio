@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
 import { Select } from '@atoms/Select/Select'
@@ -14,12 +14,14 @@ import {
 import { parseRecurringExpenseError } from '@services/recurringExpensesErrors'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
 import { useCategories } from '@hooks/useCategories'
+import { useGoals } from '@hooks/useGoals'
 import { buildCategoryTree, getCategoryDisplayName } from '@domain/category'
 import { getCurrentTerm, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
 import { getTodayLocalDate } from '@domain/date'
 import { roundMoneyInput, subtractMoney } from '@domain/money'
 import { PAYMENT_METHODS } from '@domain/transaction'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
+import { getAvailableForExpense } from '@domain/goal'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
@@ -108,6 +110,7 @@ interface FormErrors {
   day_of_month?: string
   effective_from?: string
   share?: string
+  savingsGoal?: string
 }
 
 interface RecurringExpenseFormProps {
@@ -126,6 +129,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
   const { partnerMember, partner } = useHousehold()
   const hasAcceptedPartner = partnerMember?.status === 'accepted'
   const partnerName = getHouseholdPartnerDisplayName(partner)
+  const { goals, loading: goalsLoading } = useGoals()
   const isEdit = mode === 'edit' && !!recurringExpense
   const testIdPrefix = isEdit ? 'edit-recurring-expense' : 'add-recurring-expense'
   const today = getTodayLocalDate()
@@ -141,6 +145,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       isShared: term.is_shared,
       ownerShareAmount: term.owner_share_amount,
       isHouseholdExpense: term.is_household_expense,
+      savingsGoalId: term.savings_goal_id,
     }))
     return getCurrentTerm(terms, today)
   }, [recurringExpense, today])
@@ -158,6 +163,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       : ''
   )
   const [isHouseholdExpense, setIsHouseholdExpense] = useState(currentTerm?.isHouseholdExpense ?? false)
+  const [isSavingsFunded, setIsSavingsFunded] = useState(currentTerm?.savingsGoalId !== null && currentTerm?.savingsGoalId !== undefined)
+  const [savingsGoalId, setSavingsGoalId] = useState(currentTerm?.savingsGoalId ?? '')
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -170,6 +177,18 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         children: group.children.map((child) => ({ value: child.id, label: getCategoryDisplayName(child, t) })),
       })),
     [categories, t]
+  )
+
+  const savingsGoalOptions = useMemo(
+    () =>
+      goals.map((goal) => ({
+        value: goal.id,
+        label: t('recurring:form.savingsGoalOption', {
+          name: goal.name,
+          available: formatCurrency(getAvailableForExpense(goal, null), currency, locale),
+        }),
+      })),
+    [goals, currency, locale, t]
   )
 
   // Which scheduled charge will be the first to use the new price - answers
@@ -194,6 +213,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       isShared: false,
       ownerShareAmount: null,
       isHouseholdExpense: false,
+      savingsGoalId: null,
     }
 
     return getUpcomingCharges(schedule, [dummyTerm], effectiveFrom, 1)[0]?.date ?? null
@@ -253,6 +273,16 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
     setErrors((prev) => (prev.share ? { ...prev, share: undefined } : prev))
   }, [])
 
+  const handleSavingsFundedChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setIsSavingsFunded(event.target.checked)
+    setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
+  }, [])
+
+  const handleSavingsGoalChange = useCallback((value: string) => {
+    setSavingsGoalId(value)
+    setErrors((prev) => (prev.savingsGoal ? { ...prev, savingsGoal: undefined } : prev))
+  }, [])
+
   const handleSubmit = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
@@ -287,7 +317,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
 
       // hasAcceptedPartner gates the whole section away (never checked without
       // one), but the amount is still validated whenever it's checked.
-      const effectiveIsShared = hasAcceptedPartner && isShared
+      // Also mutually exclusive with funding it from savings (ADR-017).
+      const effectiveIsShared = hasAcceptedPartner && isShared && !isSavingsFunded
       let parsedOwnerShare: number | null = null
       if (effectiveIsShared) {
         parsedOwnerShare = Number(ownerSharePart)
@@ -307,6 +338,13 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       // true at the same time as effectiveIsShared in practice.
       const effectiveIsHouseholdExpense = hasAcceptedPartner && isHouseholdExpense && !effectiveIsShared
 
+      // Mutually exclusive with sharing only (ADR-017, decision 2) - allowed
+      // together with the household tag, same as a one-off transaction.
+      const effectiveIsSavingsFunded = isSavingsFunded && !effectiveIsShared
+      if (effectiveIsSavingsFunded && !savingsGoalId) {
+        nextErrors.savingsGoal = t('recurring:validation.selectSavingsGoal')
+      }
+
       setErrors(nextErrors)
 
       if (Object.keys(nextErrors).length > 0) return
@@ -322,6 +360,7 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
         is_shared: effectiveIsShared,
         owner_share_amount: effectiveIsShared ? parsedOwnerShare : null,
         is_household_expense: effectiveIsHouseholdExpense,
+        savings_goal_id: effectiveIsSavingsFunded ? savingsGoalId : null,
       }
 
       const { error } =
@@ -350,6 +389,10 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
           setErrors({ share: t(`recurring:errors.${code}`) })
           return
         }
+        if (code === 'goal_not_found') {
+          setErrors({ savingsGoal: t(`recurring:errors.${code}`) })
+          return
+        }
         setSubmitError(code ? t(`recurring:errors.${code}`) : error.message)
         return
       }
@@ -367,6 +410,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       isShared,
       ownerSharePart,
       isHouseholdExpense,
+      isSavingsFunded,
+      savingsGoalId,
       isEdit,
       recurringExpense,
       today,
@@ -533,14 +578,18 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
                 type="checkbox"
                 checked={isShared}
                 onChange={handleSharedChange}
-                disabled={isHouseholdExpense}
+                disabled={isHouseholdExpense || isSavingsFunded}
                 aria-describedby={`${testIdPrefix}-shared-hint`}
                 data-testid={`${testIdPrefix}-shared-checkbox`}
               />
               {t('form.shareWithPartner', { partner: partnerName ?? '' })}
             </label>
             <p id={`${testIdPrefix}-shared-hint`} className={s.hint}>
-              {isHouseholdExpense ? t('form.sharedDisabledHint') : t('form.sharedHint')}
+              {isHouseholdExpense
+                ? t('form.sharedDisabledHint')
+                : isSavingsFunded
+                  ? t('form.sharedDisabledHintSavings')
+                  : t('form.sharedHint')}
             </p>
 
             {isShared && (
@@ -587,6 +636,52 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
             )}
           </div>
         )}
+
+        <div className={s.field}>
+          <label className={s.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={isSavingsFunded}
+              onChange={handleSavingsFundedChange}
+              disabled={isShared}
+              aria-describedby={`${testIdPrefix}-savings-funded-hint`}
+              data-testid={`${testIdPrefix}-savings-funded-checkbox`}
+            />
+            {t('form.savingsFunded')}
+          </label>
+          <p id={`${testIdPrefix}-savings-funded-hint`} className={s.hint}>
+            {isShared ? t('form.savingsFundedDisabledHint') : t('form.savingsFundedHint')}
+          </p>
+
+          {isSavingsFunded && (
+            <label className={s.field}>
+              {t('form.savingsGoal')}
+              <Select
+                options={savingsGoalOptions}
+                value={savingsGoalId}
+                onChange={handleSavingsGoalChange}
+                placeholder={goalsLoading ? t('form.loadingGoals') : t('form.selectSavingsGoal')}
+                disabled={goalsLoading || goals.length === 0}
+                ariaInvalid={!!errors.savingsGoal}
+                ariaDescribedBy={errors.savingsGoal ? `${testIdPrefix}-savings-goal-error` : undefined}
+                testId={`${testIdPrefix}-savings-goal-select`}
+              />
+              {!goalsLoading && goals.length === 0 && (
+                <p className={s.hint}>
+                  {t('form.noGoalsYet')}{' '}
+                  <Link to="/finora/add-goal" className={s.link} data-testid={`${testIdPrefix}-create-goal-link`}>
+                    {t('form.createGoal')}
+                  </Link>
+                </p>
+              )}
+              {errors.savingsGoal && (
+                <p id={`${testIdPrefix}-savings-goal-error`} role="alert" className={s.error}>
+                  {errors.savingsGoal}
+                </p>
+              )}
+            </label>
+          )}
+        </div>
 
         {submitError && (
           <p role="alert" className={s.error}>

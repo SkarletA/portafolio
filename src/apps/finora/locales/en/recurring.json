@@ -25,7 +25,9 @@
     "lastErrorHint": "The last attempt to post a charge failed. It will retry automatically, or use \"Post now\".",
     "sharedWith": "Shared with {{partner}} · you pay {{amount}}",
     "householdExpenseTag": "Counts toward household · not split",
-    "sharedNoPartnerWarning": "No active household - the next charge will post unshared."
+    "sharedNoPartnerWarning": "No active household - the next charge will post unshared.",
+    "fundedFrom": "Funded from {{goal}}",
+    "insufficientGoalFundsHint": "Not enough in {{goal}} to cover the next charge · missing {{amount}}. It will retry automatically, or use \"Post now\" once funded."
   },
   "form": {
     "title": "New recurring expense",
@@ -43,6 +45,16 @@
     "householdExpense": "It's 100% mine, but counts toward the household",
     "householdExpenseHint": "The full amount posts to you every time. This only tags it as a household expense - nothing is split.",
     "householdExpenseDisabledHint": "Can't combine with splitting the amount.",
+    "sharedDisabledHintSavings": "Can't combine with funding it from savings.",
+    "savingsFunded": "Fund from savings",
+    "savingsFundedHint": "Every charge this template posts is withdrawn from this goal instead of your income, until you change it.",
+    "savingsFundedDisabledHint": "Can't combine with splitting the amount.",
+    "savingsGoal": "Goal",
+    "savingsGoalOption": "{{name}} · {{available}} available",
+    "selectSavingsGoal": "Select a goal",
+    "loadingGoals": "Loading goals…",
+    "noGoalsYet": "You don't have any goals yet.",
+    "createGoal": "Create a goal first",
     "dayOfMonth": "Day of month",
     "dayOfMonthHint": "Charged on day {{day}} of each month. This can't be changed later.",
     "effectiveFrom": "Apply new price from",
@@ -62,7 +74,8 @@
     "selectPaymentMethod": "Select a payment method",
     "dayOfMonthRange": "Enter a day between 1 and 31",
     "effectiveFromMustBeFuture": "Choose a date after today",
-    "shareAmountRange": "Enter an amount greater than 0 and less than the total"
+    "shareAmountRange": "Enter an amount greater than 0 and less than the total",
+    "selectSavingsGoal": "Select the goal this comes from"
   },
   "errors": {
     "not_authenticated": "Please sign in again.",
@@ -81,6 +94,8 @@
     "invalid_share_amount": "Enter an amount greater than 0 and less than the total",
     "household_required_for_shared_expense": "Sharing an expense needs an accepted household partner.",
     "invalid_share_plan": "Choose either splitting the amount or tagging it as a household expense, not both.",
-    "household_required_for_household_expense": "Tagging an expense as the household's needs an accepted household partner."
+    "household_required_for_household_expense": "Tagging an expense as the household's needs an accepted household partner.",
+    "goal_not_found": "We couldn't find that goal.",
+    "invalid_planned_end": "Choose a valid end for this recurring expense."
   }
 }

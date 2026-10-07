@@ -9,9 +9,11 @@ import { getCurrentTerm, getNextTerm, getOverdueDates, getUpcomingCharges, type 
 import { getCategoryDisplayName } from '@domain/category'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
+import { getAvailableForExpense } from '@domain/goal'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
 import { useHousehold } from '@context/HouseholdContext'
+import { useGoals } from '@hooks/useGoals'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '@atoms/Icon/Icon'
 import s from './RecurringExpenseCard.module.css'
@@ -46,6 +48,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const { partnerMember, partner } = useHousehold()
   const hasAcceptedPartner = partnerMember?.status === 'accepted'
   const partnerName = getHouseholdPartnerDisplayName(partner)
+  const { goals } = useGoals()
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
@@ -70,6 +73,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         isShared: term.is_shared,
         ownerShareAmount: term.owner_share_amount,
         isHouseholdExpense: term.is_household_expense,
+        savingsGoalId: term.savings_goal_id,
       })),
     [terms]
   )
@@ -98,6 +102,12 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   // any ended_on, even a future one, means the template can't be edited or cancelled again.
   const isEnded = endedOn !== null
   const isFullyStopped = isEnded && endedOn! < today
+
+  const fundingGoal = currentTerm?.savingsGoalId ? goals.find((goal) => goal.id === currentTerm.savingsGoalId) ?? null : null
+  const isInsufficientGoalFunds = lastError === 'insufficient_goal_funds' && fundingGoal !== null
+  const missingGoalAmount = isInsufficientGoalFunds
+    ? Math.max(0, (currentTerm?.amount ?? 0) - getAvailableForExpense(fundingGoal, null))
+    : 0
 
   const categoryName = currentTermRow?.category ? getCategoryDisplayName(currentTermRow.category, t) : t('card.uncategorized')
   const fallbackIcon = categoryName[0] || '•'
@@ -216,6 +226,11 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
               {t('card.householdExpenseTag')}
             </p>
           )}
+          {fundingGoal && (
+            <p className={s.sharedWith} data-testid={`recurring-card-${id}-funded-from`}>
+              {t('card.fundedFrom', { goal: fundingGoal.name })}
+            </p>
+          )}
           {nextCharge && !isFullyStopped && (
             <p className={s.nextCharge}>{t('card.nextCharge', { date: formatCardDate(nextCharge.date) })}</p>
           )}
@@ -284,7 +299,16 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         </p>
       )}
 
-      {lastError && <p className={s.lastErrorHint}>{t('card.lastErrorHint')}</p>}
+      {lastError && (
+        <p className={s.lastErrorHint} data-testid={`recurring-card-${id}-last-error-hint`}>
+          {isInsufficientGoalFunds
+            ? t('card.insufficientGoalFundsHint', {
+                goal: fundingGoal!.name,
+                amount: formatCurrency(missingGoalAmount, currency, locale),
+              })
+            : t('card.lastErrorHint')}
+        </p>
+      )}
     </div>
   )
 }

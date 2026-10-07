@@ -25,7 +25,9 @@
     "lastErrorHint": "El último intento de publicar un cargo falló. Se reintentará solo, o usa \"Publicar ahora\".",
     "sharedWith": "Compartido con {{partner}} · tú pagas {{amount}}",
     "householdExpenseTag": "Cuenta para el hogar · sin dividir",
-    "sharedNoPartnerWarning": "Sin un hogar activo, el próximo cargo se publicará sin el reparto."
+    "sharedNoPartnerWarning": "Sin un hogar activo, el próximo cargo se publicará sin el reparto.",
+    "fundedFrom": "Se cubre con {{goal}}",
+    "insufficientGoalFundsHint": "No hay suficiente en {{goal}} para cubrir el próximo cargo · faltan {{amount}}. Se reintentará solo, o usa \"Publicar ahora\" cuando esté fondeada."
   },
   "form": {
     "title": "Nuevo gasto recurrente",
@@ -43,6 +45,16 @@
     "householdExpense": "Es 100% mío, pero cuenta para el hogar",
     "householdExpenseHint": "El monto completo se registra siempre a tu nombre. Esto solo lo marca como gasto del hogar — no se reparte nada.",
     "householdExpenseDisabledHint": "No se puede combinar con dividir el monto.",
+    "sharedDisabledHintSavings": "No se puede combinar con cubrirlo con ahorros.",
+    "savingsFunded": "Cubrir con ahorros",
+    "savingsFundedHint": "Todos los cargos de esta plantilla se toman de esta meta en vez de tu ingreso, hasta que lo cambies.",
+    "savingsFundedDisabledHint": "No se puede combinar con dividir el monto.",
+    "savingsGoal": "Meta",
+    "savingsGoalOption": "{{name}} · {{available}} disponibles",
+    "selectSavingsGoal": "Selecciona una meta",
+    "loadingGoals": "Cargando metas…",
+    "noGoalsYet": "Todavía no tienes metas.",
+    "createGoal": "Crea una meta primero",
     "dayOfMonth": "Día del mes",
     "dayOfMonthHint": "Se cobra el día {{day}} de cada mes. Esto no se puede cambiar después.",
     "effectiveFrom": "Aplicar nuevo precio desde",
@@ -62,7 +74,8 @@
     "selectPaymentMethod": "Selecciona un método de pago",
     "dayOfMonthRange": "Ingresa un día entre 1 y 31",
     "effectiveFromMustBeFuture": "Elige una fecha después de hoy",
-    "shareAmountRange": "Ingresa un monto mayor a 0 y menor al total"
+    "shareAmountRange": "Ingresa un monto mayor a 0 y menor al total",
+    "selectSavingsGoal": "Selecciona la meta de la que sale este gasto"
   },
   "errors": {
     "not_authenticated": "Vuelve a iniciar sesión.",
@@ -81,6 +94,8 @@
     "invalid_share_amount": "Ingresa un monto mayor a 0 y menor al total",
     "household_required_for_shared_expense": "Compartir un gasto necesita un miembro de hogar aceptado.",
     "invalid_share_plan": "Elige dividir el monto o marcarlo como gasto del hogar, no ambos.",
-    "household_required_for_household_expense": "Marcar un gasto como del hogar necesita un miembro de hogar aceptado."
+    "household_required_for_household_expense": "Marcar un gasto como del hogar necesita un miembro de hogar aceptado.",
+    "goal_not_found": "No pudimos encontrar esa meta.",
+    "invalid_planned_end": "Elige un fin válido para este gasto recurrente."
   }
 }

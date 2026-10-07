@@ -5,6 +5,7 @@ import { RecurringExpenseCard } from './RecurringExpenseCard'
 import { cancelRecurringExpense, postMyRecurringExpenses } from '@services/recurringExpensesService'
 import type { RecurringExpenseWithDetails } from '@services/recurringExpensesService'
 import { useHousehold } from '@context/HouseholdContext'
+import { useGoals } from '@hooks/useGoals'
 
 vi.mock('@services/recurringExpensesService', () => ({
   cancelRecurringExpense: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock('@services/recurringExpensesService', () => ({
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
 vi.mock('@context/HouseholdContext', () => ({ useHousehold: vi.fn() }))
+vi.mock('@hooks/useGoals', () => ({ useGoals: vi.fn() }))
 
 const ACCEPTED_PARTNER_MEMBER = { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted' as const, invited_by: 'u1' }
 const PARTNER = { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null }
@@ -40,6 +42,7 @@ function recurringExpense(overrides: Partial<RecurringExpenseWithDetails> = {}):
         is_shared: false,
         owner_share_amount: null,
         is_household_expense: false,
+        savings_goal_id: null,
         category: CATEGORY,
       },
     ],
@@ -64,6 +67,7 @@ describe('RecurringExpenseCard', () => {
     vi.mocked(cancelRecurringExpense).mockReset()
     vi.mocked(postMyRecurringExpenses).mockReset()
     vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
+    vi.mocked(useGoals).mockReturnValue({ goals: [], loading: false } as never)
   })
 
   it('renders the current term, category and an active status', () => {
@@ -111,6 +115,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: false,
           owner_share_amount: null,
           is_household_expense: false,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -147,6 +152,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: false,
           owner_share_amount: null,
           is_household_expense: false,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -172,6 +178,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: false,
           owner_share_amount: null,
           is_household_expense: false,
+          savings_goal_id: null,
           category: CATEGORY,
         },
         {
@@ -185,6 +192,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: false,
           owner_share_amount: null,
           is_household_expense: false,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -272,6 +280,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: true,
           owner_share_amount: 120,
           is_household_expense: false,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -304,6 +313,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: true,
           owner_share_amount: 120,
           is_household_expense: false,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -331,6 +341,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: true,
           owner_share_amount: 120,
           is_household_expense: false,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -355,6 +366,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: false,
           owner_share_amount: null,
           is_household_expense: true,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -379,6 +391,7 @@ describe('RecurringExpenseCard', () => {
           is_shared: false,
           owner_share_amount: null,
           is_household_expense: true,
+          savings_goal_id: null,
           category: CATEGORY,
         },
       ],
@@ -387,5 +400,60 @@ describe('RecurringExpenseCard', () => {
     renderCard(expense)
 
     expect(screen.getByTestId('recurring-card-r1-shared-no-partner-warning')).toBeInTheDocument()
+  })
+
+  it('shows which goal funds the term, for a savings-funded term', () => {
+    vi.mocked(useGoals).mockReturnValue({ goals: [{ id: 'g1', name: 'Emergency fund', current_amount: 500 }], loading: false } as never)
+    const expense = recurringExpense({
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
+          is_household_expense: false,
+          savings_goal_id: 'g1',
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    expect(screen.getByTestId('recurring-card-r1-funded-from')).toHaveTextContent('card.fundedFrom')
+  })
+
+  it('shows the missing amount when the goal lacks funds for the next charge', () => {
+    vi.mocked(useGoals).mockReturnValue({ goals: [{ id: 'g1', name: 'Emergency fund', current_amount: 120 }], loading: false } as never)
+    const expense = recurringExpense({
+      last_error: 'insufficient_goal_funds',
+      last_error_at: '2026-10-05T18:00:00Z',
+      terms: [
+        {
+          id: 't1',
+          recurring_expense_id: 'r1',
+          effective_from: '2026-08-15',
+          description: 'Streaming',
+          amount: 199,
+          category_id: 'c1',
+          payment_method: 'Credit Card',
+          is_shared: false,
+          owner_share_amount: null,
+          is_household_expense: false,
+          savings_goal_id: 'g1',
+          category: CATEGORY,
+        },
+      ],
+    })
+
+    renderCard(expense)
+
+    expect(screen.getByTestId('recurring-card-r1-last-error-hint')).toHaveTextContent('card.insufficientGoalFundsHint')
+    expect(screen.queryByText('card.lastErrorHint')).not.toBeInTheDocument()
   })
 })

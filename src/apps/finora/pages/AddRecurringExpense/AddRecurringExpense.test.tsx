@@ -5,6 +5,7 @@ import { AddRecurringExpense } from './AddRecurringExpense'
 import { createRecurringExpense, updateRecurringExpense } from '@services/recurringExpensesService'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
 import { useCategories } from '@hooks/useCategories'
+import { useGoals } from '@hooks/useGoals'
 import { useHousehold } from '@context/HouseholdContext'
 
 vi.mock('@services/recurringExpensesService', () => ({
@@ -13,6 +14,7 @@ vi.mock('@services/recurringExpensesService', () => ({
 }))
 vi.mock('@hooks/useRecurringExpenses', () => ({ useRecurringExpenses: vi.fn() }))
 vi.mock('@hooks/useCategories', () => ({ useCategories: vi.fn() }))
+vi.mock('@hooks/useGoals', () => ({ useGoals: vi.fn() }))
 vi.mock('@domain/date', () => ({ getTodayLocalDate: () => '2026-10-06' }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
 vi.mock('@context/LanguageContext', () => ({ useLanguage: () => ({ language: 'en', setLanguage: vi.fn() }) }))
@@ -89,6 +91,7 @@ describe('AddRecurringExpense', () => {
     vi.mocked(updateRecurringExpense).mockReset()
     mockCategories()
     vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
+    vi.mocked(useGoals).mockReturnValue({ goals: [], loading: false } as never)
   })
 
   describe('create mode', () => {
@@ -131,6 +134,7 @@ describe('AddRecurringExpense', () => {
             is_shared: false,
             owner_share_amount: null,
             is_household_expense: false,
+            savings_goal_id: null,
           },
           15,
           '2026-10-06'
@@ -265,6 +269,7 @@ describe('AddRecurringExpense', () => {
             is_shared: false,
             owner_share_amount: null,
             is_household_expense: false,
+            savings_goal_id: null,
           },
           '2026-10-06'
         )
@@ -352,6 +357,84 @@ describe('AddRecurringExpense', () => {
       fireEvent.click(screen.getByTestId('add-recurring-expense-save-button'))
 
       expect(await screen.findByText('recurring:errors.household_required_for_household_expense')).toBeInTheDocument()
+    })
+  })
+
+  describe('savings-funded', () => {
+    const GOAL = { id: 'g1', name: 'Emergency fund', current_amount: 500 }
+
+    beforeEach(() => {
+      vi.mocked(useGoals).mockReturnValue({ goals: [GOAL], loading: false } as never)
+    })
+
+    it('requires a goal once checked, without calling the server', () => {
+      renderCreate()
+
+      fireEvent.change(screen.getByTestId('add-recurring-expense-description-input'), { target: { value: 'Streaming' } })
+      fireEvent.change(screen.getByTestId('add-recurring-expense-amount-input'), { target: { value: '199' } })
+      fillCategoryAndPayment('add-recurring-expense')
+      fireEvent.change(screen.getByTestId('add-recurring-expense-day-of-month-input'), { target: { value: '15' } })
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-funded-checkbox'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-save-button'))
+
+      expect(screen.getByText('recurring:validation.selectSavingsGoal')).toBeInTheDocument()
+      expect(createRecurringExpense).not.toHaveBeenCalled()
+    })
+
+    it('creates the template funded from the chosen goal', async () => {
+      vi.mocked(createRecurringExpense).mockResolvedValue({ data: 'r2', error: null } as never)
+      renderCreate()
+
+      fireEvent.change(screen.getByTestId('add-recurring-expense-description-input'), { target: { value: 'Streaming' } })
+      fireEvent.change(screen.getByTestId('add-recurring-expense-amount-input'), { target: { value: '199' } })
+      fillCategoryAndPayment('add-recurring-expense')
+      fireEvent.change(screen.getByTestId('add-recurring-expense-day-of-month-input'), { target: { value: '15' } })
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-funded-checkbox'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-goal-select-trigger'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-goal-select-option-g1'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-save-button'))
+
+      await waitFor(() =>
+        expect(createRecurringExpense).toHaveBeenCalledWith(
+          expect.objectContaining({ savings_goal_id: 'g1' }),
+          15,
+          '2026-10-06'
+        )
+      )
+    })
+
+    it('disables the savings-funded checkbox while shared, and vice versa', () => {
+      vi.mocked(useHousehold).mockReturnValue({
+        partnerMember: { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted', invited_by: 'u1' },
+        partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+      } as never)
+      renderCreate()
+
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-funded-checkbox'))
+      expect(screen.getByTestId('add-recurring-expense-shared-checkbox')).toBeDisabled()
+
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-funded-checkbox'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-shared-checkbox'))
+      expect(screen.getByTestId('add-recurring-expense-savings-funded-checkbox')).toBeDisabled()
+    })
+
+    it('maps a goal-not-found server error to the savings goal field', async () => {
+      vi.mocked(createRecurringExpense).mockResolvedValue({
+        data: null,
+        error: { code: 'P0001', message: 'goal_not_found' },
+      } as never)
+      renderCreate()
+
+      fireEvent.change(screen.getByTestId('add-recurring-expense-description-input'), { target: { value: 'Streaming' } })
+      fireEvent.change(screen.getByTestId('add-recurring-expense-amount-input'), { target: { value: '199' } })
+      fillCategoryAndPayment('add-recurring-expense')
+      fireEvent.change(screen.getByTestId('add-recurring-expense-day-of-month-input'), { target: { value: '15' } })
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-funded-checkbox'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-goal-select-trigger'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-savings-goal-select-option-g1'))
+      fireEvent.click(screen.getByTestId('add-recurring-expense-save-button'))
+
+      expect(await screen.findByText('recurring:errors.goal_not_found')).toBeInTheDocument()
     })
   })
 })
