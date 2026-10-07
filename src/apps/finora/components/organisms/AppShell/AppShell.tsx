@@ -1,10 +1,11 @@
 import { useCallback, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Sidebar } from './Sidebar'
 import { NavItem } from '@molecules/NavItem/NavItem'
 import { LocaleBadge } from '@molecules/LocaleBadge/LocaleBadge'
 import { HouseholdInviteBanner } from '@molecules/HouseholdInviteBanner/HouseholdInviteBanner'
+import { MoreNav } from '@molecules/MoreNav/MoreNav'
 import { Icon } from '@atoms/Icon/Icon'
 import { useTheme } from '@context/ThemeContext'
 import { useHousehold } from '@context/HouseholdContext'
@@ -19,7 +20,6 @@ const BOTTOM_NAV_LEFT_DEFS = [
 const BOTTOM_NAV_RIGHT_DEFS = [
   { labelKey: 'nav.budgets', to: '/finora/budgets', icon: <Icon name="budgets" className={s.navIcon} /> },
   { labelKey: 'nav.analytics', to: '/finora/analytics', icon: <Icon name="analytics" className={s.navIcon} /> },
-  { labelKey: 'nav.goals', to: '/finora/goals', icon: <Icon name="goals" className={s.navIcon} /> },
 ] as const
 
 interface AppShellProps {
@@ -54,10 +54,12 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
 
       <header className={s.mobileHeader}>
-        <span className={s.brandMark}>
-          <Icon name="brand-mark" className={s.brandMarkIcon} />
-        </span>
-        <span className={s.brandName}>Finora</span>
+        <Link to="/finora" className={s.brandLink} data-testid="mobile-header-brand-link">
+          <span className={s.brandMark}>
+            <Icon name="brand-mark" className={s.brandMarkIcon} />
+          </span>
+          <span>Finora</span>
+        </Link>
         <LocaleBadge />
       </header>
 
@@ -76,7 +78,7 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
 
-      <nav className={s.bottomNav}>
+      <nav className={s.bottomNav} data-testid="mobile-bottom-nav">
         {BOTTOM_NAV_LEFT_DEFS.map((item) => (
           <NavItem key={item.labelKey} variant="bottom" label={t(item.labelKey)} icon={item.icon} to={item.to} />
         ))}
@@ -95,6 +97,8 @@ export function AppShell({ children }: AppShellProps) {
         {BOTTOM_NAV_RIGHT_DEFS.map((item) => (
           <NavItem key={item.labelKey} variant="bottom" label={t(item.labelKey)} icon={item.icon} to={item.to} />
         ))}
+
+        <MoreNav />
       </nav>
     </div>
   )
