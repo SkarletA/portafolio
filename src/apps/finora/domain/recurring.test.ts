@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getCurrentTerm,
+  getNextTerm,
   getOverdueDates,
   getPostingAvailableAt,
   getScheduledDate,
@@ -102,6 +103,23 @@ describe('getCurrentTerm', () => {
 
   it('returns null for a template with no terms at all', () => {
     expect(getCurrentTerm([], '2026-10-06')).toBeNull()
+  })
+})
+
+describe('getNextTerm', () => {
+  it('returns null when there is no term scheduled after today', () => {
+    const terms = [term('2026-08-15', 199)]
+    expect(getNextTerm(terms, '2026-10-06')).toBeNull()
+  })
+
+  it('returns the soonest term that is not in force yet', () => {
+    const terms = [term('2026-08-15', 199), term('2026-11-01', 249)]
+    expect(getNextTerm(terms, '2026-10-06')?.amount).toBe(249)
+  })
+
+  it('picks the soonest of several future terms, not the latest', () => {
+    const terms = [term('2026-08-15', 199), term('2027-01-01', 299), term('2026-11-01', 249)]
+    expect(getNextTerm(terms, '2026-10-06')?.amount).toBe(249)
   })
 })
 

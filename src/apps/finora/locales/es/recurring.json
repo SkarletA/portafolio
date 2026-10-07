@@ -15,6 +15,7 @@
       "cancelled": "Cancelado desde el {{date}}"
     },
     "nextCharge": "Próximo cargo: {{date}}",
+    "priceChangeHint": "Cambia a {{amount}} el {{date}}",
     "editAriaLabel": "Editar {{description}}",
     "cancelAriaLabel": "Cancelar {{description}}",
     "confirmCancel": "¿Cancelar \"{{description}}\"? Los cargos ya vencidos igual se publican; después de hoy no se publica ninguno.",
