@@ -22,6 +22,8 @@ export interface RecurringTerm {
   ownerShareAmount: number | null
   /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with isShared. */
   isHouseholdExpense: boolean
+  /** ADR-017: the Goal this term's charge is withdrawn from. Mutually exclusive with isShared. */
+  savingsGoalId: string | null
 }
 
 export interface UpcomingCharge {

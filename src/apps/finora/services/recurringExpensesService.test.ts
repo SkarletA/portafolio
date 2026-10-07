@@ -22,6 +22,7 @@ const input: RecurringExpenseInput = {
   is_shared: false,
   owner_share_amount: null,
   is_household_expense: false,
+  savings_goal_id: null,
 }
 
 describe('recurringExpensesService', () => {
@@ -42,6 +43,7 @@ describe('recurringExpensesService', () => {
       p_is_shared: false,
       p_owner_share_amount: undefined,
       p_is_household_expense: false,
+      p_savings_goal_id: undefined,
     })
   })
 
@@ -63,6 +65,15 @@ describe('recurringExpensesService', () => {
     )
   })
 
+  it('createRecurringExpense sends the savings goal', async () => {
+    await createRecurringExpense({ ...input, savings_goal_id: 'g1' }, 15, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'create_recurring_expense',
+      expect.objectContaining({ p_savings_goal_id: 'g1' })
+    )
+  })
+
   it('updateRecurringExpense sends the new term with its effective date', async () => {
     await updateRecurringExpense('r1', '2026-11-01', input, '2026-10-06')
 
@@ -77,6 +88,7 @@ describe('recurringExpensesService', () => {
       p_is_shared: false,
       p_owner_share_amount: undefined,
       p_is_household_expense: false,
+      p_savings_goal_id: undefined,
     })
   })
 
@@ -95,6 +107,15 @@ describe('recurringExpensesService', () => {
     expect(supabase.rpc).toHaveBeenCalledWith(
       'update_recurring_expense',
       expect.objectContaining({ p_is_household_expense: true })
+    )
+  })
+
+  it('updateRecurringExpense sends the savings goal', async () => {
+    await updateRecurringExpense('r1', '2026-11-01', { ...input, savings_goal_id: 'g1' }, '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'update_recurring_expense',
+      expect.objectContaining({ p_savings_goal_id: 'g1' })
     )
   })
 

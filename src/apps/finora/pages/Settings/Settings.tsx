@@ -396,6 +396,7 @@ export function Settings() {
               isShared: term.is_shared,
               ownerShareAmount: null,
               isHouseholdExpense: term.is_household_expense,
+              savingsGoalId: null,
             }))
             const current = getCurrentTerm(terms, today)
             return current && (current.isShared || current.isHouseholdExpense) ? current.description : null

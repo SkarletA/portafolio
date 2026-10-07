@@ -21,6 +21,7 @@ const term = (effectiveFrom: string, amount: number): RecurringTerm => ({
   isShared: false,
   ownerShareAmount: null,
   isHouseholdExpense: false,
+  savingsGoalId: null,
 })
 
 describe('getScheduledDate', () => {

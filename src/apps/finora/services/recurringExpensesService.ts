@@ -16,6 +16,8 @@ export interface RecurringExpenseTermRow {
   owner_share_amount: number | null
   /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with is_shared. */
   is_household_expense: boolean
+  /** ADR-017: the Goal this term's charge is withdrawn from. Mutually exclusive with is_shared. */
+  savings_goal_id: string | null
 }
 
 export interface RecurringExpenseOccurrenceRow {
@@ -40,7 +42,7 @@ export interface RecurringExpenseWithDetails {
 }
 
 const RECURRING_EXPENSE_SELECT =
-  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, is_shared, owner_share_amount, is_household_expense, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id, posted_without_household)'
+  '*, terms:recurring_expense_terms(id, recurring_expense_id, effective_from, description, amount, category_id, payment_method, is_shared, owner_share_amount, is_household_expense, savings_goal_id, category:categories(id, name, icon, color, translationKey:translation_key)), occurrences:recurring_occurrences(id, scheduled_date, transaction_id, posted_without_household)'
 
 // Only the caller's own templates (ADR-012, decision 10: the v1 UI shows no
 // one else's, even though the household can read them through RLS).
@@ -88,6 +90,8 @@ export interface RecurringExpenseInput {
   owner_share_amount: number | null
   /** ADR-015: the full amount, tagged as the household's, no split. Mutually exclusive with is_shared. */
   is_household_expense: boolean
+  /** ADR-017: the Goal this term's charge is withdrawn from. Mutually exclusive with is_shared. */
+  savings_goal_id: string | null
 }
 
 // day_of_month and start_on are not inputs here: start_on is p_today + 1
@@ -104,6 +108,7 @@ export function createRecurringExpense(input: RecurringExpenseInput, dayOfMonth:
     p_is_shared: input.is_shared,
     p_owner_share_amount: input.owner_share_amount ?? undefined,
     p_is_household_expense: input.is_household_expense,
+    p_savings_goal_id: input.savings_goal_id ?? undefined,
   })
 }
 
@@ -126,6 +131,7 @@ export function updateRecurringExpense(
     p_is_shared: input.is_shared,
     p_owner_share_amount: input.owner_share_amount ?? undefined,
     p_is_household_expense: input.is_household_expense,
+    p_savings_goal_id: input.savings_goal_id ?? undefined,
   })
 }
 
