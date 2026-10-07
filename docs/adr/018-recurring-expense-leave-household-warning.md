@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 Amends [ADR-014](./014-recurring-shared-expenses.md) (open decision 4) and
 [ADR-015](./015-recurring-household-expense-tag.md), both of which left this

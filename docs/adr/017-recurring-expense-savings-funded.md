@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 Amends [ADR-012](./012-recurring-expenses.md)'s "Covered by savings (Goal
 withdrawal)" row of "Interaction with existing features", which called this

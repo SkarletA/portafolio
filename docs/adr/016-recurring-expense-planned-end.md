@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 Amends [ADR-012](./012-recurring-expenses.md): its cancellation model already
 distinguishes "cancel" (`ended_on`, irreversible, no reactivation) from
@@ -39,13 +39,19 @@ monthly template that simply stops posting itself after N charges or a date.
 2. **A count is translated to a date once, never recomputed by the job.**
    The job runs hourly over the template's whole history; pushing "N
    charges" logic into its loop would duplicate date math already solved by
-   `private.scheduled_date`. The translation happens once, in SQL, at the
-   moment the planned end is set:
-   `planned_end_on := private.scheduled_date(start_on's month + (p_planned_charges - 1) months, day_of_month)`.
-   Only the resulting date is persisted. `recurring_expenses.planned_charges
-   integer` (nullable, capped at 1..600 - 50 years) additionally stores the
-   count, **display-only** ("charge 12 of 12"); the job never reads it, only
-   `planned_end_on`.
+   `private.scheduled_date`. **Amendment on implementation:** the
+   translation happens once, but client-side (`getNthScheduledDate` in
+   `domain/recurring.ts`), not in SQL as first sketched - the job already
+   has to skip a candidate date that falls before `start_on` (when
+   `day_of_month` is earlier in the month than `start_on`'s own day), and
+   replicating that same skip rule correctly in plpgsql would duplicate
+   logic that already exists, tested, in the pure domain layer. The RPCs
+   only validate the date they're given (`private.assert_recurring_planned_end`)
+   and never derive one from a count - the same client-boundary rule
+   ADR-005 already applies to money. Only the resulting date is persisted.
+   `recurring_expenses.planned_charges integer` (nullable, capped at 1..600 -
+   50 years) additionally stores the count, **display-only** ("charge 12 of
+   12"); the job never reads it, only `planned_end_on`.
 
 3. **Whichever end is sooner wins, mechanically.**
    `private.post_due_recurring_occurrences`'s existing clamp
@@ -57,9 +63,11 @@ monthly template that simply stops posting itself after N charges or a date.
 4. **The job never writes to `planned_end_on` or `ended_on`.** Reaching the
    planned end is not a mutation - it is the absence of any future candidate
    date past that clamp, exactly like a cancelled template today. "Completed"
-   is derived client-side (`plannedEndOn !== null && endedOn === null && today > plannedEndOn`),
+   is derived client-side (`plannedEndOn !== null && today > plannedEndOn`),
    never persisted, matching ADR-014's "no new table, no persisted paused
-   state."
+   state." Cancellation still takes display priority: the card only reaches
+   the planned-end statuses once `ended_on` is null, the same precedence
+   `v_limit`'s own `least()` already gives cancellation mechanically.
 
 5. **A planned end is editable at any time the template itself still is**
    (i.e. `ended_on is null`), through a new, dedicated RPC -
