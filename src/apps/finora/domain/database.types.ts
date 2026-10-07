@@ -339,6 +339,8 @@ export type Database = {
           id: string
           last_error: string | null
           last_error_at: string | null
+          planned_charges: number | null
+          planned_end_on: string | null
           start_on: string
           user_id: string
         }
@@ -350,6 +352,8 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_error_at?: string | null
+          planned_charges?: number | null
+          planned_end_on?: string | null
           start_on: string
           user_id: string
         }
@@ -361,6 +365,8 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_error_at?: string | null
+          planned_charges?: number | null
+          planned_end_on?: string | null
           start_on?: string
           user_id?: string
         }
@@ -625,6 +631,23 @@ export type Database = {
             }
             Returns: string
           }
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_day_of_month: number
+              p_description: string
+              p_is_household_expense?: boolean
+              p_is_shared?: boolean
+              p_owner_share_amount?: number
+              p_payment_method: string
+              p_planned_charges?: number
+              p_planned_end_on?: string
+              p_savings_goal_id?: string
+              p_today: string
+            }
+            Returns: string
+          }
       current_household_id: { Args: never; Returns: string }
       decline_household_invite: { Args: never; Returns: undefined }
       get_household_partner: {
@@ -655,6 +678,15 @@ export type Database = {
           p_savings_goal_id: string
           p_shares?: Json
           p_type: string
+        }
+        Returns: string
+      }
+      set_recurring_expense_planned_end: {
+        Args: {
+          p_id: string
+          p_planned_charges?: number
+          p_planned_end_on?: string
+          p_today?: string
         }
         Returns: string
       }
