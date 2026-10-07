@@ -273,6 +273,7 @@ export type Database = {
           owner_share_amount: number | null
           payment_method: string
           recurring_expense_id: string
+          savings_goal_id: string | null
           user_id: string
         }
         Insert: {
@@ -287,6 +288,7 @@ export type Database = {
           owner_share_amount?: number | null
           payment_method: string
           recurring_expense_id: string
+          savings_goal_id?: string | null
           user_id: string
         }
         Update: {
@@ -301,6 +303,7 @@ export type Database = {
           owner_share_amount?: number | null
           payment_method?: string
           recurring_expense_id?: string
+          savings_goal_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -316,6 +319,13 @@ export type Database = {
             columns: ["recurring_expense_id"]
             isOneToOne: false
             referencedRelation: "recurring_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_expense_terms_savings_goal_id_fkey"
+            columns: ["savings_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
             referencedColumns: ["id"]
           },
         ]
@@ -600,6 +610,21 @@ export type Database = {
             }
             Returns: string
           }
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_day_of_month: number
+              p_description: string
+              p_is_household_expense?: boolean
+              p_is_shared?: boolean
+              p_owner_share_amount?: number
+              p_payment_method: string
+              p_savings_goal_id?: string
+              p_today: string
+            }
+            Returns: string
+          }
       current_household_id: { Args: never; Returns: string }
       decline_household_invite: { Args: never; Returns: undefined }
       get_household_partner: {
@@ -680,6 +705,22 @@ export type Database = {
               p_is_shared?: boolean
               p_owner_share_amount?: number
               p_payment_method: string
+              p_today: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_category_id: string
+              p_description: string
+              p_effective_from: string
+              p_id: string
+              p_is_household_expense?: boolean
+              p_is_shared?: boolean
+              p_owner_share_amount?: number
+              p_payment_method: string
+              p_savings_goal_id?: string
               p_today: string
             }
             Returns: string
