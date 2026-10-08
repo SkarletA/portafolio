@@ -34,7 +34,7 @@ Finora is a personal finance application for people who want a clear, manual pic
 
 It solves a narrow but real problem: most budgeting apps either require bank integration or are too generic (a spreadsheet) to model things people actually deal with — a purchase split across two payment methods, a reimbursed expense, a purchase financed in monthly installments, two partners splitting a household's bills. Finora is built around those specifics, including a full household mode where two people share visibility into their combined finances without losing their own.
 
-Finora lives inside this portfolio as an independent application at `/finora` (see the [root README](../../../README.md) and [`CLAUDE.md`](../../../CLAUDE.md) for how the two boundaries are kept separate), and doubles as a case study in this portfolio: a from-scratch, production-shaped React + Supabase app with real architectural decisions behind it — 11 ADRs and counting (see [§3](#3-architecture)).
+Finora lives inside this portfolio as an independent application at `/finora` (see the [root README](../../../README.md) and [`CLAUDE.md`](../../../CLAUDE.md) for how the two boundaries are kept separate), and doubles as a case study in this portfolio: a from-scratch, production-shaped React + Supabase app with real architectural decisions behind it — 18 ADRs and counting (see [§3](#3-architecture)).
 
 ## 2. Screenshots
 
@@ -77,31 +77,47 @@ Finora is a separate application boundary inside this portfolio's repository (`s
 
 ### Request flow
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ Browser (React 19 + Vite)                                        │
-│                                                                    │
-│  pages/        — compose organisms, own page-level state          │
-│  components/   — Atomic Design: atoms → molecules → organisms     │
-│  hooks/        — data-fetching + UI state (useBudgets, useGoals…) │
-│  domain/       — pure functions, no Supabase/React dependency     │
-│                  (money math, category rollups, attribution)      │
-│  services/     — the ONLY layer that imports the Supabase client  │
-└───────────────────────────────┬────────────────────────────────────┘
-                                │ supabase-js
-                                ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ Supabase                                                          │
-│  Auth           — email/password, email confirmation              │
-│  Postgres (RLS) — transactions, transaction_shares, categories,   │
-│                    budgets, goals, goal_transfers,                │
-│                    household_members, profiles                    │
-│  Storage        — user avatars                                    │
-│  Edge Functions — delete-account (server-side account teardown)   │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Browser["Browser (React 19 + Vite)"]
+        pages["pages/<br/>compose organisms, own page-level state"]
+        hooks["hooks/<br/>data-fetching + UI state<br/>(useBudgets, useGoals, useRecurringExpenses…)"]
+        components["components/<br/>Atomic Design: atoms → molecules → organisms"]
+        domain["domain/<br/>pure functions, no Supabase/React dependency<br/>(money math, category rollups, attribution, recurring schedule)"]
+        services["services/<br/>the ONLY layer that imports the Supabase client"]
+
+        pages --> components
+        pages --> hooks
+        hooks --> services
+        services --> domain
+    end
+
+    services -->|supabase-js| Auth
+
+    subgraph Supabase["Supabase"]
+        Auth["Auth<br/>email/password, email confirmation"]
+
+        subgraph Postgres["Postgres (RLS)"]
+            RPCs["public RPCs<br/>save_transaction, create/update/cancel_recurring_expense,<br/>post_my_recurring_expenses ('Post now')"]
+            Writer["private.write_transaction<br/>the single writer (ADR-012)"]
+            Tables["transactions, transaction_shares, categories, budgets,<br/>goals, goal_transfers, household_members, profiles,<br/>recurring_expenses, recurring_expense_terms, recurring_occurrences"]
+            Cron["pg_cron: post-recurring-occurrences<br/>hourly"]
+            Job["private.post_due_recurring_occurrences"]
+
+            RPCs --> Writer
+            Writer --> Tables
+            Cron --> Job
+            Job --> Writer
+        end
+
+        Storage["Storage<br/>user avatars"]
+        EdgeFn["Edge Functions<br/>delete-account (server-side account teardown)"]
+    end
 ```
 
 A page never calls `supabase` directly and never does its own money math — it asks a `services/` function for rows and a `domain/` function what they mean. That split is what let ADR-002's bug (a budget's headline number disagreeing with its own breakdown) be fixed in one place instead of several, and is why household attribution (below) is one function, not duplicated per page.
+
+`private.write_transaction` is the single place that writes a `transactions` row (ADR-012, amending ADR-004's write-path note): `save_transaction` calls it for a user-entered transaction, and the hourly `pg_cron` job calls it for a recurring occurrence, so a posted charge and a manually entered one are validated and shaped identically.
 
 ### Household read/write flow (ADR-007 → ADR-011)
 
@@ -142,6 +158,13 @@ RLS only decides who can **read** a row — write policies stay owner-only throu
 | [009](../../../docs/adr/009-shared-expense-split.md) | Case A: a shared expense split between both members as two explicit amounts |
 | [010](../../../docs/adr/010-household-expense-tag-and-household-budget.md) | Case B: an expense tagged as the household's in full (no split), and household budgets |
 | [011](../../../docs/adr/011-household-combined-analytics.md) | Analytics/Dashboard combined for a household, with the same per-member attribution Budgets already used |
+| [012](../../../docs/adr/012-recurring-expenses.md) | Recurring expenses: templates (`recurring_expenses`) with terms versioned by `effective_from`; a single writer (`private.write_transaction`) shared with `save_transaction`; an hourly `pg_cron` posting job plus "Post now" (`post_my_recurring_expenses`) for overdue charges |
+| [013](../../../docs/adr/013-local-calendar-dates.md) | The client's "today", current month/year, and elapsed-days counts use the device's local calendar day, not UTC — the posting job is the one exception, deciding by the UTC date |
+| [014](../../../docs/adr/014-recurring-shared-expenses.md) | Recurring expenses shared with a partner (Case A, ADR-009) as a term-versioned split, with a no-partner fallback that posts unsplit instead of stalling |
+| [015](../../../docs/adr/015-recurring-household-expense-tag.md) | Recurring expenses tagged as the household's in full with no split (Case B, ADR-010), reusing ADR-014's posting-job mechanics |
+| [016](../../../docs/adr/016-recurring-expense-planned-end.md) | A planned end for a template (fixed date or fixed count, translated to a date once) distinct from an irreversible cancellation |
+| [017](../../../docs/adr/017-recurring-expense-savings-funded.md) | A recurring expense funded from a savings Goal, reusing the job's existing `last_error` retry mechanism when the Goal lacks funds |
+| [018](../../../docs/adr/018-recurring-expense-leave-household-warning.md) | An informative warning before leaving a household when the user or their partner has active shared/tagged recurring templates — no RLS or RPC change |
 
 ## 4. Process & Workflow
 
@@ -158,11 +181,13 @@ Finora went from a rough sketch to a high-fidelity prototype in [Figma](https://
 - **Budgets** — monthly limits per category, with subcategory support and a breakdown view; create, edit, and delete; a reimbursement widens a budget's effective limit instead of silently shrinking its "spent" figure (see [ADR-002](../../../docs/adr/002-gross-spend-and-effective-limit.md)).
 - **Analytics** — daily/monthly/yearly views, spending over time, top categories, and period-over-period comparison with plain-language insights; click a point on the trend chart to drill its category breakdown into that specific period.
 - **Goals** — savings goals with a target amount, an optional target date, and deposits/withdrawals recorded on an atomic transfer ledger (no lost updates under concurrent changes, see [ADR-004](../../../docs/adr/004-goal-transfers.md)).
+- **Recurring expenses** (`/finora/recurring`) — templates for fixed monthly charges (rent, subscriptions) with terms versioned by `effective_from`: editing the amount, category, or payment method starts a new version from that point on and never rewrites a charge that already posted. An hourly `pg_cron` job publishes due occurrences as real transactions through the same single writer `save_transaction` uses (`private.write_transaction`), is idempotent (one `recurring_occurrences` row per date), and catches up on any date it missed; "Post now" lets the user publish their own overdue charges immediately instead of waiting for the next run. A template is cancelled (`ended_on`, irreversible) or given a planned end (a fixed date or a number of charges, informative only — extendable or removable, unlike a cancellation). A template can be shared with a partner as an explicit split (Case A) or tagged to the household in full with no split (Case B); both fall back to posting unsplit if there's no accepted partner at posting time. A charge can be covered by a savings Goal withdrawal instead of regular income, retried automatically (via the job's existing `last_error` mechanism) if the Goal lacks funds. Leaving a household warns first if the user or their partner has active shared or tagged templates (see [ADR-012](../../../docs/adr/012-recurring-expenses.md)–[018](../../../docs/adr/018-recurring-expense-leave-household-warning.md)).
 - **Household (shared accounts)** — invite a partner; once accepted, split a shared expense as two explicit amounts, or tag one as the household's in full; shared budgets; combined Analytics and Dashboard with each member's own attribution, never a blind merge (see [ADR-007](../../../docs/adr/007-household-foundations.md)–[011](../../../docs/adr/011-household-combined-analytics.md)). Visibility is RLS-wide; write access (edit/delete) always stays with whoever created the row.
 - **Multi-language** — English and Spanish, switchable instantly from anywhere in the app.
 - **Dark mode** — instant theme toggle, persisted per user.
 - **Configurable currency** — MXN, USD, or EUR display formatting, switchable instantly from anywhere in the app (see [§10](#10-technical-decisions) — this is formatting only, not real conversion).
 - **Per-route SEO + 404** — the portfolio and Finora each carry their own title, meta description, and favicon, switching on client-side navigation with no reload; an unmatched route under either boundary shows a contextual not-found page instead of a blank screen.
+- **Responsive navigation** — a sidebar on desktop; on mobile, a five-tab bottom bar (Dashboard, Transactions, Budgets, Analytics, and a "More" tab) plus a bottom sheet for Goals, Recurring, and Settings, which don't otherwise fit a five-destination bar.
 
 ## 7. Tech Stack
 
@@ -185,6 +210,8 @@ Finora went from a rough sketch to a high-fidelity prototype in [Figma](https://
 | Linting | oxlint | 1.79.0 |
 
 *(Versions as pinned in [`package.json`](../../../package.json) at the repository root — Finora shares one `package.json` with the portfolio.)*
+
+`pg_cron` isn't an npm package — it's a Postgres extension enabled on the Supabase project (`create extension if not exists pg_cron`, [ADR-012](../../../docs/adr/012-recurring-expenses.md)) that schedules the hourly recurring-expense posting job directly in the database.
 
 ## 8. Running Locally
 
@@ -210,6 +237,10 @@ npm run storybook     # Finora's component workshop at http://localhost:6006
 ```
 
 Finora's own Supabase schema (tables, RLS policies, the `delete-account` Edge Function) is managed outside this repository and isn't included here — without a matching project, auth and data calls will fail even though the app boots.
+
+### SQL regression tests
+
+`supabase/tests/*.sql` (6 files today — household RLS, the partner-profile RLS, the shared-expense split, the household expense tag, refund links on account deletion, and recurring expenses' posting job/RPCs) are self-contained scripts that end in `ROLLBACK`, so they leave no data behind. They aren't wired into CI; run them by hand, as a privileged role, in the Supabase SQL editor or via `psql`, after applying the matching migration.
 
 ### Supabase auth configuration
 
@@ -246,6 +277,7 @@ The portfolio (Finora included, as it's part of the same bundle) deploys automat
 - **Currency selection is display-formatting only, not real conversion.** Switching between MXN/USD/EUR changes the symbol and number formatting (via `Intl.NumberFormat`) everywhere in the app instantly, but stored amounts are never converted. Real conversion would need a live exchange-rate feed and a decision about *when* a rate applies to a historical transaction — complexity and cost (and a provider dependency) that a single-currency personal-use app doesn't need yet.
 - **No bank aggregation (Plaid, Belvo, etc.).** Transactions are entered manually by design. Bank aggregation is a recurring, per-connection cost and a much larger trust/security surface (storing or proxying bank credentials or tokens) that isn't justified for a personal finance tool where the user is already willing to log their own spending.
 - **Domain logic as pure functions, decoupled from Supabase.** Money math, category rollups, and household attribution (`domain/category.ts`, `domain/budget.ts`, `domain/analytics.ts`, `domain/transaction.ts`) take and return plain values, with no dependency on the Supabase client or React. They're unit-tested directly with plain arrays.
+- **Operational note, not yet verified: `pg_cron` across a Supabase Free-plan pause.** The Free plan pauses a project after 7 days with no activity. Whether the two scheduled jobs (`post-recurring-occurrences`, `cleanup-recurring-cron-history`) resume on their own once the project wakes up, or need to be rescheduled by hand, hasn't been tested end-to-end — it's an open question, not a documented guarantee. The existing mitigation is user-facing regardless: `RecurringExpenses` surfaces any overdue template and lets the user publish it immediately with "Post now" (`post_my_recurring_expenses`) rather than depending on the next cron tick.
 
 ## 11. Author
 
