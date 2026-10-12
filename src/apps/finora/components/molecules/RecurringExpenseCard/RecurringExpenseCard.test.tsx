@@ -359,15 +359,15 @@ describe('RecurringExpenseCard', () => {
 
     renderCard(expense)
 
-    expect(screen.getByTestId('recurring-card-r1-shared-with')).toHaveTextContent(
-      'card.sharedWith:{"partner":"Bel Suarez","amount":"$120.00"}'
-    )
+    expect(screen.getByText('card.chipYou:{"amount":"$120.00"}')).toBeInTheDocument()
+    expect(screen.getByText('card.chipOther:{"name":"Bel Suarez","amount":"$79.00"}')).toBeInTheDocument()
   })
 
-  it('shows no shared-with line for an unshared term', () => {
+  it('shows no shared chips for an unshared term', () => {
     renderCard(recurringExpense())
 
-    expect(screen.queryByTestId('recurring-card-r1-shared-with')).not.toBeInTheDocument()
+    expect(screen.queryByText(/card\.chipYou/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/card\.chipOther/)).not.toBeInTheDocument()
   })
 
   it('warns when a shared term has no accepted partner right now', () => {
@@ -445,7 +445,7 @@ describe('RecurringExpenseCard', () => {
 
     renderCard(expense)
 
-    expect(screen.getByTestId('recurring-card-r1-household-expense')).toHaveTextContent('card.householdExpenseTag')
+    expect(screen.getByText('card.householdExpenseTag')).toBeInTheDocument()
   })
 
   it('warns when a household-tagged term has no accepted partner right now', () => {
@@ -496,7 +496,7 @@ describe('RecurringExpenseCard', () => {
 
     renderCard(expense)
 
-    expect(screen.getByTestId('recurring-card-r1-funded-from')).toHaveTextContent('card.fundedFrom')
+    expect(screen.getByText(/card\.fundedFrom/)).toBeInTheDocument()
   })
 
   it('shows the missing amount when the goal lacks funds for the next charge', () => {

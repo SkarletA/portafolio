@@ -45,8 +45,16 @@
   @apply truncate text-xs text-finora-primary;
 }
 
-.sharedWith {
-  @apply truncate text-xs text-finora-ink-muted;
+.sharedChips {
+  @apply mt-1 flex flex-wrap gap-1.5;
+}
+
+.contextChips {
+  @apply mt-1 flex flex-wrap items-center gap-1.5;
+}
+
+.contextChipIcon {
+  @apply h-3 w-3 shrink-0;
 }
 
 .sharedWarning {

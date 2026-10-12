@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { PiggyBank, Users } from 'lucide-react'
 import cn from 'clsx'
 import type { RecurringExpenseWithDetails } from '@services/recurringExpensesService'
 import {
@@ -21,6 +22,7 @@ import { useHousehold } from '@context/HouseholdContext'
 import { useGoals } from '@hooks/useGoals'
 import { CategoryIcon } from '@atoms/CategoryIcon/CategoryIcon'
 import { Icon } from '@atoms/Icon/Icon'
+import { Badge } from '@atoms/Badge/Badge'
 import s from './RecurringExpenseCard.module.css'
 
 interface RecurringExpenseCardProps {
@@ -269,22 +271,33 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
             {formatCurrency(currentTerm?.amount ?? 0, currency, locale)} · {categoryName}
           </p>
           {currentTerm?.isShared && (
-            <p className={s.sharedWith} data-testid={`recurring-card-${id}-shared-with`}>
-              {t('card.sharedWith', {
-                partner: partnerName ?? '',
-                amount: formatCurrency(currentTerm.ownerShareAmount ?? 0, currency, locale),
-              })}
-            </p>
+            <div className={s.sharedChips}>
+              <Badge variant="shared">
+                {t('card.chipYou', { amount: formatCurrency(currentTerm.ownerShareAmount ?? 0, currency, locale) })}
+              </Badge>
+              <Badge variant="shared">
+                {t('card.chipOther', {
+                  name: partnerName ?? '',
+                  amount: formatCurrency(currentTerm.amount - (currentTerm.ownerShareAmount ?? 0), currency, locale),
+                })}
+              </Badge>
+            </div>
           )}
-          {currentTerm?.isHouseholdExpense && (
-            <p className={s.sharedWith} data-testid={`recurring-card-${id}-household-expense`}>
-              {t('card.householdExpenseTag')}
-            </p>
-          )}
-          {fundingGoal && (
-            <p className={s.sharedWith} data-testid={`recurring-card-${id}-funded-from`}>
-              {t('card.fundedFrom', { goal: fundingGoal.name })}
-            </p>
+          {(currentTerm?.isHouseholdExpense || fundingGoal) && (
+            <div className={s.contextChips}>
+              {currentTerm?.isHouseholdExpense && (
+                <Badge variant="context">
+                  <Users className={s.contextChipIcon} aria-hidden="true" />
+                  {t('card.householdExpenseTag')}
+                </Badge>
+              )}
+              {fundingGoal && (
+                <Badge variant="context">
+                  <PiggyBank className={s.contextChipIcon} aria-hidden="true" />
+                  {t('card.fundedFrom', { goal: fundingGoal.name })}
+                </Badge>
+              )}
+            </div>
           )}
           {nextCharge && (
             <p className={s.nextCharge}>{t('card.nextCharge', { date: formatCardDate(nextCharge.date) })}</p>
