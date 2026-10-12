@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Last revised: 2026-10-12 (see Revision history).
 
 Amends [ADR-006](./006-reimbursement-purchase-links.md): a reimbursement can
 no longer link to a purchase that is shared (`invalid_refund_link` now also
@@ -70,13 +70,22 @@ pattern instead of inventing one.
   inside each month, and a savings-funded split means deciding which Goal (or
   whose) it draws from - both are real feature decisions the product has not
   asked for yet, not omissions.
-- **The split is accounting, not a visibility rule.** It does not change
-  anything about `getGrossSpendByCategory` (ADR-001/002/003): the full
-  `amount` still counts against the category and the budget of whoever
-  recorded the transaction (`transactions.user_id`), exactly as an unshared
-  expense does. `transaction_shares` says who put in how much; it does not
-  move the expense onto someone else's budget. Reopening that is its own
-  future decision, not a side effect of this one.
+- **The split determines each person's own figures, not just who recorded
+  the row.** `getGrossSpendByCategory` and every other count of "how much
+  did I spend" (ADR-001/002/003) stay unaware that households exist, but
+  every consumer that reports a single person's own spend - Dashboard,
+  Analytics' Mine view, an individual budget, the trend/daily/comparison
+  breakdowns and the generated insights - feeds it entries already
+  attributed per person: an unshared expense in full, and a Case A share by
+  `transaction_shares.amount` for the person it belongs to, never in full
+  against whoever happened to record the row. Building "Mine" never reads
+  the partner's full row set to get there - only the subset of their shared
+  (`is_shared`) rows where a `transaction_shares` row names the caller, the
+  same minimal read `household_member_ids()` already grants (ADR-007).
+  (Originally: "the full amount still counts against the category and the
+  budget of whoever recorded the transaction", and `transaction_shares` was
+  accounting only, read by nothing outside `save_transaction` - see Revision
+  history.)
 - **Participants are fixed: the caller and their current household
   partner.** `household_member_ids()` already resolves to exactly `{caller}`
   ∪ `{accepted partner}` (ADR-007); subtracting the caller's own id leaves at
@@ -121,19 +130,26 @@ pattern instead of inventing one.
 
 ## Consequences
 
-- **A shared expense still counts in full against its owner's budget.**
-  Nothing about ADR-001/002/003's figures changes; `transaction_shares` is
-  read by nothing yet outside this RPC.
+- **A shared expense counts, for each person, exactly their own share.**
+  The owner's Mine view/budget reflects their own typed part, not the
+  total; the partner's Mine view/budget reflects their part too, for a
+  transaction they never recorded, for as long as the household that
+  produced it (or a future ADR extending this past dissolution) lets them
+  read it. `transaction_shares` is read by Budgets (ADR-010) and Analytics
+  (ADR-011) for both the Household and the Mine view, and by every other
+  consumer of a person's own spend (Dashboard, the trend/daily/comparison
+  breakdowns, insights) - no longer only by `save_transaction`.
 - **Sharing requires an active household**, checked at save time, not only
   at the UI layer - `household_required_for_shared_expense` fires even if a
   stale client tries to resend a share after the household was dissolved.
 - **A shared expense cannot be financed in installments or paid from
   savings, and cannot be or receive a reimbursement**, until a future ADR
   revisits each of those combinations on its own.
-- **Only the owner can create, edit or delete a shared expense** - the
-  partner's row in `transaction_shares` is informational, matching ADR-007's
-  "visibility, not ownership": forming a household or appearing in a share
-  never grants write access to anyone else's transaction.
+- **Only the owner can create, edit or delete a shared expense** - having a
+  row in `transaction_shares`, even one now counted in the partner's own
+  figures, never grants the partner write access, matching ADR-007's
+  "visibility, not ownership": forming a household never grants write
+  access to anyone else's transaction.
 - **Alternatives considered (rejected):**
   - *(a) Two independent transactions*: see Context - no atomicity, no
     single place that says "this was shared."
@@ -148,3 +164,23 @@ pattern instead of inventing one.
     transaction_shares ...)` instead of a stored column*: every consumer
     (RLS policies aside) would need the join merely to know whether a row is
     shared, and the v1 check constraint could not be expressed without it.
+
+## Revision history
+
+- 2026-10-12: Amended the Decision and Consequences sections above. The
+  original decision stated the full amount of a Case A shared expense counts
+  against the budget/Mine view of whoever recorded it; `transaction_shares`
+  was accounting only, read by nothing outside `save_transaction`. This did
+  not match how the household actually pays - each person pays their own
+  part from their own account - and it was already inconsistent with
+  ADR-010/ADR-011, which attribute a household budget and Analytics'
+  Household view by each person's own share. This revision makes every
+  consumer of a person's own spend (Dashboard, Analytics' Mine view,
+  individual budgets, the trend/daily/comparison breakdowns, insights)
+  follow the same attribution (`getHouseholdAttributedAmount`), built from
+  only the caller's own rows plus the shared rows naming them - not the
+  partner's full row set. Case B (ADR-010) is unaffected: its 100% still
+  belongs to whoever recorded it, by design. A household dissolving still
+  leaves the non-recording partner permanently unable to read their own
+  historical share (ADR-007's visibility, unchanged here); that gap is
+  tracked for a separate, future ADR, not resolved by this revision.
