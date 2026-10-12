@@ -32,6 +32,7 @@ export default {
         'trash',
         'language',
         'currency',
+        'power',
       ],
       table: { type: { summary: 'IconName' } },
     },
@@ -68,6 +69,9 @@ const ALL_ICON_NAMES: IconName[] = [
   'edit',
   'arrow-left',
   'trash',
+  'language',
+  'currency',
+  'power',
 ]
 
 export const AllIcons = {

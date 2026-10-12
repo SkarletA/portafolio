@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useRecurringExpenses } from '@hooks/useRecurringExpenses'
@@ -13,6 +13,14 @@ export function RecurringExpenses() {
   const { recurringExpenses, loading, error, refetch } = useRecurringExpenses()
   const navigate = useNavigate()
   const today = getTodayLocalDate()
+
+  // ADR-019: deactivated templates sort after active ones. A stable sort
+  // (guaranteed by the spec since ES2019) keeps everything else in the
+  // order the service already returns (created_at, ascending).
+  const sortedRecurringExpenses = useMemo(
+    () => [...recurringExpenses].sort((a, b) => Number(a.deactivated_since !== null) - Number(b.deactivated_since !== null)),
+    [recurringExpenses]
+  )
 
   const handleNewRecurringExpenseClick = useCallback(() => {
     navigate('/finora/add-recurring-expense')
@@ -47,7 +55,7 @@ export function RecurringExpenses() {
         boxed
       >
         <div className={s.grid}>
-          {recurringExpenses.map((recurringExpense) => (
+          {sortedRecurringExpenses.map((recurringExpense) => (
             <RecurringExpenseCard
               key={recurringExpense.id}
               recurringExpense={recurringExpense}

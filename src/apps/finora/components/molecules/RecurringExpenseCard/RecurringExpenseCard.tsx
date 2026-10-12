@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import cn from 'clsx'
 import type { RecurringExpenseWithDetails } from '@services/recurringExpensesService'
-import { cancelRecurringExpense, postMyRecurringExpenses } from '@services/recurringExpensesService'
+import {
+  activateRecurringExpense,
+  deactivateRecurringExpense,
+  deleteRecurringExpense,
+  postMyRecurringExpenses,
+} from '@services/recurringExpensesService'
 import { parseRecurringExpenseError } from '@services/recurringExpensesErrors'
 import { getCurrentTerm, getNextTerm, getOverdueDates, getUpcomingCharges, type RecurringSchedule, type RecurringTerm } from '@domain/recurring'
 import { getCategoryDisplayName } from '@domain/category'
@@ -22,7 +27,7 @@ interface RecurringExpenseCardProps {
   recurringExpense: RecurringExpenseWithDetails
   /** The caller's local calendar date (ADR-013) - what "current", "overdue" and "next" mean here. */
   today: string
-  /** Called after a cancel or a "post now" that changed the template or posted a charge. */
+  /** Called after a toggle, a delete, or a "post now" that changed the template or posted a charge. */
   onChanged: () => void
 }
 
@@ -36,8 +41,9 @@ function formatCardDate(date: string): string {
 
 /**
  * One recurring expense template: its current term, next charge, status, and
- * the actions to edit, cancel, or publish an overdue charge now. Mirrors
- * BudgetCard's confirm-before-destructive-action pattern for cancel.
+ * the actions to edit, pause/resume, delete, or publish an overdue charge
+ * now. Mirrors BudgetCard's confirm-before-destructive-action pattern for
+ * delete (ADR-019 - replaces the old, irreversible cancel).
  */
 export function RecurringExpenseCard({ recurringExpense, today, onChanged }: RecurringExpenseCardProps) {
   const { t } = useTranslation(['recurring', 'categories', 'common'])
@@ -49,13 +55,24 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const hasAcceptedPartner = partnerMember?.status === 'accepted'
   const partnerName = getHouseholdPartnerDisplayName(partner)
   const { goals } = useGoals()
-  const [isConfirmingCancel, setIsConfirmingCancel] = useState(false)
-  const [cancelling, setCancelling] = useState(false)
-  const [cancelError, setCancelError] = useState<string | null>(null)
+  const [togglingActive, setTogglingActive] = useState(false)
+  const [toggleError, setToggleError] = useState<string | null>(null)
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const [postError, setPostError] = useState<string | null>(null)
 
-  const { id, ended_on: endedOn, planned_end_on: plannedEndOn, last_error: lastError, terms, occurrences } = recurringExpense
+  const {
+    id,
+    ended_on: endedOn,
+    planned_end_on: plannedEndOn,
+    deactivated_since: deactivatedSince,
+    active_from: activeFrom,
+    last_error: lastError,
+    terms,
+    occurrences,
+  } = recurringExpense
 
   // ADR-016: whichever end is sooner governs - the same least() the job
   // itself applies to v_limit - so "next charge" and the overdue count
@@ -64,8 +81,14 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
     endedOn !== null && plannedEndOn !== null ? (endedOn < plannedEndOn ? endedOn : plannedEndOn) : endedOn ?? plannedEndOn
 
   const schedule: RecurringSchedule = useMemo(
-    () => ({ startOn: recurringExpense.start_on, endedOn: effectiveScheduleEnd, dayOfMonth: recurringExpense.day_of_month }),
-    [recurringExpense.start_on, effectiveScheduleEnd, recurringExpense.day_of_month]
+    () => ({
+      startOn: recurringExpense.start_on,
+      endedOn: effectiveScheduleEnd,
+      dayOfMonth: recurringExpense.day_of_month,
+      deactivatedSince,
+      activeFrom,
+    }),
+    [recurringExpense.start_on, effectiveScheduleEnd, recurringExpense.day_of_month, deactivatedSince, activeFrom]
   )
 
   const scheduleTerms: RecurringTerm[] = useMemo(
@@ -104,10 +127,10 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const overdueDates = useMemo(() => getOverdueDates(schedule, postedDates, today), [schedule, postedDates, today])
   const isOverdue = overdueDates.length > 0
 
-  // Matches update_recurring_expense and cancel_recurring_expense (recurring_ended):
-  // any ended_on, even a future one, means the template can't be edited or cancelled again.
-  const isEnded = endedOn !== null
-  const isFullyStopped = isEnded && endedOn! < today
+  // ADR-019: reversible, unlike the retired ended_on. Takes label precedence
+  // over a planned end (decision 11) - a paused template reads "Deactivated"
+  // even if it also has one.
+  const isDeactivated = deactivatedSince !== null
 
   // ADR-016: a planned end is reached once today is past it - the job never
   // writes anything to mark it (v_limit's own least() clamp is what actually
@@ -125,46 +148,62 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   const fallbackIcon = categoryName[0] || '•'
   const iconStyle = currentTermRow?.category?.color ? { backgroundColor: currentTermRow.category.color } : undefined
 
-  const statusLabel = isFullyStopped
-    ? t('card.status.cancelled', { date: formatCardDate(endedOn!) })
-    : isEnded
-      ? t('card.status.ending', { date: formatCardDate(endedOn!) })
-      : isPlannedEndCompleted
-        ? t('card.status.completed', { date: formatCardDate(plannedEndOn!) })
-        : isPlannedEndSet
-          ? t('card.status.endsOn', { date: formatCardDate(plannedEndOn!) })
-          : t('card.status.active')
+  const statusLabel = isDeactivated
+    ? t('card.status.deactivated', { date: formatCardDate(deactivatedSince!) })
+    : isPlannedEndCompleted
+      ? t('card.status.completed', { date: formatCardDate(plannedEndOn!) })
+      : isPlannedEndSet
+        ? t('card.status.endsOn', { date: formatCardDate(plannedEndOn!) })
+        : t('card.status.active')
 
   const handleEditClick = useCallback(() => {
     navigate(`/finora/recurring/${id}/edit`)
   }, [navigate, id])
 
-  const handleCancelIconClick = useCallback(() => {
-    setIsConfirmingCancel(true)
-  }, [])
+  // ADR-019: fires immediately, no confirmation - reversible by design.
+  const handleToggleActiveClick = useCallback(async () => {
+    setTogglingActive(true)
+    setToggleError(null)
 
-  const handleDismissCancel = useCallback(() => {
-    setIsConfirmingCancel(false)
-    setCancelError(null)
-  }, [])
+    const { error } = isDeactivated ? await activateRecurringExpense(id, today) : await deactivateRecurringExpense(id, today)
 
-  const handleConfirmCancel = useCallback(async () => {
-    setCancelling(true)
-    setCancelError(null)
-
-    const { error } = await cancelRecurringExpense(id, today, today)
-
-    setCancelling(false)
+    setTogglingActive(false)
 
     if (error) {
       const code = parseRecurringExpenseError(error)
-      setCancelError(code ? t(`recurring:errors.${code}`) : error.message)
+      setToggleError(code ? t(`recurring:errors.${code}`) : error.message)
       return
     }
 
-    setIsConfirmingCancel(false)
     onChanged()
-  }, [id, today, onChanged, t])
+  }, [isDeactivated, id, today, onChanged, t])
+
+  const handleDeleteIconClick = useCallback(() => {
+    setIsConfirmingDelete(true)
+  }, [])
+
+  const handleDismissDelete = useCallback(() => {
+    setIsConfirmingDelete(false)
+    setDeleteError(null)
+  }, [])
+
+  const handleConfirmDelete = useCallback(async () => {
+    setDeleting(true)
+    setDeleteError(null)
+
+    const { error } = await deleteRecurringExpense(id)
+
+    setDeleting(false)
+
+    if (error) {
+      const code = parseRecurringExpenseError(error)
+      setDeleteError(code ? t(`recurring:errors.${code}`) : error.message)
+      return
+    }
+
+    setIsConfirmingDelete(false)
+    onChanged()
+  }, [id, onChanged, t])
 
   const handlePostNowClick = useCallback(async () => {
     setPosting(true)
@@ -183,35 +222,35 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
     onChanged()
   }, [today, onChanged, t])
 
-  if (isConfirmingCancel) {
+  if (isConfirmingDelete) {
     return (
-      <div className={cn(s.card, s.cancelConfirmCard)} data-testid={`recurring-card-${id}`}>
-        <span className={s.cancelConfirmText}>
-          {t('card.confirmCancel', { description: currentTerm?.description ?? '' })}
+      <div className={cn(s.card, s.deleteConfirmCard)} data-testid={`recurring-card-${id}`}>
+        <span className={s.deleteConfirmText}>
+          {t('card.confirmDelete', { description: currentTerm?.description ?? '', count: postedDates.length })}
         </span>
-        <div className={s.cancelConfirmActions}>
+        <div className={s.deleteConfirmActions}>
           <button
             type="button"
-            onClick={handleConfirmCancel}
-            disabled={cancelling}
-            className={s.cancelConfirmButton}
-            data-testid={`recurring-card-${id}-confirm-cancel-button`}
+            onClick={handleConfirmDelete}
+            disabled={deleting}
+            className={s.deleteConfirmButton}
+            data-testid={`recurring-card-${id}-confirm-delete-button`}
           >
-            {cancelling ? t('common:buttons.updating') : t('common:buttons.confirm')}
+            {deleting ? t('common:buttons.updating') : t('common:buttons.confirm')}
           </button>
           <button
             type="button"
-            onClick={handleDismissCancel}
-            disabled={cancelling}
-            className={s.cancelDismissButton}
-            data-testid={`recurring-card-${id}-dismiss-cancel-button`}
+            onClick={handleDismissDelete}
+            disabled={deleting}
+            className={s.deleteDismissButton}
+            data-testid={`recurring-card-${id}-dismiss-delete-button`}
           >
             {t('common:buttons.cancel')}
           </button>
         </div>
-        {cancelError && (
+        {deleteError && (
           <p role="alert" className={s.error}>
-            {cancelError}
+            {deleteError}
           </p>
         )}
       </div>
@@ -219,7 +258,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
   }
 
   return (
-    <div className={s.card} data-testid={`recurring-card-${id}`}>
+    <div className={cn(s.card, isDeactivated && s.cardDeactivated)} data-testid={`recurring-card-${id}`}>
       <div className={s.header}>
         <div className={cn(s.icon, !iconStyle && s.iconFallbackBg)} style={iconStyle}>
           <CategoryIcon name={currentTermRow?.category?.icon ?? null} fallbackLabel={fallbackIcon} className={s.categoryIcon} />
@@ -247,10 +286,10 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
               {t('card.fundedFrom', { goal: fundingGoal.name })}
             </p>
           )}
-          {nextCharge && !isFullyStopped && (
+          {nextCharge && (
             <p className={s.nextCharge}>{t('card.nextCharge', { date: formatCardDate(nextCharge.date) })}</p>
           )}
-          {nextTerm && nextTermChargeDate && !isFullyStopped && (
+          {nextTerm && nextTermChargeDate && (
             <p className={s.priceChangeHint} data-testid={`recurring-card-${id}-price-change-hint`}>
               {t('card.priceChangeHint', {
                 amount: formatCurrency(nextTerm.amount, currency, locale),
@@ -263,39 +302,54 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
           <span
             className={cn(
               s.statusBadge,
-              isFullyStopped || isPlannedEndCompleted
-                ? s.statusCancelled
-                : isEnded || isPlannedEndSet
-                  ? s.statusEnding
-                  : s.statusActive
+              isDeactivated || isPlannedEndCompleted ? s.statusCancelled : isPlannedEndSet ? s.statusEnding : s.statusActive
             )}
           >
             {statusLabel}
           </span>
-          {!isEnded && (
-            <div className={s.actions}>
+          <div className={s.actions}>
+            <button
+              type="button"
+              onClick={handleEditClick}
+              aria-label={t('card.editAriaLabel', { description: currentTerm?.description ?? '' })}
+              className={s.actionIcon}
+              data-testid={`recurring-card-${id}-edit-icon`}
+            >
+              <Icon name="edit" className={s.actionIconGlyph} />
+            </button>
+            {/* ADR-019, decision 11: hidden once Completed - toggling it would only make the card stop reading "Completed". */}
+            {!isPlannedEndCompleted && (
               <button
                 type="button"
-                onClick={handleEditClick}
-                aria-label={t('card.editAriaLabel', { description: currentTerm?.description ?? '' })}
+                onClick={handleToggleActiveClick}
+                disabled={togglingActive}
+                aria-label={t(isDeactivated ? 'card.activateAriaLabel' : 'card.deactivateAriaLabel', {
+                  description: currentTerm?.description ?? '',
+                })}
                 className={s.actionIcon}
-                data-testid={`recurring-card-${id}-edit-icon`}
+                data-testid={`recurring-card-${id}-toggle-active-icon`}
               >
-                <Icon name="edit" className={s.actionIconGlyph} />
+                <Icon name="power" className={s.actionIconGlyph} />
               </button>
-              <button
-                type="button"
-                onClick={handleCancelIconClick}
-                aria-label={t('card.cancelAriaLabel', { description: currentTerm?.description ?? '' })}
-                className={s.actionIcon}
-                data-testid={`recurring-card-${id}-cancel-icon`}
-              >
-                <Icon name="trash" className={s.actionIconGlyph} />
-              </button>
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={handleDeleteIconClick}
+              aria-label={t('card.deleteAriaLabel', { description: currentTerm?.description ?? '' })}
+              className={s.actionIcon}
+              data-testid={`recurring-card-${id}-delete-icon`}
+            >
+              <Icon name="trash" className={s.actionIconGlyph} />
+            </button>
+          </div>
         </div>
       </div>
+
+      {toggleError && (
+        <p role="alert" className={s.error}>
+          {toggleError}
+        </p>
+      )}
 
       {isOverdue && (
         <div className={s.overdueBanner} data-testid={`recurring-card-${id}-overdue-banner`}>
@@ -312,7 +366,7 @@ export function RecurringExpenseCard({ recurringExpense, today, onChanged }: Rec
         </div>
       )}
 
-      {(currentTerm?.isShared || currentTerm?.isHouseholdExpense) && !hasAcceptedPartner && !isFullyStopped && (
+      {(currentTerm?.isShared || currentTerm?.isHouseholdExpense) && !hasAcceptedPartner && !isDeactivated && (
         <p className={s.sharedWarning} data-testid={`recurring-card-${id}-shared-no-partner-warning`}>
           {t('card.sharedNoPartnerWarning')}
         </p>

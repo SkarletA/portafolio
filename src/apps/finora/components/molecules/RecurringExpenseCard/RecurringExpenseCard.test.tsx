@@ -2,13 +2,20 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecurringExpenseCard } from './RecurringExpenseCard'
-import { cancelRecurringExpense, postMyRecurringExpenses } from '@services/recurringExpensesService'
+import {
+  activateRecurringExpense,
+  deactivateRecurringExpense,
+  deleteRecurringExpense,
+  postMyRecurringExpenses,
+} from '@services/recurringExpensesService'
 import type { RecurringExpenseWithDetails } from '@services/recurringExpensesService'
 import { useHousehold } from '@context/HouseholdContext'
 import { useGoals } from '@hooks/useGoals'
 
 vi.mock('@services/recurringExpensesService', () => ({
-  cancelRecurringExpense: vi.fn(),
+  activateRecurringExpense: vi.fn(),
+  deactivateRecurringExpense: vi.fn(),
+  deleteRecurringExpense: vi.fn(),
   postMyRecurringExpenses: vi.fn(),
 }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
@@ -30,6 +37,8 @@ function recurringExpense(overrides: Partial<RecurringExpenseWithDetails> = {}):
     ended_on: null,
     planned_end_on: null,
     planned_charges: null,
+    deactivated_since: null,
+    active_from: null,
     last_error: null,
     last_error_at: null,
     terms: [
@@ -66,7 +75,9 @@ function renderCard(expense: RecurringExpenseWithDetails, today = '2026-10-06', 
 
 describe('RecurringExpenseCard', () => {
   beforeEach(() => {
-    vi.mocked(cancelRecurringExpense).mockReset()
+    vi.mocked(activateRecurringExpense).mockReset()
+    vi.mocked(deactivateRecurringExpense).mockReset()
+    vi.mocked(deleteRecurringExpense).mockReset()
     vi.mocked(postMyRecurringExpenses).mockReset()
     vi.mocked(useHousehold).mockReturnValue({ partnerMember: null, partner: null } as never)
     vi.mocked(useGoals).mockReturnValue({ goals: [], loading: false } as never)
@@ -81,38 +92,43 @@ describe('RecurringExpenseCard', () => {
     expect(screen.getByText('card.nextCharge:{"date":"Oct 15, 2026"}')).toBeInTheDocument()
   })
 
-  it('shows edit and cancel icons for an active template', () => {
+  it('shows edit, toggle and delete icons for an active template', () => {
     renderCard(recurringExpense())
 
     expect(screen.getByTestId('recurring-card-r1-edit-icon')).toBeInTheDocument()
-    expect(screen.getByTestId('recurring-card-r1-cancel-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-toggle-active-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-delete-icon')).toBeInTheDocument()
   })
 
-  it('hides edit and cancel icons once the template has an end date', () => {
-    renderCard(recurringExpense({ ended_on: '2026-12-01' }))
+  it('shows "deactivated" for a paused template, and offers no next charge', () => {
+    renderCard(recurringExpense({ deactivated_since: '2026-10-01' }))
 
-    expect(screen.queryByTestId('recurring-card-r1-edit-icon')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('recurring-card-r1-cancel-icon')).not.toBeInTheDocument()
+    expect(screen.getByText('card.status.deactivated:{"date":"Oct 1, 2026"}')).toBeInTheDocument()
+    expect(screen.queryByText(/card\.nextCharge/)).not.toBeInTheDocument()
   })
 
-  it('shows "ending" for a future end date and "cancelled" for a past one', () => {
-    renderCard(recurringExpense({ ended_on: '2026-12-01' }))
-    expect(screen.getByText('card.status.ending:{"date":"Dec 1, 2026"}')).toBeInTheDocument()
-  })
-
-  it('shows "ends on" for a planned end still ahead, with edit and cancel still available', () => {
+  it('shows "ends on" for a planned end still ahead, with edit, toggle and delete still available', () => {
     renderCard(recurringExpense({ planned_end_on: '2026-12-15', planned_charges: 4 }))
 
     expect(screen.getByText('card.status.endsOn:{"date":"Dec 15, 2026"}')).toBeInTheDocument()
     expect(screen.getByTestId('recurring-card-r1-edit-icon')).toBeInTheDocument()
-    expect(screen.getByTestId('recurring-card-r1-cancel-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-toggle-active-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-delete-icon')).toBeInTheDocument()
   })
 
-  it('shows "completed" once a planned end has passed, and clamps the next charge', () => {
+  it('shows "completed" once a planned end has passed, hides the toggle, and clamps the next charge', () => {
     renderCard(recurringExpense({ planned_end_on: '2026-09-15', planned_charges: 2 }))
 
     expect(screen.getByText('card.status.completed:{"date":"Sep 15, 2026"}')).toBeInTheDocument()
     expect(screen.queryByText(/card\.nextCharge/)).not.toBeInTheDocument()
+    expect(screen.queryByTestId('recurring-card-r1-toggle-active-icon')).not.toBeInTheDocument()
+    expect(screen.getByTestId('recurring-card-r1-delete-icon')).toBeInTheDocument()
+  })
+
+  it('deactivating takes label precedence over a planned end (ADR-019, decision 11)', () => {
+    renderCard(recurringExpense({ deactivated_since: '2026-10-01', planned_end_on: '2026-09-15', planned_charges: 2 }))
+
+    expect(screen.getByText('card.status.deactivated:{"date":"Oct 1, 2026"}')).toBeInTheDocument()
   })
 
   it('hides a next charge that falls after a still-upcoming planned end, matching the job\'s own clamp', () => {
@@ -262,27 +278,56 @@ describe('RecurringExpenseCard', () => {
     expect(await screen.findByText('boom')).toBeInTheDocument()
   })
 
-  it('confirms before cancelling, and calls cancelRecurringExpense with today as the end date', async () => {
-    vi.mocked(cancelRecurringExpense).mockResolvedValue({ data: null, error: null } as never)
+  it('deactivates immediately, with no confirmation (ADR-019)', async () => {
+    vi.mocked(deactivateRecurringExpense).mockResolvedValue({ data: 'r1', error: null } as never)
     const { onChanged } = renderCard(recurringExpense())
 
-    fireEvent.click(screen.getByTestId('recurring-card-r1-cancel-icon'))
-    expect(screen.getByText('card.confirmCancel:{"description":"Streaming"}')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('recurring-card-r1-toggle-active-icon'))
 
-    fireEvent.click(screen.getByTestId('recurring-card-r1-confirm-cancel-button'))
-
-    await waitFor(() => expect(cancelRecurringExpense).toHaveBeenCalledWith('r1', '2026-10-06', '2026-10-06'))
+    await waitFor(() => expect(deactivateRecurringExpense).toHaveBeenCalledWith('r1', '2026-10-06'))
     expect(onChanged).toHaveBeenCalled()
   })
 
-  it('dismissing the cancel confirmation does not call the server', () => {
+  it('reactivates a deactivated template', async () => {
+    vi.mocked(activateRecurringExpense).mockResolvedValue({ data: 'r1', error: null } as never)
+    const { onChanged } = renderCard(recurringExpense({ deactivated_since: '2026-10-01' }))
+
+    fireEvent.click(screen.getByTestId('recurring-card-r1-toggle-active-icon'))
+
+    await waitFor(() => expect(activateRecurringExpense).toHaveBeenCalledWith('r1', '2026-10-06'))
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('shows the error returned when toggling fails', async () => {
+    vi.mocked(deactivateRecurringExpense).mockResolvedValue({ data: null, error: { message: 'boom' } } as never)
     renderCard(recurringExpense())
 
-    fireEvent.click(screen.getByTestId('recurring-card-r1-cancel-icon'))
-    fireEvent.click(screen.getByTestId('recurring-card-r1-dismiss-cancel-button'))
+    fireEvent.click(screen.getByTestId('recurring-card-r1-toggle-active-icon'))
 
-    expect(cancelRecurringExpense).not.toHaveBeenCalled()
-    expect(screen.getByTestId('recurring-card-r1-cancel-icon')).toBeInTheDocument()
+    expect(await screen.findByText('boom')).toBeInTheDocument()
+  })
+
+  it('confirms before deleting, states how many charges are kept, and calls deleteRecurringExpense', async () => {
+    vi.mocked(deleteRecurringExpense).mockResolvedValue({ data: null, error: null } as never)
+    const { onChanged } = renderCard(recurringExpense())
+
+    fireEvent.click(screen.getByTestId('recurring-card-r1-delete-icon'))
+    expect(screen.getByText('card.confirmDelete:{"description":"Streaming","count":2}')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('recurring-card-r1-confirm-delete-button'))
+
+    await waitFor(() => expect(deleteRecurringExpense).toHaveBeenCalledWith('r1'))
+    expect(onChanged).toHaveBeenCalled()
+  })
+
+  it('dismissing the delete confirmation does not call the server', () => {
+    renderCard(recurringExpense())
+
+    fireEvent.click(screen.getByTestId('recurring-card-r1-delete-icon'))
+    fireEvent.click(screen.getByTestId('recurring-card-r1-dismiss-delete-button'))
+
+    expect(deleteRecurringExpense).not.toHaveBeenCalled()
+    expect(screen.getByTestId('recurring-card-r1-delete-icon')).toBeInTheDocument()
   })
 
   it('shows a hint when the last posting attempt failed', () => {

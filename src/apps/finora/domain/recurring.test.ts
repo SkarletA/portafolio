@@ -86,6 +86,59 @@ describe('getScheduledDatesThrough', () => {
 
     expect(dates).toEqual(['2026-12-31', '2027-01-31', '2027-02-28'])
   })
+
+  // ADR-019. Same scenarios as supabase/tests/recurring_deactivate_job.sql
+  // (tests A-C), so the job and the domain layer can't silently drift onto
+  // different rules for the same pause/reactivate behavior.
+  it('returns nothing while deactivated, even for a date long overdue (test A)', () => {
+    const schedule: RecurringSchedule = {
+      startOn: '2026-01-15',
+      endedOn: null,
+      dayOfMonth: 15,
+      deactivatedSince: '2026-02-01',
+    }
+
+    expect(getScheduledDatesThrough(schedule, '2026-12-31')).toEqual([])
+  })
+
+  it('never returns a date before activeFrom (test B)', () => {
+    const schedule: RecurringSchedule = {
+      startOn: '2026-01-15',
+      endedOn: null,
+      dayOfMonth: 15,
+      activeFrom: '2026-04-16',
+    }
+
+    expect(getScheduledDatesThrough(schedule, '2026-12-31')).toEqual([
+      '2026-05-15',
+      '2026-06-15',
+      '2026-07-15',
+      '2026-08-15',
+      '2026-09-15',
+      '2026-10-15',
+      '2026-11-15',
+      '2026-12-15',
+    ])
+  })
+
+  it('after two deactivate/reactivate cycles, only the latest activeFrom is in effect (test C)', () => {
+    // The first pause window (deactivated after Feb, reactivated with a
+    // May 1 floor) leaves no trace once a second cycle moves the floor to
+    // September 1 - nothing remembers the first window, matching the job.
+    const schedule: RecurringSchedule = {
+      startOn: '2026-01-01',
+      endedOn: null,
+      dayOfMonth: 1,
+      activeFrom: '2026-09-01',
+    }
+
+    expect(getScheduledDatesThrough(schedule, '2026-12-31')).toEqual([
+      '2026-09-01',
+      '2026-10-01',
+      '2026-11-01',
+      '2026-12-01',
+    ])
+  })
 })
 
 describe('getTermInForce', () => {
@@ -198,6 +251,20 @@ describe('getUpcomingCharges', () => {
   it('returns nothing when there are no terms', () => {
     expect(getUpcomingCharges(schedule, [], '2026-10-06', 3)).toEqual([])
   })
+
+  it('returns nothing while deactivated (ADR-019)', () => {
+    const deactivated: RecurringSchedule = { ...schedule, deactivatedSince: '2026-10-08' }
+
+    expect(getUpcomingCharges(deactivated, terms, '2026-10-06', 2)).toEqual([])
+  })
+
+  it('never lists a charge before activeFrom (ADR-019)', () => {
+    const reactivated: RecurringSchedule = { ...schedule, activeFrom: '2026-11-01' }
+
+    const charges = getUpcomingCharges(reactivated, terms, '2026-10-06', 2)
+
+    expect(charges.map((charge) => charge.date)).toEqual(['2026-11-15', '2026-12-15'])
+  })
 })
 
 describe('getPostingAvailableAt', () => {
@@ -229,5 +296,17 @@ describe('getOverdueDates', () => {
 
   it('counts yesterday as overdue once nothing has posted for it', () => {
     expect(getOverdueDates(schedule, [], '2026-08-16')).toEqual(['2026-07-15', '2026-08-15'])
+  })
+
+  it('never flags a date from inside a past pause window as overdue after reactivation (ADR-019)', () => {
+    const reactivated: RecurringSchedule = { ...schedule, activeFrom: '2026-09-01' }
+
+    expect(getOverdueDates(reactivated, [], '2026-10-06')).toEqual(['2026-09-15'])
+  })
+
+  it('returns nothing while deactivated (ADR-019)', () => {
+    const deactivated: RecurringSchedule = { ...schedule, deactivatedSince: '2026-08-01' }
+
+    expect(getOverdueDates(deactivated, [], '2026-10-06')).toEqual([])
   })
 })

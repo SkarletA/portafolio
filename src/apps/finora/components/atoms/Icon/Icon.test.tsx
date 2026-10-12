@@ -17,6 +17,9 @@ const ICON_NAMES: IconName[] = [
   'edit',
   'arrow-left',
   'trash',
+  'language',
+  'currency',
+  'power',
 ]
 
 describe('Icon', () => {

@@ -19,6 +19,7 @@ export type IconName =
   | 'trash'
   | 'language'
   | 'currency'
+  | 'power'
 
 interface IconProps {
   /** Which glyph to render. */
@@ -179,6 +180,15 @@ function TrashGlyph() {
   )
 }
 
+function PowerGlyph() {
+  return (
+    <>
+      <path d="M12 3 V11" />
+      <path d="M7 5.5 a8 8 0 1 0 10 0" />
+    </>
+  )
+}
+
 function MoreGlyph() {
   return (
     <>
@@ -206,6 +216,7 @@ const GLYPHS: Record<IconName, () => ReactElement> = {
   trash: TrashGlyph,
   language: LanguageGlyph,
   currency: CurrencyGlyph,
+  power: PowerGlyph,
 }
 
 /** A hand-drawn line icon from Finora's own glyph set, sized and colored via `className`. */

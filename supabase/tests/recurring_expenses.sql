@@ -1,8 +1,10 @@
--- Recurring expenses: the posting job and the client RPCs (ADR-012, PR 3).
+-- Recurring expenses: the posting job and the client RPCs (ADR-012, PR 3;
+-- deactivate/reactivate/delete updated for ADR-019, PR 2, replacing the
+-- retired cancel_recurring_expense).
 --
 -- Run it in the Supabase SQL editor (or psql) as a privileged role, AFTER the
--- recurring_posting migration. It ends in ROLLBACK, so it leaves no data behind.
--- Any failed check raises an exception naming what went wrong.
+-- recurring_deactivate_rpc migration. It ends in ROLLBACK, so it leaves no
+-- data behind. Any failed check raises an exception naming what went wrong.
 --
 -- Posting uses fixed dates, so its results do not depend on when the test runs.
 -- The RPC checks use today's UTC date, because they accept only a local date
@@ -189,33 +191,48 @@ begin
     raise exception 'recurring test 7: an edit did not add a term version';
   end if;
 
-  -- Cancel once. A second cancel is refused.
-  perform public.cancel_recurring_expense(v_gym, v_today + 100, v_today);
-  begin
-    perform public.cancel_recurring_expense(v_gym, v_today + 100, v_today);
-    raise exception 'recurring test 7: a second cancel was accepted';
-  exception when others then
-    if sqlerrm <> 'recurring_already_cancelled' then
-      raise exception 'recurring test 7: expected recurring_already_cancelled, got %', sqlerrm;
-    end if;
-  end;
+  -- ADR-019: deactivate is idempotent - a repeat call is a no-op, not an error.
+  perform public.deactivate_recurring_expense(v_gym, v_today);
+  if (select deactivated_since from public.recurring_expenses where id = v_gym) <> v_today then
+    raise exception 'recurring test 7: deactivate did not set deactivated_since';
+  end if;
+  perform public.deactivate_recurring_expense(v_gym, v_today);
+  if (select deactivated_since from public.recurring_expenses where id = v_gym) <> v_today then
+    raise exception 'recurring test 7: a repeat deactivate changed deactivated_since';
+  end if;
 
-  -- Editing a cancelled template is refused.
-  begin
-    perform public.update_recurring_expense(v_gym, v_today + 60, 'Gym', 320, v_category, 'Card', v_today);
-    raise exception 'recurring test 7: an edit of a cancelled template was accepted';
-  exception when others then
-    if sqlerrm <> 'recurring_ended' then
-      raise exception 'recurring test 7: expected recurring_ended, got %', sqlerrm;
-    end if;
-  end;
+  -- Editing a deactivated template still works (ADR-019, decision 8) - unlike
+  -- the old, final cancellation, a pause does not block edits.
+  perform public.update_recurring_expense(v_gym, v_today + 60, 'Gym', 320, v_category, 'Card', v_today);
+  if (select count(*) from public.recurring_expense_terms where recurring_expense_id = v_gym) <> 3 then
+    raise exception 'recurring test 7: editing a deactivated template did not add a term version';
+  end if;
+
+  -- Reactivate is idempotent too, and never backfills (active_from = today + 1).
+  perform public.activate_recurring_expense(v_gym, v_today);
+  if (select (deactivated_since, active_from) from public.recurring_expenses where id = v_gym)
+     is distinct from (null::date, v_today + 1) then
+    raise exception 'recurring test 7: activate did not set active_from / clear deactivated_since';
+  end if;
+  perform public.activate_recurring_expense(v_gym, v_today);
+  if (select active_from from public.recurring_expenses where id = v_gym) <> v_today + 1 then
+    raise exception 'recurring test 7: a repeat activate changed active_from';
+  end if;
 
   -- Another user's template is invisible to these RPCs.
   perform set_config('request.jwt.claim.sub', v_other::text, true);
   perform set_config('request.jwt.claims', json_build_object('sub', v_other)::text, true);
   begin
-    perform public.cancel_recurring_expense(v_template, v_today + 100, v_today);
-    raise exception 'recurring test 7: another user cancelled a template';
+    perform public.deactivate_recurring_expense(v_template, v_today);
+    raise exception 'recurring test 7: another user deactivated a template';
+  exception when others then
+    if sqlerrm <> 'recurring_not_found' then
+      raise exception 'recurring test 7: expected recurring_not_found, got %', sqlerrm;
+    end if;
+  end;
+  begin
+    perform public.delete_recurring_expense(v_template);
+    raise exception 'recurring test 7: another user deleted a template';
   exception when others then
     if sqlerrm <> 'recurring_not_found' then
       raise exception 'recurring test 7: expected recurring_not_found, got %', sqlerrm;
@@ -230,6 +247,35 @@ begin
     select 1 from public.recurring_occurrences where user_id = v_user and scheduled_date >= v_today
   ) then
     raise exception 'recurring test 7: post now published a date that is not yet due';
+  end if;
+
+  -- 8. Deleting a template with already-posted charges (v_template: Jan 31,
+  -- Mar 31 and Apr 30 posted, Feb 28 a tombstone from test 3) keeps the
+  -- transactions and removes the template, its terms and its occurrences
+  -- (ADR-019, decision 9).
+  if (
+    select count(*) from public.transactions
+     where user_id = v_user and date in ('2026-01-31', '2026-03-31', '2026-04-30')
+  ) <> 3 then
+    raise exception 'recurring test 8: setup check failed, expected 3 posted transactions before delete';
+  end if;
+
+  perform public.delete_recurring_expense(v_template);
+
+  if exists (select 1 from public.recurring_expenses where id = v_template) then
+    raise exception 'recurring test 8: the template row survived delete';
+  end if;
+  if exists (select 1 from public.recurring_expense_terms where recurring_expense_id = v_template) then
+    raise exception 'recurring test 8: term rows survived delete';
+  end if;
+  if exists (select 1 from public.recurring_occurrences where recurring_expense_id = v_template) then
+    raise exception 'recurring test 8: occurrence rows survived delete';
+  end if;
+  if (
+    select count(*) from public.transactions
+     where user_id = v_user and date in ('2026-01-31', '2026-03-31', '2026-04-30')
+  ) <> 3 then
+    raise exception 'recurring test 8: posted transactions were not kept';
   end if;
 
   raise notice 'recurring_expenses: all checks passed';
