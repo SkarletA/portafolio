@@ -221,6 +221,8 @@ function RecurringExpenseForm({ mode, recurringExpense }: RecurringExpenseFormPr
       startOn: recurringExpense.start_on,
       endedOn: recurringExpense.ended_on,
       dayOfMonth: recurringExpense.day_of_month,
+      deactivatedSince: recurringExpense.deactivated_since,
+      activeFrom: recurringExpense.active_from,
     }
     const dummyTerm: RecurringTerm = {
       effectiveFrom,

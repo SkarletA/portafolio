@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { supabase } from '@services/supabaseClient'
 import {
-  cancelRecurringExpense,
+  activateRecurringExpense,
   createRecurringExpense,
+  deactivateRecurringExpense,
+  deleteRecurringExpense,
   postMyRecurringExpenses,
   setRecurringExpensePlannedEnd,
   updateRecurringExpense,
@@ -131,14 +133,28 @@ describe('recurringExpensesService', () => {
     )
   })
 
-  it('cancelRecurringExpense sends the end date', async () => {
-    await cancelRecurringExpense('r1', '2026-10-06', '2026-10-06')
+  it('deactivateRecurringExpense sends the id and today', async () => {
+    await deactivateRecurringExpense('r1', '2026-10-06')
 
-    expect(supabase.rpc).toHaveBeenCalledWith('cancel_recurring_expense', {
+    expect(supabase.rpc).toHaveBeenCalledWith('deactivate_recurring_expense', {
       p_id: 'r1',
-      p_ended_on: '2026-10-06',
       p_today: '2026-10-06',
     })
+  })
+
+  it('activateRecurringExpense sends the id and today', async () => {
+    await activateRecurringExpense('r1', '2026-10-06')
+
+    expect(supabase.rpc).toHaveBeenCalledWith('activate_recurring_expense', {
+      p_id: 'r1',
+      p_today: '2026-10-06',
+    })
+  })
+
+  it('deleteRecurringExpense sends the id', async () => {
+    await deleteRecurringExpense('r1')
+
+    expect(supabase.rpc).toHaveBeenCalledWith('delete_recurring_expense', { p_id: 'r1' })
   })
 
   it('setRecurringExpensePlannedEnd sends the date and count', async () => {

@@ -79,4 +79,18 @@ describe('RecurringExpenses', () => {
     expect(screen.getByTestId('mock-recurring-card-r1')).toBeInTheDocument()
     expect(screen.getByTestId('mock-recurring-card-r2')).toBeInTheDocument()
   })
+
+  it('sorts deactivated templates after active ones (ADR-019)', () => {
+    const recurringExpenses = [
+      { id: 'paused', deactivated_since: '2026-09-01' },
+      { id: 'active-1', deactivated_since: null },
+      { id: 'active-2', deactivated_since: null },
+    ]
+    vi.mocked(useRecurringExpenses).mockReturnValue({ ...EMPTY, recurringExpenses } as never)
+
+    renderPage()
+
+    const ids = screen.getAllByTestId(/^mock-recurring-card-/).map((el) => el.dataset.testid)
+    expect(ids).toEqual(['mock-recurring-card-active-1', 'mock-recurring-card-active-2', 'mock-recurring-card-paused'])
+  })
 })

@@ -13,7 +13,7 @@ export default {
     docs: {
       description: {
         component:
-          'One recurring expense template: its current term, next charge, status, and the actions to edit, cancel, or publish an overdue charge now (ADR-012).',
+          'One recurring expense template: its current term, next charge, status, and the actions to edit, activate/deactivate, delete, or publish an overdue charge now (ADR-012, ADR-019).',
       },
     },
   },
@@ -28,7 +28,7 @@ export default {
       control: 'text',
     },
     onChanged: {
-      description: 'Called after a cancel or a "post now" that changed the template or posted a charge.',
+      description: 'Called after a toggle, a delete, or a "post now" that changed the template or posted a charge.',
       action: 'changed',
       table: { type: { summary: 'function' } },
     },
@@ -44,6 +44,10 @@ export const Active = {
       day_of_month: 15,
       start_on: '2026-08-15',
       ended_on: null,
+      planned_end_on: null,
+      planned_charges: null,
+      deactivated_since: null,
+      active_from: null,
       last_error: null,
       last_error_at: null,
       terms: [
@@ -82,17 +86,30 @@ export const Overdue = {
   },
 }
 
-export const Ending = {
+// ADR-016: a planned end still ahead - editable, with the toggle and delete
+// both still available.
+export const EndsOn = {
   args: {
     ...Active.args,
-    recurringExpense: { ...Active.args.recurringExpense, id: '3', ended_on: '2026-12-01' },
+    recurringExpense: { ...Active.args.recurringExpense, id: '3', planned_end_on: '2026-12-01', planned_charges: 3 },
   },
 }
 
-export const Cancelled = {
+// ADR-016: the planned end has already passed - the toggle is hidden
+// (ADR-019, decision 11), only Delete remains.
+export const Completed = {
   args: {
     ...Active.args,
-    recurringExpense: { ...Active.args.recurringExpense, id: '4', ended_on: '2026-09-01' },
+    recurringExpense: { ...Active.args.recurringExpense, id: '4', planned_end_on: '2026-09-01', planned_charges: 2 },
+  },
+}
+
+// ADR-019: paused, reversible. Deactivated takes label precedence even over
+// a planned end (decision 11).
+export const Deactivated = {
+  args: {
+    ...Active.args,
+    recurringExpense: { ...Active.args.recurringExpense, id: '5', deactivated_since: '2026-09-20' },
   },
 }
 

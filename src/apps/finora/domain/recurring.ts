@@ -8,6 +8,17 @@ export interface RecurringSchedule {
   startOn: string
   endedOn: string | null
   dayOfMonth: number
+  /** ADR-019: non-null while paused. Optional so existing callers (pre-ADR-019) still typecheck; absent means never deactivated. */
+  deactivatedSince?: string | null
+  /** ADR-019: the floor below which no date is ever considered, regardless of startOn. Never backdated by a reactivation. */
+  activeFrom?: string | null
+}
+
+// ADR-019: the first date the schedule will ever consider - startOn, unless
+// a reactivation moved the floor forward. Mirrors the job's own
+// `coalesce(active_from, start_on)`.
+function effectiveStart(schedule: RecurringSchedule): string {
+  return schedule.activeFrom ?? schedule.startOn
 }
 
 export interface RecurringTerm {
@@ -127,16 +138,20 @@ export function getNextTerm(terms: RecurringTerm[], currentTerm: RecurringTerm |
 
 // Every scheduled date from startOn through the earlier of asOf and endedOn,
 // in order. A date before startOn is not charged, and a date after endedOn
-// never is.
+// never is. ADR-019: empty while deactivated, and never before activeFrom
+// (a reactivation's floor), mirroring the job's own two rules.
 export function getScheduledDatesThrough(schedule: RecurringSchedule, asOf: string): string[] {
+  if (schedule.deactivatedSince) return []
+
+  const from = effectiveStart(schedule)
   const last = schedule.endedOn !== null && schedule.endedOn < asOf ? schedule.endedOn : asOf
   const dates: string[] = []
   const [lastYear, lastMonth] = parseYearMonth(last)
-  let [year, month] = parseYearMonth(schedule.startOn)
+  let [year, month] = parseYearMonth(from)
 
   while (year < lastYear || (year === lastYear && month <= lastMonth)) {
     const date = getScheduledDate(year, month, schedule.dayOfMonth)
-    if (date >= schedule.startOn && date <= last) dates.push(date)
+    if (date >= from && date <= last) dates.push(date)
     ;[year, month] = nextMonth(year, month)
   }
 
@@ -145,7 +160,8 @@ export function getScheduledDatesThrough(schedule: RecurringSchedule, asOf: stri
 
 // The next `count` scheduled dates from today on, each with the term in force
 // on that date. A display list only: the totals never include it (ADR-012,
-// decision 11).
+// decision 11). ADR-019: empty while deactivated, and never before
+// activeFrom (a reactivation's floor).
 export function getUpcomingCharges(
   schedule: RecurringSchedule,
   terms: RecurringTerm[],
@@ -153,9 +169,10 @@ export function getUpcomingCharges(
   count: number
 ): UpcomingCharge[] {
   const charges: UpcomingCharge[] = []
-  if (terms.length === 0) return charges
+  if (terms.length === 0 || schedule.deactivatedSince) return charges
 
-  const from = schedule.startOn > today ? schedule.startOn : today
+  const start = effectiveStart(schedule)
+  const from = start > today ? start : today
   let [year, month] = parseYearMonth(from)
 
   for (let scanned = 0; charges.length < count && scanned < MAX_SCAN_MONTHS; scanned++) {

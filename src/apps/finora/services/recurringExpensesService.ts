@@ -34,10 +34,15 @@ export interface RecurringExpenseWithDetails {
   user_id: string
   day_of_month: number
   start_on: string
+  /** Legacy: set only by the retired cancel_recurring_expense (ADR-019). No RPC writes it after ADR-019; kept for one release cycle. */
   ended_on: string | null
   /** ADR-016: a planned end, by date or by charge count (display label only). */
   planned_end_on: string | null
   planned_charges: number | null
+  /** ADR-019: non-null while paused, since this date. Reversible, unlike the retired ended_on. */
+  deactivated_since: string | null
+  /** ADR-019: the floor below which the job never posts again, set on reactivation. Never backdated. */
+  active_from: string | null
   last_error: string | null
   last_error_at: string | null
   terms: RecurringExpenseTermRow[]
@@ -74,12 +79,15 @@ export interface HouseholdLinkedRecurringExpenseRow {
 // deliberately limits to the caller's own templates, ADR-012 decision 10):
 // this relies on the same household select policy (ADR-007) to read the
 // partner's templates too. Informative only; the no-partner fallback
-// (ADR-014/015) already protects the money without this.
+// (ADR-014/015) already protects the money without this. ADR-019: also
+// excludes a deactivated template - it poses no near-term risk, since it
+// won't post again until reactivated.
 export function getActiveHouseholdLinkedRecurringExpenses() {
   return supabase
     .from('recurring_expenses')
     .select('id, ended_on, terms:recurring_expense_terms(effective_from, description, is_shared, is_household_expense)')
     .is('ended_on', null)
+    .is('deactivated_since', null)
 }
 
 export interface RecurringExpenseInput {
@@ -153,10 +161,26 @@ export function updateRecurringExpense(
   })
 }
 
-// Charges already due up to endedOn still post later; nothing after it does
-// (ADR-012, decision 7). No reactivation in v1.
-export function cancelRecurringExpense(id: string, endedOn: string, today: string) {
-  return supabase.rpc('cancel_recurring_expense', { p_id: id, p_ended_on: endedOn, p_today: today })
+// ADR-019: reversible pause, replacing the old cancel_recurring_expense.
+// Idempotent - a repeat call while already deactivated is a no-op, not an
+// error. Flushes the owner's own dates before today first, so a genuinely
+// overdue charge is never lost to the pause.
+export function deactivateRecurringExpense(id: string, today: string) {
+  return supabase.rpc('deactivate_recurring_expense', { p_id: id, p_today: today })
+}
+
+// ADR-019: idempotent - a repeat call while already active is a no-op.
+// Never backfills: the next charge is the first scheduled date after today,
+// regardless of how long the template was paused.
+export function activateRecurringExpense(id: string, today: string) {
+  return supabase.rpc('activate_recurring_expense', { p_id: id, p_today: today })
+}
+
+// ADR-019: deletes the template, its terms and its occurrences. Charges it
+// already posted are kept as ordinary transactions; only the "Recurring"
+// mark on them is lost, since that mark is read from the occurrence row.
+export function deleteRecurringExpense(id: string) {
+  return supabase.rpc('delete_recurring_expense', { p_id: id })
 }
 
 // ADR-016: sets or clears a planned end, independent of update_recurring_expense
