@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -577,77 +577,23 @@ export type Database = {
         }
         Returns: string
       }
-      create_recurring_expense:
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_day_of_month: number
-              p_description: string
-              p_payment_method: string
-              p_today: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_day_of_month: number
-              p_description: string
-              p_is_shared?: boolean
-              p_owner_share_amount?: number
-              p_payment_method: string
-              p_today: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_day_of_month: number
-              p_description: string
-              p_is_household_expense?: boolean
-              p_is_shared?: boolean
-              p_owner_share_amount?: number
-              p_payment_method: string
-              p_today: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_day_of_month: number
-              p_description: string
-              p_is_household_expense?: boolean
-              p_is_shared?: boolean
-              p_owner_share_amount?: number
-              p_payment_method: string
-              p_savings_goal_id?: string
-              p_today: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_day_of_month: number
-              p_description: string
-              p_is_household_expense?: boolean
-              p_is_shared?: boolean
-              p_owner_share_amount?: number
-              p_payment_method: string
-              p_planned_charges?: number
-              p_planned_end_on?: string
-              p_savings_goal_id?: string
-              p_today: string
-            }
-            Returns: string
-          }
+      create_recurring_expense: {
+        Args: {
+          p_amount: number
+          p_category_id: string
+          p_day_of_month: number
+          p_description: string
+          p_is_household_expense?: boolean
+          p_is_shared?: boolean
+          p_owner_share_amount?: number
+          p_payment_method: string
+          p_planned_charges?: number
+          p_planned_end_on?: string
+          p_savings_goal_id?: string
+          p_today: string
+        }
+        Returns: string
+      }
       current_household_id: { Args: never; Returns: string }
       decline_household_invite: { Args: never; Returns: undefined }
       get_household_partner: {
@@ -699,64 +645,22 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_recurring_expense:
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_description: string
-              p_effective_from: string
-              p_id: string
-              p_payment_method: string
-              p_today: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_description: string
-              p_effective_from: string
-              p_id: string
-              p_is_shared?: boolean
-              p_owner_share_amount?: number
-              p_payment_method: string
-              p_today: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_description: string
-              p_effective_from: string
-              p_id: string
-              p_is_household_expense?: boolean
-              p_is_shared?: boolean
-              p_owner_share_amount?: number
-              p_payment_method: string
-              p_today: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_category_id: string
-              p_description: string
-              p_effective_from: string
-              p_id: string
-              p_is_household_expense?: boolean
-              p_is_shared?: boolean
-              p_owner_share_amount?: number
-              p_payment_method: string
-              p_savings_goal_id?: string
-              p_today: string
-            }
-            Returns: string
-          }
+      update_recurring_expense: {
+        Args: {
+          p_amount: number
+          p_category_id: string
+          p_description: string
+          p_effective_from: string
+          p_id: string
+          p_is_household_expense?: boolean
+          p_is_shared?: boolean
+          p_owner_share_amount?: number
+          p_payment_method: string
+          p_savings_goal_id?: string
+          p_today: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -756,6 +756,14 @@ For simple sequential tasks, work directly.
 * **Doubt means it is stale.** If you are unsure how a table relates to another, whether a column exists, or what an RPC takes, and the file does not answer it, treat that as a sign the file is out of date. Do not guess and do not work around it: regenerate the types (or ask the user to apply the pending migration and regenerate them), then continue with the updated file.
 * **What it does not cover.** It has no CHECK constraints, triggers, RLS policies or function bodies. Those live in `supabase/migrations/` and the ADRs; when they may have drifted from the live database, ask for the `pg_constraint`, `pg_indexes` and `pg_trigger` results, as was done for ADR-006, rather than assuming.
 
+### RPC Function Signatures
+
+`CREATE OR REPLACE FUNCTION` only substitutes a function with the identical signature. Adding, removing, or reordering parameters creates a new overload alongside the old one instead of replacing it, which leaves several candidates for calls using the original argument list and can fail with "could not choose the best candidate function".
+
+* **When a migration changes a function's parameters, that same migration drops the previous signature** with `drop function if exists schema.fn(old, arg, types)`, before or after creating the new one — as done for `save_transaction` in ADR-006.
+* This applies to any function in `public` or `private`, not only RPCs called from the client.
+* `supabase/tests/function_signature_uniqueness.sql` fails if any function in `public` or `private` ends up with more than one live signature; add an explicit, documented exception there only for a genuinely intentional overload.
+
 ## Agent and Token Usage
 
 * Use the subagents already defined in `.claude/agents/` when the task matches their purpose, instead of solving everything with the main agent.
