@@ -151,12 +151,12 @@ begin
   where id in (v_legacy_past, v_legacy_future);
 
   if (select (deactivated_since, planned_end_on, ended_on) from public.recurring_expenses where id = v_legacy_past)
-     is distinct from (v_today - 5, null, null) then
+     is distinct from (v_today - 5, null::date, null::date) then
     raise exception 'test E: a legacy template with a past stop date did not convert to deactivated';
   end if;
 
   if (select (deactivated_since, planned_end_on, ended_on) from public.recurring_expenses where id = v_legacy_future)
-     is distinct from (null, v_today + 3, null) then
+     is distinct from (null::date, v_today + 3, null::date) then
     raise exception 'test E: a legacy template with a future stop date did not convert to a planned end';
   end if;
 
