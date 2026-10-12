@@ -332,8 +332,10 @@ export type Database = {
       }
       recurring_expenses: {
         Row: {
+          active_from: string | null
           created_at: string
           day_of_month: number
+          deactivated_since: string | null
           ended_on: string | null
           frequency: string
           id: string
@@ -345,8 +347,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_from?: string | null
           created_at?: string
           day_of_month: number
+          deactivated_since?: string | null
           ended_on?: string | null
           frequency?: string
           id?: string
@@ -358,8 +362,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_from?: string | null
           created_at?: string
           day_of_month?: number
+          deactivated_since?: string | null
           ended_on?: string | null
           frequency?: string
           id?: string
@@ -563,9 +569,9 @@ export type Database = {
     }
     Functions: {
       accept_household_invite: { Args: never; Returns: string }
-      cancel_recurring_expense: {
-        Args: { p_ended_on: string; p_id: string; p_today: string }
-        Returns: undefined
+      activate_recurring_expense: {
+        Args: { p_id: string; p_today: string }
+        Returns: string
       }
       create_goal: {
         Args: {
@@ -595,7 +601,12 @@ export type Database = {
         Returns: string
       }
       current_household_id: { Args: never; Returns: string }
+      deactivate_recurring_expense: {
+        Args: { p_id: string; p_today: string }
+        Returns: string
+      }
       decline_household_invite: { Args: never; Returns: undefined }
+      delete_recurring_expense: { Args: { p_id: string }; Returns: undefined }
       get_household_partner: {
         Args: never
         Returns: {

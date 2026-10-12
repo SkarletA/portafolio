@@ -80,11 +80,24 @@ exercises them.
    loses exactly that floor the moment it's cleared (see Alternatives).
 
    ```sql
-   constraint recurring_expenses_deactivated_since_after_start
-     check (deactivated_since is null or deactivated_since >= start_on),
    constraint recurring_expenses_active_from_after_start
      check (active_from is null or active_from >= start_on)
    ```
+
+   **Amendment on implementation:** `deactivated_since` initially carried
+   its own `check (deactivated_since is null or deactivated_since >=
+   start_on)`, by analogy with `active_from`'s. Running
+   `supabase/tests/recurring_expenses.sql` against the live project after
+   PR 2 shipped hit it immediately: `create_recurring_expense` never
+   backfills, so a brand-new template's `start_on` is always tomorrow, and
+   deactivating it the same day it's created (a legitimate flow - nothing
+   here says a user can't pause a template before its first charge) sets
+   `deactivated_since = today`, which is before `start_on`. Unlike
+   `active_from` - which the job's date loop actually compares against
+   (decision 4) - `deactivated_since` was never compared to anything; the
+   whole-template skip (decision 6) fires on it being non-null alone. The
+   constraint was dropped (`20261012130000_recurring_deactivate_drop_start_check.sql`)
+   rather than loosened, since it was never load-bearing.
 
 2. **Deactivating is idempotent, flushes, then pauses.**
    `deactivate_recurring_expense` first checks the current row: if
@@ -255,6 +268,10 @@ UI change — the smallest safe slice):**
   ADR-014/015/016 already did). Adds the per-template `deactivated_since is
   not null` skip and the per-date `active_from` floor.
 - `database.types.ts` regenerated (temp file, diffed, per CLAUDE.md).
+- `20261012130000_recurring_deactivate_drop_start_check.sql`: drops
+  `recurring_expenses_deactivated_since_after_start` (decision 1's
+  amendment note) — found by running `supabase/tests/recurring_expenses.sql`
+  against the live project after PR 2.
 
 **PR 2 — RPCs and service layer, still no visible UI change:**
 
