@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GoalCard } from './GoalCard'
 import { addGoalDeposit, deleteGoalDeposit, getGoalTransfers } from '@services/goalsService'
 import type { GoalWithProgress } from '@hooks/useGoals'
+import { getTodayLocalDate } from '@domain/date'
 
 vi.mock('../../../services/goalsService', () => ({
   addGoalDeposit: vi.fn(),
@@ -87,6 +88,42 @@ describe('GoalCard', () => {
 
     await waitFor(() => expect(onBalanceChanged).toHaveBeenCalledTimes(1))
     expect(addGoalDeposit).toHaveBeenCalledWith('1', 200, expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
+  })
+
+  it('defaults the deposit date to today and shows the add-funds hint', () => {
+    renderCard()
+
+    fireEvent.click(screen.getByTestId('goal-card-1-add-funds-button'))
+
+    expect(screen.getByText('goals:card.addFundsHint')).toBeInTheDocument()
+    expect(screen.getByTestId('goal-card-1-date-input')).toHaveValue(getTodayLocalDate())
+    expect(screen.getByTestId('goal-card-1-date-input')).toHaveAttribute('max', getTodayLocalDate())
+  })
+
+  it('adds funds dated in the past, for a deposit the user is backdating', async () => {
+    vi.mocked(addGoalDeposit).mockResolvedValue({ data: { id: 'd2' }, error: null } as never)
+    const { onBalanceChanged } = renderCard()
+
+    fireEvent.click(screen.getByTestId('goal-card-1-add-funds-button'))
+    fireEvent.change(screen.getByTestId('goal-card-1-amount-input'), { target: { value: '200' } })
+    fireEvent.change(screen.getByTestId('goal-card-1-date-input'), { target: { value: '2026-08-01' } })
+    fireEvent.click(screen.getByTestId('goal-card-1-confirm-button'))
+
+    await waitFor(() => expect(onBalanceChanged).toHaveBeenCalledTimes(1))
+    expect(addGoalDeposit).toHaveBeenCalledWith('1', 200, '2026-08-01')
+  })
+
+  it('rejects a future date typed past what the date picker offers', async () => {
+    renderCard()
+
+    fireEvent.click(screen.getByTestId('goal-card-1-add-funds-button'))
+    fireEvent.change(screen.getByTestId('goal-card-1-amount-input'), { target: { value: '200' } })
+    const futureDate = getTodayLocalDate(new Date(Date.now() + 1000 * 60 * 60 * 24 * 30))
+    fireEvent.change(screen.getByTestId('goal-card-1-date-input'), { target: { value: futureDate } })
+    fireEvent.click(screen.getByTestId('goal-card-1-confirm-button'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('goals:validation.depositDateNotFuture')
+    expect(addGoalDeposit).not.toHaveBeenCalled()
   })
 
   it('rounds the amount to 2 decimals when the field loses focus', () => {
@@ -178,7 +215,7 @@ describe('GoalCard', () => {
     fireEvent.click(screen.getByTestId('goal-card-1-activity-toggle-button'))
     fireEvent.click(await screen.findByTestId('goal-activity-transfer-d1-delete-icon'))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('goals:activity.depositAlreadyUsed')
+    expect(await screen.findByRole('alert')).toHaveTextContent('goals:activity.transferAlreadyUsed')
     expect(onBalanceChanged).not.toHaveBeenCalled()
   })
 })

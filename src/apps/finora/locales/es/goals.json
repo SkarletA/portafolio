@@ -11,9 +11,11 @@
     "targetDate": "Fecha límite: {{date}}",
     "remaining": "{{amount}} restante",
     "progressAriaLabel": "Progreso de {{name}}",
-    "addFunds": "Agregar fondos",
+    "addFunds": "Abonar",
+    "addFundsHint": "Sale de tu balance de este mes, en la fecha que elijas.",
     "amountPlaceholder": "Monto",
     "amountAriaLabel": "Monto para agregar a {{name}}",
+    "depositDateLabel": "Fecha del abono",
     "showActivity": "Ver movimientos",
     "hideActivity": "Ocultar movimientos",
     "editAriaLabel": "Editar {{name}}"
@@ -32,13 +34,15 @@
     "withdrawal": "Cubrió: {{description}}",
     "refund": "Reembolso: {{description}}",
     "deleteDepositAriaLabel": "Eliminar depósito de {{amount}} del {{date}}",
-    "depositAlreadyUsed": "Este depósito ya se usó en gastos cubiertos con ahorros, así que no se puede eliminar."
+    "deleteOpeningBalanceAriaLabel": "Eliminar saldo inicial de {{amount}} del {{date}}",
+    "transferAlreadyUsed": "Este movimiento ya se usó en gastos cubiertos con ahorros, así que no se puede eliminar."
   },
   "form": {
     "title": "Nueva meta",
     "name": "Nombre",
     "targetAmount": "Monto objetivo",
     "startingAmount": "Ya ahorrado",
+    "startingAmountHint": "No afecta el balance de ningún mes. Es dinero que ya tenías ahorrado antes de usar Finora.",
     "targetDate": "Fecha límite",
     "saveGoal": "Guardar meta",
     "editTitle": "Editar meta",
@@ -47,11 +51,22 @@
     "loadingGoal": "Cargando meta…",
     "loadError": "No pudimos cargar esta meta. Inténtalo de nuevo más tarde.",
     "notFound": "No encontramos esta meta.",
-    "belowSavedWarning": "Tu objetivo es menor que los {{saved}} que ya ahorraste, así que ya alcanzaste esta meta. Aún puedes guardar."
+    "belowSavedWarning": "Tu objetivo es menor que los {{saved}} que ya ahorraste, así que ya alcanzaste esta meta. Aún puedes guardar.",
+    "deleteGoal": "Eliminar meta",
+    "deleteGoalCheckError": "No pudimos comprobar si esta meta se puede eliminar. Inténtalo de nuevo.",
+    "deleteGoalConfirmTitle": "¿Eliminar esta meta?",
+    "deleteGoalConfirmBody": "Se eliminará {{count}} movimiento por {{amount}}, que dejará de contar en el balance de ese mes. Esta acción no se puede deshacer.",
+    "deleteGoalConfirmBody_other": "Se eliminarán {{count}} movimientos por un total de {{amount}}, que dejarán de contar en el balance de sus meses. Esta acción no se puede deshacer.",
+    "deleteGoalConfirmBodyEmpty": "Esta meta no tiene depósitos ni saldo inicial que afecten ningún balance. Esta acción no se puede deshacer.",
+    "deleteGoalBlockedTitle": "No se puede eliminar esta meta",
+    "deleteGoalBlockedExpenses": "Todavía cubre estos gastos: {{names}}. Edítalos o quítales el ahorro primero.",
+    "deleteGoalBlockedTemplates": "La usan estas plantillas recurrentes: {{names}}. Quítales la meta o bórralas para desbloquearla.",
+    "deleteGoalError": "No pudimos eliminar esta meta. Inténtalo de nuevo."
   },
   "validation": {
     "targetAmountGreaterThanZero": "Ingresa un monto objetivo mayor a 0",
     "alreadySavedNotNegative": "Ingresa 0 o más",
-    "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales"
+    "amountMaxDecimals": "Los montos pueden tener como máximo 2 decimales",
+    "depositDateNotFuture": "La fecha no puede ser futura"
   }
 }
