@@ -7,6 +7,7 @@ import {
   grossSpendByBucketKey,
   sumLedgerTotals,
 } from './analyticsService'
+import { getLocalCalendarDate } from '@domain/date'
 
 const tables: Record<string, unknown[]> = {}
 const filterCalls: [string, ...unknown[]][] = []
@@ -435,7 +436,10 @@ describe('getHouseholdTrendData (ADR-010/011 attribution)', () => {
   })
 
   it("splits a Case A transaction's amount into the right trend bucket for each member", async () => {
-    const todayIso = new Date().toISOString().slice(0, 10)
+    // getTrendWindow('day') builds its bucket list from getLocalCalendarDate()
+    // (the suite's Mexico City local date), not the machine's raw UTC date -
+    // the two disagree for part of the day, which is what made this flake.
+    const todayIso = getLocalCalendarDate().toISOString().slice(0, 10)
     tables.transactions = [
       {
         category_id: 'housing',
