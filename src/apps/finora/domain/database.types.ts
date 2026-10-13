@@ -606,6 +606,7 @@ export type Database = {
         Returns: string
       }
       decline_household_invite: { Args: never; Returns: undefined }
+      delete_goal: { Args: { p_id: string }; Returns: undefined }
       delete_recurring_expense: { Args: { p_id: string }; Returns: undefined }
       get_household_partner: {
         Args: never

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Last revised: 2026-10-13 (see Revision history).
 
 Amends [ADR-003](./003-installments-and-savings-funding.md): supersedes its
 consequence that "Covered by savings" is a declaration not linked to Goals, and
@@ -66,9 +66,17 @@ row - the Goal withdrawal - must stay consistent with them.
   - `opening_balance` records money saved before Finora tracked it (the
     existing `current_amount`, or AddGoal's starting amount). It never counts as
     any month's saving; a `deposit` does.
-  - RLS: users select their own rows, and may insert or delete only their own
-    `deposit` rows on their own goals. No client `update`. Withdrawals and
-    opening balances are written only by the RPCs below.
+  - RLS: users select their own rows, and may insert only their own `deposit`
+    rows on their own goals, never dated more than one day past the server's
+    clock (`date <= current_date + 1` - a UTC-vs-local buffer; the client
+    itself never offers a date later than its own local today). Users may
+    delete their own `deposit` and `opening_balance` rows. No client
+    `update`. Withdrawals and refunds are written only by the RPCs below; an
+    `opening_balance` is written once, by `create_goal`, and is never
+    re-insertable by the client - allowing that would let "already saved"
+    money be recorded at any time without ever lowering any month's balance.
+    Correcting a wrong opening balance means deleting it (above) or, if the
+    whole Goal was wrong, deleting the Goal itself (below).
 
 - **`goals.current_amount` stays a stored column, maintained only by a trigger
   on `goal_transfers`**, and a Goal can never end a transaction negative. The
@@ -88,6 +96,29 @@ row - the Goal withdrawal - must stay consistent with them.
     `CHECK` would abort the whole account deletion. Deferred to commit, the
     Goals are already gone and there is nothing to check.
 
+- **A Goal can be deleted by its owner, atomically, through `delete_goal`**,
+  once nothing still depends on it. The function locks the Goal row first,
+  in the same order `private.write_transaction` and the recurring posting
+  job already lock Goals in, so a concurrent withdrawal cannot slip in
+  between the check and the delete. It is then blocked, naming the rows in
+  the error's `detail`, when any `goal_transfers` row of kind `withdrawal`
+  or `refund` references it (`goal_has_linked_expenses`: an expense
+  currently covered by savings from it, or a refund that returned money to
+  it), or when any `recurring_expense_terms` row - in any status, active,
+  deactivated or completed - has `savings_goal_id` pointing to it
+  (`goal_has_linked_recurring_templates`, ADR-017). Neither check relies on
+  a raw foreign key violation: the function controls both explicitly, the
+  same way `save_transaction` already controls every check it can. When
+  neither blocks it, the function deletes every remaining `goal_transfers`
+  row for the Goal - necessarily only `deposit` and `opening_balance`,
+  since the checks above ruled out any other kind - and then the Goal
+  itself, in the same statement; `goal_transfers.goal_id`'s `NO ACTION`
+  foreign key (this ADR's original decision, unchanged) is exactly why the
+  transfers must be deleted first. Clients lose the `DELETE` privilege on
+  `goals` they still had (it was never revoked when `insert`/`update`
+  were): deletion, like every other write, now goes only through this
+  function.
+
 - **`transactions.funding_source` stays.** It remains the flag every spend
   query filters on (ADR-003). Which Goal paid is recorded only on the
   withdrawal. The invariant "`funding_source = 'savings'` if and only if exactly
@@ -97,11 +128,14 @@ row - the Goal withdrawal - must stay consistent with them.
   > Amended by ADR-006: the invariant also covers reimbursements linked to a savings-funded purchase, whose single transfer is a `refund`.
 
 - **Write paths.**
-  - *Deposit*: a single insert into `goal_transfers`, dated today (the
-    client's local date). Already atomic: the trigger updates the Goal in the
-    same statement.
-  - *Deleting a deposit*: a single delete; rejected with `goal_balance_negative`
-    if that money was already used.
+  - *Deposit*: a single insert into `goal_transfers`, dated by the user - any
+    local calendar day up to today, never in the future; defaults to today.
+    The trigger updates the Goal in the same statement.
+  - *Deleting a deposit or an opening balance*: a single delete; rejected
+    with `goal_balance_negative` if that money was already used. These are
+    the only `goal_transfers` kinds a client ever writes or deletes
+    directly.
+  - *Deleting a Goal*: `delete_goal`, described above.
   - *`create_goal` RPC*: the Goal and its optional opening balance together.
   - *`save_transaction` RPC*: the only way to create or update a transaction.
     In one database transaction it locks the transaction and every affected
@@ -157,6 +191,8 @@ row - the Goal withdrawal - must stay consistent with them.
   | Opening balance X | +X | - | - | - | - |
   | Deposit D | +D | - | unchanged | −D in its month | +D in its month |
   | Delete deposit D | −D; rejected if it would go below 0 | - | - | +D | −D |
+  | Delete opening balance O | −O; rejected if it would go below 0 | - | - | - | - |
+  | Delete a Goal (no linked expenses/templates) | Goal and all its remaining transfers (deposits/opening balance only) removed; blocked (`goal_has_linked_expenses` / `goal_has_linked_recurring_templates`) otherwise | - | - | retroactively, the Goal's past deposits stop lowering any month's balance | retroactively removed from every affected month, and from the household's combined view if shared |
   | Expense funded by income | - | ADR-003 | ADR-003 | ADR-003 | - |
   | Expense A covered by savings (single or financed), Goal G | −A in full on the purchase date; rejected if G has less than A | 0 | excluded | no net effect | - |
   | Edit that expense | old withdrawal credited back, then new one checked and debited; rejected if insufficient | ADR-003 | ADR-003 | - | - |
@@ -251,8 +287,12 @@ row - the Goal withdrawal - must stay consistent with them.
   deleting it, which restores the Goal automatically.
 
   > Amended by ADR-006: a reimbursement linked to the purchase refills the Goal; only an unlinked one still needs a manual deposit.
-- **Goals with transfers cannot be deleted** from the app (no Goal can be
-  deleted today).
+- **A Goal can now be deleted by its owner**, through `delete_goal`, once no
+  withdrawal, refund, or recurring template still names it. Deleting a Goal
+  with only deposits and/or an opening balance is a deliberate, retroactive
+  change to every past month that counted those deposits (no snapshots
+  exist, same as editing any transaction) - the client confirms how many
+  deposits and how much money that is before calling it.
 - **Money inputs round visibly to 2 decimals on blur.** The user always sees
   the amount that will be saved; the database never rounds on its own.
 - **Categories are global** (no owner column; readable by every authenticated
@@ -285,3 +325,17 @@ row - the Goal withdrawal - must stay consistent with them.
   - *Deposits lowering the savings rate*: saving would look like overspending.
   - *A second, goal-based savings rate*: competes with the existing rate and
     misses money kept without a logged deposit.
+
+## Revision history
+
+- 2026-10-13: Goals can now be deleted by their owner through `delete_goal`
+  when no `withdrawal`/`refund` transfer and no `recurring_expense_terms`
+  row (any status) names them, naming the blocking expenses or templates in
+  the error. A wrong `opening_balance` can now be deleted the same way a
+  deposit already could, but still never re-inserted by the client. A
+  deposit can now be dated any past local calendar day, not only today.
+  Supersedes "Goals with transfers cannot be deleted from the app (no Goal
+  can be deleted today)" and the `goal_transfers` insert policy's implicit
+  "dated today" rule. Also closes a pre-existing gap: `DELETE` on `goals`
+  had never been revoked from `anon`/`authenticated` when `INSERT`/`UPDATE`
+  were.
