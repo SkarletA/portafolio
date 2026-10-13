@@ -22,8 +22,10 @@
     "declineButton": "Rechazar invitación",
     "cancelInviteButton": "Cancelar invitación",
     "leaveButton": "Salir del hogar",
-    "leaveWarningTitle": "Esto afecta a gastos recurrentes activos",
+    "leaveWarningTitle": "Esto afecta a gastos compartidos del hogar",
     "leaveWarningText": "Estos gastos recurrentes están compartidos o etiquetados como del hogar. Al salir, su próximo cargo se publicará sin eso, y seguirá así hasta que se forme un hogar de nuevo.",
+    "leaveWarningSharedCount": "También dejarás de ver tu parte de {{count}} gasto compartido que registró tu pareja, y ya no aparecerá en tus propias cifras.",
+    "leaveWarningSharedCount_other": "También dejarás de ver tu parte de {{count}} gastos compartidos que registró tu pareja, y ya no aparecerán en tus propias cifras.",
     "inviteSuccess": "Invitación enviada."
   },
   "errors": {

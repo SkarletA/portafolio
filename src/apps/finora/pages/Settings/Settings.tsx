@@ -27,6 +27,7 @@ import { COUNTRIES, COUNTRY_CALLING_CODES, isValidName } from '@domain/profile'
 import type { Currency, Language } from '@domain/profile'
 import { getHouseholdPartnerDisplayName } from '@domain/household'
 import { getActiveHouseholdLinkedRecurringExpenses } from '@services/recurringExpensesService'
+import { getSharedExpenseCountFromPartner } from '@services/transactionsService'
 import { getCurrentTerm, type RecurringTerm } from '@domain/recurring'
 import { getTodayLocalDate } from '@domain/date'
 import s from './Settings.module.css'
@@ -115,6 +116,10 @@ export function Settings() {
 
   // ADR-018: informative only - checked right before leaving, never blocking.
   const [leaveHouseholdWarningNames, setLeaveHouseholdWarningNames] = useState<string[] | null>(null)
+  // How many one-off shared expenses the partner recorded (ADR-018 revision)
+  // - set together with leaveHouseholdWarningNames, whose null/non-null is
+  // still the only thing that gates the dialog open.
+  const [leaveHouseholdSharedCount, setLeaveHouseholdSharedCount] = useState(0)
   const [checkingLeaveHousehold, setCheckingLeaveHousehold] = useState(false)
 
   const canConfirmDelete =
@@ -373,13 +378,19 @@ export function Settings() {
   }, [declineHouseholdInvite])
 
   // ADR-018: checks for active shared/household-tagged templates (the
-  // caller's own or their partner's) before leaving. Purely informative -
-  // the no-partner fallback (ADR-014/015) already protects the money, so a
-  // failed check never blocks leaving; it only skips straight to it.
+  // caller's own or their partner's) before leaving, plus (revision) how
+  // many one-off shared expenses the partner recorded - once left, RLS stops
+  // letting the caller read those rows at all, losing their own share's
+  // figure for each one. Purely informative either way - the no-partner
+  // fallback (ADR-014/015) already protects the money, so a failed check
+  // never blocks leaving; it only skips straight to it.
   const handleLeaveHousehold = useCallback(async () => {
     setCheckingLeaveHousehold(true)
 
-    const { data, error } = await getActiveHouseholdLinkedRecurringExpenses()
+    const [{ data, error }, { data: sharedCount, error: sharedCountError }] = await Promise.all([
+      getActiveHouseholdLinkedRecurringExpenses(),
+      householdPartnerMember ? getSharedExpenseCountFromPartner(householdPartnerMember.user_id) : Promise.resolve({ data: 0, error: null }),
+    ])
 
     setCheckingLeaveHousehold(false)
 
@@ -403,17 +414,20 @@ export function Settings() {
           })
           .filter((name): name is string => name !== null)
       : []
+    const effectiveSharedCount = sharedCountError ? 0 : (sharedCount ?? 0)
 
-    if (affectedNames.length === 0) {
+    if (affectedNames.length === 0 && effectiveSharedCount === 0) {
       leaveHousehold()
       return
     }
 
+    setLeaveHouseholdSharedCount(effectiveSharedCount)
     setLeaveHouseholdWarningNames(affectedNames)
-  }, [leaveHousehold])
+  }, [leaveHousehold, householdPartnerMember])
 
   const handleCancelLeaveHouseholdWarning = useCallback(() => {
     setLeaveHouseholdWarningNames(null)
+    setLeaveHouseholdSharedCount(0)
   }, [])
 
   const handleConfirmLeaveHousehold = useCallback(async () => {
@@ -881,12 +895,21 @@ export function Settings() {
             <h3 id="leave-household-modal-title" className={s.modalTitle}>
               {t('household:settings.leaveWarningTitle')}
             </h3>
-            <p className={s.modalText}>{t('household:settings.leaveWarningText')}</p>
-            <ul className={s.modalList} data-testid="settings-leave-household-affected-list">
-              {leaveHouseholdWarningNames.map((name, index) => (
-                <li key={`${name}-${index}`}>{name}</li>
-              ))}
-            </ul>
+            {leaveHouseholdWarningNames.length > 0 && (
+              <>
+                <p className={s.modalText}>{t('household:settings.leaveWarningText')}</p>
+                <ul className={s.modalList} data-testid="settings-leave-household-affected-list">
+                  {leaveHouseholdWarningNames.map((name, index) => (
+                    <li key={`${name}-${index}`}>{name}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {leaveHouseholdSharedCount > 0 && (
+              <p className={s.modalText} data-testid="settings-leave-household-shared-count">
+                {t('household:settings.leaveWarningSharedCount', { count: leaveHouseholdSharedCount })}
+              </p>
+            )}
             <div className={s.modalActions}>
               <Button
                 id="settings-leave-household-cancel-button"

@@ -91,6 +91,10 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
   const isHouseholdActive = ownMember?.status === 'accepted' && partnerMember?.status === 'accepted'
   const isHouseholdView = viewMode === 'household' && isHouseholdActive
   const householdMemberKey = isHouseholdView ? `${ownMember.user_id},${partnerMember.user_id}` : ''
+  // The accepted partner, for the "mine" branch's own attribution
+  // (getOwnAttributedEntries) - distinct from householdMemberKey, which only
+  // widens for the combined view above. See docs/adr/009-shared-expense-split.md.
+  const minePartnerId = isHouseholdActive ? partnerMember.user_id : undefined
 
   const refetch = useCallback(async () => {
     setLoading(true)
@@ -106,11 +110,11 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
         { data: trendPoints, error: trendError },
         { data: comparisonData, error: comparisonError },
       ] = await Promise.all([
-        getMonthlyStats(current, undefined),
-        getExpensesByCategory(current, undefined),
+        getMonthlyStats(current, undefined, minePartnerId),
+        getExpensesByCategory(current, undefined, minePartnerId),
         getCategories(),
-        getTrendData(periodType, undefined),
-        getPeriodComparison(periodType, undefined),
+        getTrendData(periodType, undefined, minePartnerId),
+        getPeriodComparison(periodType, undefined, minePartnerId),
       ])
 
       if (!mountedRef.current) return
@@ -201,7 +205,7 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
     setComparison(null)
 
     setLoading(false)
-  }, [periodType, householdMemberKey])
+  }, [periodType, householdMemberKey, minePartnerId])
 
   useEffect(() => {
     mountedRef.current = true
@@ -238,7 +242,7 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
       const bucketRange = getBucketRange(selectedBucket, periodType)
 
       if (!householdMemberKey) {
-        const { data: expensesData, error: expensesError } = await getExpensesByCategory(bucketRange, undefined)
+        const { data: expensesData, error: expensesError } = await getExpensesByCategory(bucketRange, undefined, minePartnerId)
 
         if (cancelled) return
 
@@ -276,7 +280,7 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
     return () => {
       cancelled = true
     }
-  }, [selectedBucket, periodType, householdMemberKey, categories])
+  }, [selectedBucket, periodType, householdMemberKey, minePartnerId, categories])
 
   return {
     stats,

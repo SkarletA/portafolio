@@ -34,10 +34,14 @@ vi.mock('./supabaseClient', () => ({
   },
 }))
 
+// user_id: 'u1' matches the mocked auth user above - getOwnAttributedAmount
+// (ADR-009 revision) needs it on every row to tell the caller's own rows
+// from a partner's, which real RLS-filtered rows always carry.
 const expense = (amount: number, funding_source: 'income' | 'savings' = 'income') => ({
   type: 'expense' as const,
   funding_source,
   amount,
+  user_id: 'u1',
 })
 
 describe('sumLedgerTotals', () => {
@@ -104,7 +108,7 @@ describe('getMonthlyStats', () => {
     tables.transactions = [
       { ...expense(0.1), date: '2026-09-02', installment_months: 1 },
       { ...expense(0.2), date: '2026-09-03', installment_months: 1 },
-      { type: 'income', funding_source: 'income', amount: 1, date: '2026-09-04', installment_months: 1 },
+      { type: 'income', funding_source: 'income', amount: 1, date: '2026-09-04', installment_months: 1, user_id: 'u1' },
     ]
     tables.goal_transfers = [{ amount: 0.1 }, { amount: 0.2 }]
 
@@ -121,9 +125,9 @@ describe('getMonthlyStats', () => {
   // funding_source 'income', and they net the savings rate exactly as before.
   it('nets every existing reimbursement against the savings rate exactly as before ADR-006', async () => {
     tables.transactions = [
-      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1 },
+      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1, user_id: 'u1' },
       { ...expense(400), date: '2026-09-02', installment_months: 1 },
-      { type: 'reimbursement', funding_source: 'income', amount: 100, date: '2026-09-05', installment_months: 1 },
+      { type: 'reimbursement', funding_source: 'income', amount: 100, date: '2026-09-05', installment_months: 1, user_id: 'u1' },
     ]
     tables.goal_transfers = []
 
@@ -136,10 +140,10 @@ describe('getMonthlyStats', () => {
 
   it('does not raise the savings rate or income for a reimbursement returned to a Goal', async () => {
     tables.transactions = [
-      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1 },
+      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1, user_id: 'u1' },
       { ...expense(400), date: '2026-09-02', installment_months: 1 },
       { ...expense(200, 'savings'), date: '2026-09-03', installment_months: 1 },
-      { type: 'reimbursement', funding_source: 'savings', amount: 200, date: '2026-09-05', installment_months: 1 },
+      { type: 'reimbursement', funding_source: 'savings', amount: 200, date: '2026-09-05', installment_months: 1, user_id: 'u1' },
     ]
     tables.goal_transfers = []
 
@@ -166,7 +170,16 @@ describe('getMonthlyStats', () => {
 
     await getMonthlyStats(range)
 
-    expect(filterCalls).toContainEqual(['in', 'user_id', ['u1']])
+    expect(filterCalls).toContainEqual(['eq', 'user_id', 'u1'])
+  })
+
+  it('widens to the caller and their partner (or-ed, partner restricted to Case A) when a partnerId is given', async () => {
+    tables.transactions = []
+    tables.goal_transfers = []
+
+    await getMonthlyStats(range, undefined, 'u2')
+
+    expect(filterCalls).toContainEqual(['or', 'user_id.eq.u1,and(user_id.eq.u2,is_shared.eq.true)'])
   })
 
   it('filters to every given household member instead (ADR-011)', async () => {
@@ -176,6 +189,94 @@ describe('getMonthlyStats', () => {
     await getMonthlyStats(range, ['u1', 'u2'])
 
     expect(filterCalls).toContainEqual(['in', 'user_id', ['u1', 'u2']])
+  })
+
+  // ADR-009 revision: the individual ("Mine") view counts each person's own
+  // share, not the full amount, for a Case A shared expense - whether the
+  // caller recorded it or their partner did.
+  describe('Mine attribution for a Case A shared expense (ADR-009 revision)', () => {
+    it("counts only the caller's own share, not the full amount, for a shared expense they recorded", async () => {
+      tables.transactions = [
+        {
+          type: 'expense',
+          funding_source: 'income',
+          amount: 15200,
+          date: '2026-09-05',
+          installment_months: 1,
+          user_id: 'u1',
+          is_shared: true,
+          is_household_expense: false,
+          shares: [
+            { user_id: 'u1', amount: 5200 },
+            { user_id: 'u2', amount: 10000 },
+          ],
+        },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range, undefined, 'u2')
+
+      expect(data?.totalSpent).toBe(5200)
+    })
+
+    it("counts the caller's share of a shared expense their partner recorded, not 0", async () => {
+      tables.transactions = [
+        {
+          type: 'expense',
+          funding_source: 'income',
+          amount: 15200,
+          date: '2026-09-05',
+          installment_months: 1,
+          user_id: 'u2',
+          is_shared: true,
+          is_household_expense: false,
+          shares: [
+            { user_id: 'u1', amount: 5200 },
+            { user_id: 'u2', amount: 10000 },
+          ],
+        },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range, undefined, 'u2')
+
+      expect(data?.totalSpent).toBe(5200)
+    })
+
+    it('leaves an unshared expense of its own at the full amount, unaffected by this revision', async () => {
+      tables.transactions = [
+        { ...expense(400), date: '2026-09-02', installment_months: 1, user_id: 'u1', is_shared: false, is_household_expense: false, shares: [] },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range, undefined, 'u2')
+
+      expect(data?.totalSpent).toBe(400)
+    })
+
+    it('without a partnerId (no accepted household), still attributes a historically-shared row of its own', async () => {
+      tables.transactions = [
+        {
+          type: 'expense',
+          funding_source: 'income',
+          amount: 15200,
+          date: '2026-09-05',
+          installment_months: 1,
+          user_id: 'u1',
+          is_shared: true,
+          is_household_expense: false,
+          shares: [
+            { user_id: 'u1', amount: 5200 },
+            { user_id: 'u2', amount: 10000 },
+          ],
+        },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range)
+
+      expect(data?.totalSpent).toBe(5200)
+    })
   })
 })
 

@@ -129,7 +129,7 @@
     "refundGoalNotice": "Esta compra se pagó con la meta {{goal}}. Los {{amount}} reembolsados volverán a ella y no aumentarán el límite del presupuesto ni la tasa de ahorro.",
     "sharedExpense": "Gasto del hogar",
     "shareExpense": "Dividir el monto con {{partner}}",
-    "sharedHint": "El monto completo sigue contando contra tu propio presupuesto. Esto solo registra quién puso cuánto.",
+    "sharedHint": "Tu propia parte cuenta contra tu propio presupuesto; la parte de tu pareja cuenta contra el suyo.",
     "sharedDisabledHint": "Todavía no se puede compartir un gasto a meses o cubierto con ahorros.",
     "yourSharePart": "Tu parte",
     "partnerSharePart": "Parte de {{partner}}: {{amount}}",

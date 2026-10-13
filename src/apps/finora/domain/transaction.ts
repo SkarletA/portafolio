@@ -113,6 +113,30 @@ export function getHouseholdAttributedAmount(
 }
 
 /**
+ * This transaction's amount belonging to `memberId` for their own view
+ * (Mine, an individual budget, Dashboard, the trend/comparison breakdowns):
+ * their own share for a split (Case A, regardless of who recorded it), or
+ * the full amount for an expense of their own that is neither split nor
+ * tagged - unlike getHouseholdAttributedAmount, built for a household
+ * budget's *tagged-only* rollup, where an ordinary personal expense
+ * contributes 0. A member's own view includes their ordinary spend too, so
+ * it can't reuse that 0. For any single transaction, this member's amount
+ * plus the other member's is always the transaction's own amount - a split
+ * sums to it by construction (ADR-009's `shares_do_not_match_amount` check),
+ * and an unshared or Case B expense belongs to exactly one of the two. See
+ * docs/adr/009-shared-expense-split.md.
+ */
+export function getOwnAttributedAmount(
+  transaction: Pick<Transaction, 'user_id' | 'amount' | 'is_shared' | 'is_household_expense'> & {
+    shares: Pick<TransactionShare, 'user_id' | 'amount'>[]
+  },
+  memberId: string
+): number {
+  if (transaction.is_shared) return getHouseholdAttributedAmount(transaction, memberId)
+  return transaction.user_id === memberId ? transaction.amount : 0
+}
+
+/**
  * Every distinct year-month (`YYYY-MM`) with at least one transaction,
  * newest first - the Transactions page's month filter options, so it only
  * ever offers a month that actually has something to show.

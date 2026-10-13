@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { getAvailableMonths, getHouseholdAttributedAmount, getPrimaryPaymentMethod } from './transaction'
+import { getAvailableMonths, getHouseholdAttributedAmount, getOwnAttributedAmount, getPrimaryPaymentMethod } from './transaction'
+import { addMoney } from './money'
 
 describe('getPrimaryPaymentMethod', () => {
   it('returns an empty string when there are no payments', () => {
@@ -78,6 +79,100 @@ describe('getHouseholdAttributedAmount', () => {
     }
 
     expect(getHouseholdAttributedAmount(transaction, 'partner')).toBe(0)
+  })
+})
+
+describe('getOwnAttributedAmount', () => {
+  const baseTransaction = {
+    user_id: 'owner',
+    amount: 100,
+    is_shared: false,
+    is_household_expense: false,
+    shares: [],
+  }
+
+  it("counts an unshared expense in full for its owner - unlike getHouseholdAttributedAmount's tagged-only 0", () => {
+    expect(getOwnAttributedAmount(baseTransaction, 'owner')).toBe(100)
+  })
+
+  it('counts nothing from an unshared expense for the other member', () => {
+    expect(getOwnAttributedAmount(baseTransaction, 'partner')).toBe(0)
+  })
+
+  it('counts a Case A share, not the full amount, for whoever recorded it', () => {
+    const transaction = {
+      ...baseTransaction,
+      is_shared: true,
+      amount: 250,
+      shares: [
+        { user_id: 'owner', amount: 150 },
+        { user_id: 'partner', amount: 100 },
+      ],
+    }
+
+    expect(getOwnAttributedAmount(transaction, 'owner')).toBe(150)
+  })
+
+  it("counts a Case A share for the member who didn't record it, reading the row they never wrote", () => {
+    const transaction = {
+      ...baseTransaction,
+      user_id: 'owner',
+      is_shared: true,
+      amount: 250,
+      shares: [
+        { user_id: 'owner', amount: 150 },
+        { user_id: 'partner', amount: 100 },
+      ],
+    }
+
+    expect(getOwnAttributedAmount(transaction, 'partner')).toBe(100)
+  })
+
+  it('counts a Case B household-tagged expense in full for its owner, 0 for the other member - unaffected by this revision', () => {
+    const transaction = { ...baseTransaction, is_household_expense: true, amount: 250 }
+
+    expect(getOwnAttributedAmount(transaction, 'owner')).toBe(250)
+    expect(getOwnAttributedAmount(transaction, 'partner')).toBe(0)
+  })
+
+  // The individual-view invariant this ADR-009 revision relies on: summing
+  // both household members' own-attributed amount for any single
+  // transaction always recovers that transaction's own amount, whatever its
+  // case - so summing every transaction's own-attributed amount over a
+  // range, for both members, always recovers the household-combined
+  // (full-visibility) total for that same range (ADR-011, unchanged).
+  describe('invariant: both members\' own-attributed amount sums to the transaction\'s own amount', () => {
+    const assertInvariantHolds = (transaction: {
+      user_id: string
+      amount: number
+      is_shared: boolean
+      is_household_expense: boolean
+      shares: { user_id: string; amount: number }[]
+    }) => {
+      expect(addMoney(getOwnAttributedAmount(transaction, 'owner'), getOwnAttributedAmount(transaction, 'partner'))).toBe(
+        transaction.amount
+      )
+    }
+
+    it('holds for an unshared personal expense', () => {
+      assertInvariantHolds(baseTransaction)
+    })
+
+    it('holds for a Case A split, cents-exact', () => {
+      assertInvariantHolds({
+        ...baseTransaction,
+        is_shared: true,
+        amount: 152.37,
+        shares: [
+          { user_id: 'owner', amount: 52.37 },
+          { user_id: 'partner', amount: 100 },
+        ],
+      })
+    })
+
+    it('holds for a Case B household-tagged expense', () => {
+      assertInvariantHolds({ ...baseTransaction, is_household_expense: true, amount: 250 })
+    })
   })
 })
 

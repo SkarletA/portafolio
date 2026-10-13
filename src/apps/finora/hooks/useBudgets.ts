@@ -44,6 +44,13 @@ export function useBudgets() {
     ownMember?.status === 'accepted' && partnerMember?.status === 'accepted'
       ? `${ownMember.user_id},${partnerMember.user_id}`
       : ''
+  // An individual budget's own spend (getExpensesByCategory below, with no
+  // householdMemberIds) still needs the partner's id to attribute a Case A
+  // share correctly - distinct from householdMemberIds, which is only for a
+  // household budget's combined "two entries". See
+  // docs/adr/009-shared-expense-split.md.
+  const minePartnerId =
+    ownMember?.status === 'accepted' && partnerMember?.status === 'accepted' ? partnerMember.user_id : undefined
 
   const refetch = useCallback(async () => {
     setLoading(true)
@@ -59,7 +66,7 @@ export function useBudgets() {
       { data: householdData, error: householdError },
     ] = await Promise.all([
       getBudgets(householdMemberIds),
-      getExpensesByCategory(monthRange),
+      getExpensesByCategory(monthRange, undefined, minePartnerId),
       getCategories(),
       householdMemberIds
         ? getHouseholdContributionsByCategory(monthRange, { ownId: householdMemberIds[0], partnerId: householdMemberIds[1] })
@@ -130,7 +137,7 @@ export function useBudgets() {
     }
 
     setLoading(false)
-  }, [householdMemberKey])
+  }, [householdMemberKey, minePartnerId])
 
   useEffect(() => {
     mountedRef.current = true

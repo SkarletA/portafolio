@@ -182,5 +182,11 @@ pattern instead of inventing one.
   partner's full row set. Case B (ADR-010) is unaffected: its 100% still
   belongs to whoever recorded it, by design. A household dissolving still
   leaves the non-recording partner permanently unable to read their own
-  historical share (ADR-007's visibility, unchanged here); that gap is
-  tracked for a separate, future ADR, not resolved by this revision.
+  historical share (ADR-007's visibility, unchanged here); a leave-household
+  warning now counts this (ADR-018's own revision), but the gap itself is
+  tracked for a separate, future ADR, not resolved by this revision. That
+  future ADR cannot stop at letting a member read their own
+  `transaction_shares` row past dissolution: attributing it to the right
+  month and category - what every consumer above actually needs - also
+  needs the parent transaction's `date` and `category_id`, not the share
+  amount alone, so its RLS widening (or equivalent) has to expose both.

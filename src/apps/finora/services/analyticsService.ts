@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { getExpensesByCategory, getHouseholdAttributedEntries } from './transactionsService'
+import { getExpensesByCategory, getHouseholdAttributedEntries, getOwnAttributedEntries } from './transactionsService'
 import { getCategories } from './categoriesService'
 import { catchServiceErrors } from './catchServiceErrors'
 import {
@@ -78,26 +78,44 @@ export function sumLedgerTotals(
 // householdMemberIds: when given (both members accepted - ADR-007), combines
 // every member's transactions and goal deposits instead of only the caller's
 // own - ADR-011's "full visibility, no tagging" for Analytics/Dashboard.
-// Omitted or empty, behaves exactly as before.
-export function getMonthlyStats(range: DateRange, householdMemberIds?: string[]) {
-  return catchServiceErrors(() => loadMonthlyStats(range, householdMemberIds))
+// Omitted or empty, the caller's own entries are each already attributed
+// (see getOwnAttributedEntries) rather than taken at their raw amount - see
+// docs/adr/009-shared-expense-split.md.
+//
+// partnerId: the caller's current accepted household partner, when calling
+// for their own ("mine") view - forwarded to getOwnAttributedEntries.
+// Ignored when householdMemberIds widens to the combined view.
+export function getMonthlyStats(range: DateRange, householdMemberIds?: string[], partnerId?: string) {
+  return catchServiceErrors(() => loadMonthlyStats(range, householdMemberIds, partnerId))
 }
 
-async function loadMonthlyStats(range: DateRange, householdMemberIds?: string[]) {
+// The household-combined, full-visibility fetch loadMonthlyStats falls back
+// to when householdMemberIds widens to both members - unchanged from before
+// this PR: every row of both members, tagged or not, at its raw amount.
+async function loadCombinedStatsEntries(range: DateRange, userIds: string[]) {
+  const { data: rows, error } = await supabase
+    .from('transactions')
+    .select('type, amount, date, installment_months, funding_source')
+    .in('user_id', userIds)
+    .lte('date', range.end)
+    .gte('last_installment_date', range.start)
+
+  if (error) return { data: null, error }
+
+  return { data: expandLedgerRowsInRange(rows ?? [], range), error: null }
+}
+
+async function loadMonthlyStats(range: DateRange, householdMemberIds?: string[], partnerId?: string) {
   const { data: userData, error: userError } = await supabase.auth.getUser()
 
   if (userError) return { data: null, error: userError }
   if (!userData.user) return { data: null, error: new Error('Not authenticated') }
 
-  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+  const isHouseholdCombined = !!householdMemberIds && householdMemberIds.length > 0
+  const userIds = isHouseholdCombined ? householdMemberIds : [userData.user.id]
 
-  const [{ data, error }, { data: deposits, error: depositsError }] = await Promise.all([
-    supabase
-      .from('transactions')
-      .select('type, amount, date, installment_months, funding_source')
-      .in('user_id', userIds)
-      .lte('date', range.end)
-      .gte('last_installment_date', range.start),
+  const [{ data: entriesData, error }, { data: deposits, error: depositsError }] = await Promise.all([
+    isHouseholdCombined ? loadCombinedStatsEntries(range, userIds) : getOwnAttributedEntries(range, { partnerId }),
     // Deposits are money kept, not spent: they lower the spendable balance
     // but never the savings rate. See docs/adr/004-goal-transfers.md.
     supabase
@@ -120,7 +138,7 @@ async function loadMonthlyStats(range: DateRange, householdMemberIds?: string[])
   // installment per month, and expenses covered by savings go to
   // totalCoveredBySavings instead of totalSpent - see
   // docs/adr/003-installments-and-savings-funding.md.
-  const totals = sumLedgerTotals(expandLedgerRowsInRange(data ?? [], range))
+  const totals = sumLedgerTotals(entriesData ?? [])
 
   const netSpentForSavings = subtractMoney(totals.totalSpent, totals.totalReimbursed)
 
@@ -172,13 +190,13 @@ export function buildCategorySpending(totals: Record<string, number>, categories
     .sort((a, b) => b.amount - a.amount)
 }
 
-export function getSpendingByCategory(range: DateRange, householdMemberIds?: string[]) {
-  return catchServiceErrors(() => loadSpendingByCategory(range, householdMemberIds))
+export function getSpendingByCategory(range: DateRange, householdMemberIds?: string[], partnerId?: string) {
+  return catchServiceErrors(() => loadSpendingByCategory(range, householdMemberIds, partnerId))
 }
 
-async function loadSpendingByCategory(range: DateRange, householdMemberIds?: string[]) {
+async function loadSpendingByCategory(range: DateRange, householdMemberIds?: string[], partnerId?: string) {
   const [{ data: expensesByCategory, error: expensesError }, { data: categoriesData, error: categoriesError }] =
-    await Promise.all([getExpensesByCategory(range, householdMemberIds), getCategories()])
+    await Promise.all([getExpensesByCategory(range, householdMemberIds, partnerId), getCategories()])
 
   const error = expensesError || categoriesError
   if (error) return { data: null, error }
@@ -245,26 +263,27 @@ export type LedgerRow = {
 
 // Rows already expanded into the installments that fall in the range, so a
 // financed purchase lands one installment per bucket on its own date.
-// householdMemberIds widens to every member's rows (ADR-011), same as above.
-async function fetchExpenseAndReimbursementRows(range: DateRange, householdMemberIds?: string[]) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
+// householdMemberIds widens to every member's rows, full visibility (ADR-011),
+// unchanged. Omitted or empty, the caller's own entries are each already
+// attributed (see getOwnAttributedEntries) - see docs/adr/009-shared-expense-split.md.
+// partnerId: the caller's current accepted household partner, for their own
+// ("mine") view - ignored when householdMemberIds widens to the combined view.
+async function fetchExpenseAndReimbursementRows(range: DateRange, householdMemberIds?: string[], partnerId?: string) {
+  if (householdMemberIds && householdMemberIds.length > 0) {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('date, amount, type, installment_months, funding_source')
+      .in('user_id', householdMemberIds)
+      .in('type', ['expense', 'reimbursement'])
+      .lte('date', range.end)
+      .gte('last_installment_date', range.start)
 
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
+    if (error) return { data: null, error }
 
-  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
+    return { data: expandLedgerRowsInRange((data ?? []) as LedgerRow[], range), error: null }
+  }
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('date, amount, type, installment_months, funding_source')
-    .in('user_id', userIds)
-    .in('type', ['expense', 'reimbursement'])
-    .lte('date', range.end)
-    .gte('last_installment_date', range.start)
-
-  if (error) return { data: null, error }
-
-  return { data: expandLedgerRowsInRange((data ?? []) as LedgerRow[], range), error: null }
+  return getOwnAttributedEntries(range, { partnerId })
 }
 
 // Gross spend per bucket (expense amounts only, never floored - a sum of
@@ -290,12 +309,12 @@ export function grossSpendByBucketKey(
   }, {})
 }
 
-export function getDailySpending(range: DateRange, householdMemberIds?: string[]) {
-  return catchServiceErrors(() => loadDailySpending(range, householdMemberIds))
+export function getDailySpending(range: DateRange, householdMemberIds?: string[], partnerId?: string) {
+  return catchServiceErrors(() => loadDailySpending(range, householdMemberIds, partnerId))
 }
 
-async function loadDailySpending(range: DateRange, householdMemberIds?: string[]) {
-  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds)
+async function loadDailySpending(range: DateRange, householdMemberIds?: string[], partnerId?: string) {
+  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds, partnerId)
 
   if (error) return { data: null, error }
 
@@ -378,14 +397,14 @@ function getTrendWindow(periodType: PeriodType): TrendWindow {
   }
 }
 
-export function getTrendData(periodType: PeriodType, householdMemberIds?: string[]) {
-  return catchServiceErrors(() => loadTrendData(periodType, householdMemberIds))
+export function getTrendData(periodType: PeriodType, householdMemberIds?: string[], partnerId?: string) {
+  return catchServiceErrors(() => loadTrendData(periodType, householdMemberIds, partnerId))
 }
 
-async function loadTrendData(periodType: PeriodType, householdMemberIds?: string[]) {
+async function loadTrendData(periodType: PeriodType, householdMemberIds?: string[], partnerId?: string) {
   const { range, keyFn, bucketDates } = getTrendWindow(periodType)
 
-  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds)
+  const { data, error } = await fetchExpenseAndReimbursementRows(range, householdMemberIds, partnerId)
   if (error) return { data: null, error }
 
   const grossByKey = grossSpendByBucketKey(data ?? [], keyFn)
@@ -491,7 +510,7 @@ export function buildCategoryComparison(
   return categories
 }
 
-export async function getPeriodComparison(periodType: PeriodType, householdMemberIds?: string[]) {
+export async function getPeriodComparison(periodType: PeriodType, householdMemberIds?: string[], partnerId?: string) {
   const { current, previous } = getPeriodRange(periodType, new Date())
 
   const [
@@ -500,10 +519,10 @@ export async function getPeriodComparison(periodType: PeriodType, householdMembe
     { data: currentCategories, error: currentCategoriesError },
     { data: previousCategories, error: previousCategoriesError },
   ] = await Promise.all([
-    getMonthlyStats(current, householdMemberIds),
-    getMonthlyStats(previous, householdMemberIds),
-    getSpendingByCategory(current, householdMemberIds),
-    getSpendingByCategory(previous, householdMemberIds),
+    getMonthlyStats(current, householdMemberIds, partnerId),
+    getMonthlyStats(previous, householdMemberIds, partnerId),
+    getSpendingByCategory(current, householdMemberIds, partnerId),
+    getSpendingByCategory(previous, householdMemberIds, partnerId),
   ])
 
   const error = currentStatsError || previousStatsError || currentCategoriesError || previousCategoriesError
