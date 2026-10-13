@@ -12,8 +12,10 @@
     "remaining": "{{amount}} remaining",
     "progressAriaLabel": "{{name}} progress",
     "addFunds": "Add funds",
+    "addFundsHint": "Comes out of this month's balance, on the date you choose.",
     "amountPlaceholder": "Amount",
     "amountAriaLabel": "Amount to add to {{name}}",
+    "depositDateLabel": "Deposit date",
     "showActivity": "Show activity",
     "hideActivity": "Hide activity",
     "editAriaLabel": "Edit {{name}}"
@@ -32,13 +34,15 @@
     "withdrawal": "Covered: {{description}}",
     "refund": "Reimbursement: {{description}}",
     "deleteDepositAriaLabel": "Delete deposit of {{amount}} on {{date}}",
-    "depositAlreadyUsed": "This deposit was already used by expenses covered by savings, so it can't be deleted."
+    "deleteOpeningBalanceAriaLabel": "Delete opening balance of {{amount}} on {{date}}",
+    "transferAlreadyUsed": "This entry was already used by expenses covered by savings, so it can't be deleted."
   },
   "form": {
     "title": "New goal",
     "name": "Name",
     "targetAmount": "Target amount",
     "startingAmount": "Already saved",
+    "startingAmountHint": "Doesn't affect any month's balance. It's money you already had saved before using Finora.",
     "targetDate": "Target date",
     "saveGoal": "Save goal",
     "editTitle": "Edit goal",
@@ -47,11 +51,22 @@
     "loadingGoal": "Loading goal…",
     "loadError": "We couldn't load this goal. Please try again later.",
     "notFound": "We couldn't find this goal.",
-    "belowSavedWarning": "Your target is below the {{saved}} you've already saved, so you've already reached this goal. You can still save."
+    "belowSavedWarning": "Your target is below the {{saved}} you've already saved, so you've already reached this goal. You can still save.",
+    "deleteGoal": "Delete goal",
+    "deleteGoalCheckError": "We couldn't check whether this goal can be deleted. Please try again.",
+    "deleteGoalConfirmTitle": "Delete this goal?",
+    "deleteGoalConfirmBody": "{{count}} entry totaling {{amount}} will be removed and will stop counting in that month's balance. This cannot be undone.",
+    "deleteGoalConfirmBody_other": "{{count}} entries totaling {{amount}} will be removed and will stop counting in your months' balance. This cannot be undone.",
+    "deleteGoalConfirmBodyEmpty": "This goal has no deposits or opening balance affecting any balance. This cannot be undone.",
+    "deleteGoalBlockedTitle": "This goal can't be deleted",
+    "deleteGoalBlockedExpenses": "It still covers these expenses: {{names}}. Edit them or remove the savings funding first.",
+    "deleteGoalBlockedTemplates": "These recurring templates use it: {{names}}. Unlink or delete them to unblock it.",
+    "deleteGoalError": "We couldn't delete this goal. Please try again."
   },
   "validation": {
     "targetAmountGreaterThanZero": "Enter a target amount greater than 0",
     "alreadySavedNotNegative": "Enter 0 or more",
-    "amountMaxDecimals": "Amounts can have at most 2 decimals"
+    "amountMaxDecimals": "Amounts can have at most 2 decimals",
+    "depositDateNotFuture": "The date can't be in the future"
   }
 }

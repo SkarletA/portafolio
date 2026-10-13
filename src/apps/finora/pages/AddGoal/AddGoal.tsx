@@ -3,14 +3,21 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@atoms/Button/Button'
 import { BackLink } from '@molecules/BackLink/BackLink'
-import { createGoal, updateGoal, type EditableGoalInput, type NewGoalInput } from '@services/goalsService'
+import {
+  createGoal,
+  deleteGoal,
+  getGoalDeletionImpact,
+  updateGoal,
+  type EditableGoalInput,
+  type NewGoalInput,
+} from '@services/goalsService'
 import { parseMoneyMovementError } from '@services/moneyMovementErrors'
 import { useGoals } from '@hooks/useGoals'
 import { useCurrency } from '@context/CurrencyContext'
 import { useLanguage } from '@context/LanguageContext'
 import { formatCurrency, getLocaleForLanguage } from '@domain/currency'
 import { getTodayLocalDate } from '@domain/date'
-import type { Goal } from '@domain/goal'
+import type { Goal, GoalDeletionImpact } from '@domain/goal'
 import { roundMoneyInput } from '@domain/money'
 import s from './AddGoal.module.css'
 
@@ -81,6 +88,11 @@ function GoalForm({ mode, goal }: GoalFormProps) {
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [deletionImpact, setDeletionImpact] = useState<GoalDeletionImpact | null>(null)
+  const [checkingDeletion, setCheckingDeletion] = useState(false)
+  const [deletionCheckError, setDeletionCheckError] = useState<string | null>(null)
+  const [deletingGoal, setDeletingGoal] = useState(false)
+  const [deleteModalError, setDeleteModalError] = useState<string | null>(null)
 
   const handleNameChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setName(event.target.value)
@@ -179,6 +191,75 @@ function GoalForm({ mode, goal }: GoalFormProps) {
     [name, targetAmount, currentAmount, targetDate, isEdit, goal, navigate, t]
   )
 
+  // Checks what deleting this Goal would do (ADR-004) before asking to confirm,
+  // so the user sees either what blocks it or exactly how many deposits and
+  // how much money would stop counting in their months' balance.
+  const handleDeleteGoalClick = useCallback(async () => {
+    if (!goal) return
+
+    setCheckingDeletion(true)
+    setDeletionCheckError(null)
+
+    const { data, error } = await getGoalDeletionImpact(goal.id)
+
+    setCheckingDeletion(false)
+
+    if (error || !data) {
+      setDeletionCheckError(t('goals:form.deleteGoalCheckError'))
+      return
+    }
+
+    setDeletionImpact(data)
+  }, [goal, t])
+
+  const handleCancelDeleteGoal = useCallback(() => {
+    setDeletionImpact(null)
+    setDeleteModalError(null)
+  }, [])
+
+  const handleConfirmDeleteGoal = useCallback(async () => {
+    if (!goal) return
+
+    setDeletingGoal(true)
+    setDeleteModalError(null)
+
+    const { error } = await deleteGoal(goal.id)
+
+    setDeletingGoal(false)
+
+    if (error) {
+      const moneyError = parseMoneyMovementError(error)
+
+      // Already gone (e.g. deleted from another tab) - nothing left to confirm.
+      if (moneyError?.code === 'goal_not_found') {
+        navigate('/finora/goals')
+        return
+      }
+
+      // Something started depending on the Goal between the check and this
+      // call; re-show the blocked view with what the database just found.
+      if (moneyError?.code === 'goal_has_linked_expenses' || moneyError?.code === 'goal_has_linked_recurring_templates') {
+        const names = moneyError.detail ? moneyError.detail.split(', ') : []
+        setDeletionImpact({
+          linkedExpenseDescriptions: moneyError.code === 'goal_has_linked_expenses' ? names : [],
+          linkedTemplateDescriptions: moneyError.code === 'goal_has_linked_recurring_templates' ? names : [],
+          depositCount: 0,
+          depositTotal: 0,
+        })
+        return
+      }
+
+      setDeleteModalError(t('goals:form.deleteGoalError'))
+      return
+    }
+
+    navigate('/finora/goals')
+  }, [goal, navigate, t])
+
+  const isDeletionBlocked =
+    deletionImpact !== null &&
+    (deletionImpact.linkedExpenseDescriptions.length > 0 || deletionImpact.linkedTemplateDescriptions.length > 0)
+
   // Not an error: a target below what is already saved just means the goal is already reached.
   const parsedTarget = Number(targetAmount)
   const targetBelowSaved = isEdit && targetAmount !== '' && parsedTarget > 0 && parsedTarget < goal.current_amount
@@ -244,6 +325,7 @@ function GoalForm({ mode, goal }: GoalFormProps) {
         {!isEdit && (
           <label className={s.field}>
             {t('goals:form.startingAmount')} <span className={s.hint}>{t('common:profileFields.optional')}</span>
+            <span className={s.hint}>{t('goals:form.startingAmountHint')}</span>
             <input
               type="number"
               inputMode="decimal"
@@ -291,6 +373,91 @@ function GoalForm({ mode, goal }: GoalFormProps) {
           {submitting ? t('common:buttons.saving') : isEdit ? t('goals:form.saveChanges') : t('goals:form.saveGoal')}
         </Button>
       </form>
+
+      {isEdit && (
+        <div className={s.dangerZone}>
+          <Button
+            id={`${testIdPrefix}-delete-button`}
+            data-testid={`${testIdPrefix}-delete-button`}
+            type="button"
+            variant="secondary"
+            className={s.dangerButton}
+            onClick={handleDeleteGoalClick}
+            disabled={checkingDeletion}
+          >
+            {checkingDeletion ? t('common:buttons.deleting') : t('goals:form.deleteGoal')}
+          </Button>
+          {deletionCheckError && (
+            <p role="alert" className={s.error}>
+              {deletionCheckError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {deletionImpact && (
+        <div className={s.modalOverlay}>
+          <div className={s.modal} role="dialog" aria-modal="true" aria-labelledby="delete-goal-modal-title">
+            <h3 id="delete-goal-modal-title" className={s.modalTitle}>
+              {t(isDeletionBlocked ? 'goals:form.deleteGoalBlockedTitle' : 'goals:form.deleteGoalConfirmTitle')}
+            </h3>
+            {isDeletionBlocked ? (
+              <>
+                {deletionImpact.linkedExpenseDescriptions.length > 0 && (
+                  <p className={s.modalText} data-testid={`${testIdPrefix}-delete-blocked-expenses`}>
+                    {t('goals:form.deleteGoalBlockedExpenses', {
+                      names: deletionImpact.linkedExpenseDescriptions.join(', '),
+                    })}
+                  </p>
+                )}
+                {deletionImpact.linkedTemplateDescriptions.length > 0 && (
+                  <p className={s.modalText} data-testid={`${testIdPrefix}-delete-blocked-templates`}>
+                    {t('goals:form.deleteGoalBlockedTemplates', {
+                      names: deletionImpact.linkedTemplateDescriptions.join(', '),
+                    })}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className={s.modalText} data-testid={`${testIdPrefix}-delete-confirm-body`}>
+                {deletionImpact.depositCount > 0
+                  ? t('goals:form.deleteGoalConfirmBody', {
+                      count: deletionImpact.depositCount,
+                      amount: formatCurrency(deletionImpact.depositTotal, currency, getLocaleForLanguage(language)),
+                    })
+                  : t('goals:form.deleteGoalConfirmBodyEmpty')}
+              </p>
+            )}
+            {deleteModalError && (
+              <p role="alert" className={s.error}>
+                {deleteModalError}
+              </p>
+            )}
+            <div className={s.modalActions}>
+              <Button
+                id={`${testIdPrefix}-delete-cancel-button`}
+                data-testid={`${testIdPrefix}-delete-cancel-button`}
+                variant="secondary"
+                onClick={handleCancelDeleteGoal}
+                disabled={deletingGoal}
+              >
+                {t('common:buttons.cancel')}
+              </Button>
+              {!isDeletionBlocked && (
+                <Button
+                  id={`${testIdPrefix}-delete-confirm-button`}
+                  data-testid={`${testIdPrefix}-delete-confirm-button`}
+                  className={s.dangerButton}
+                  onClick={handleConfirmDeleteGoal}
+                  disabled={deletingGoal}
+                >
+                  {deletingGoal ? t('common:buttons.deleting') : t('common:buttons.delete')}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

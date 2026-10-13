@@ -40,6 +40,7 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
   const locale = getLocaleForLanguage(language)
   const [isAddingFunds, setIsAddingFunds] = useState(false)
   const [amount, setAmount] = useState('')
+  const [date, setDate] = useState(getTodayLocalDate())
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [isActivityOpen, setIsActivityOpen] = useState(initiallyOpen)
@@ -62,6 +63,7 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
   const handleCancelClick = useCallback(() => {
     setIsAddingFunds(false)
     setAmount('')
+    setDate(getTodayLocalDate())
     setError(null)
   }, [])
 
@@ -73,6 +75,11 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
   // Visible rounding to 2 decimals, so the user sees what will be saved (ADR-004).
   const handleAmountBlur = useCallback(() => {
     setAmount((prev) => roundMoneyInput(prev))
+  }, [])
+
+  const handleDateChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setDate(event.target.value)
+    setError(null)
   }, [])
 
   const handleActivityToggle = useCallback(() => {
@@ -93,7 +100,7 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
         const moneyError = parseMoneyMovementError(deleteDepositError)
         setDeleteError(
           moneyError?.code === 'goal_balance_negative'
-            ? t('goals:activity.depositAlreadyUsed')
+            ? t('goals:activity.transferAlreadyUsed')
             : deleteDepositError.message
         )
         return
@@ -120,10 +127,16 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
         setError(t('goals:validation.amountMaxDecimals'))
         return
       }
+      // The date input's max attribute keeps the picker from offering a future
+      // date, but a typed value can still bypass it (ADR-004 revision).
+      if (date > getTodayLocalDate()) {
+        setError(t('goals:validation.depositDateNotFuture'))
+        return
+      }
 
       setSubmitting(true)
 
-      const { error: submitError } = await addGoalDeposit(goal.id, parsedAmount, getTodayLocalDate())
+      const { error: submitError } = await addGoalDeposit(goal.id, parsedAmount, date)
 
       setSubmitting(false)
 
@@ -134,10 +147,11 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
 
       setIsAddingFunds(false)
       setAmount('')
+      setDate(getTodayLocalDate())
       if (isActivityOpen) refetchTransfers()
       onBalanceChanged()
     },
-    [amount, goal.id, isActivityOpen, refetchTransfers, onBalanceChanged, t]
+    [amount, date, goal.id, isActivityOpen, refetchTransfers, onBalanceChanged, t]
   )
 
   return (
@@ -207,6 +221,7 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
 
       {isAddingFunds && (
         <form onSubmit={handleConfirmSubmit} className={s.addFundsForm} noValidate>
+          <p className={s.hint}>{t('goals:card.addFundsHint')}</p>
           <input
             type="number"
             inputMode="decimal"
@@ -221,6 +236,17 @@ export function GoalCard({ goal, onBalanceChanged, initiallyOpen = false }: Goal
             aria-invalid={!!error}
             data-testid={`goal-card-${goal.id}-amount-input`}
           />
+          <label className={s.dateField}>
+            {t('goals:card.depositDateLabel')}
+            <input
+              type="date"
+              value={date}
+              max={getTodayLocalDate()}
+              onChange={handleDateChange}
+              className={s.addFundsInput}
+              data-testid={`goal-card-${goal.id}-date-input`}
+            />
+          </label>
           <div className={s.addFundsActions}>
             <Button
               id={`goal-card-${goal.id}-confirm-button`}

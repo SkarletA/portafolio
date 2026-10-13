@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getAvailableForExpense, getGoalProgress } from './goal'
+import { getAvailableForExpense, getGoalProgress, summarizeGoalDeletionImpact } from './goal'
 
 describe('getGoalProgress', () => {
   it('computes percentage and remaining toward the target', () => {
@@ -49,5 +49,59 @@ describe('getGoalProgress remaining', () => {
   it('is 0 once the goal is reached or exceeded', () => {
     expect(getGoalProgress(0.3, 0.3).remaining).toBe(0)
     expect(getGoalProgress(500.75, 500).remaining).toBe(0)
+  })
+})
+
+describe('summarizeGoalDeletionImpact', () => {
+  it('is deletable with no impact when the Goal has no transfers at all', () => {
+    expect(summarizeGoalDeletionImpact([], [])).toEqual({
+      linkedExpenseDescriptions: [],
+      linkedTemplateDescriptions: [],
+      depositCount: 0,
+      depositTotal: 0,
+    })
+  })
+
+  it('counts deposits and opening balances toward the total, but only deposits toward the count that stops counting monthly', () => {
+    const transfers = [
+      { kind: 'opening_balance' as const, amount: 1000, transactionDescription: null },
+      { kind: 'deposit' as const, amount: 200, transactionDescription: null },
+      { kind: 'deposit' as const, amount: 300, transactionDescription: null },
+    ]
+
+    expect(summarizeGoalDeletionImpact(transfers, [])).toEqual({
+      linkedExpenseDescriptions: [],
+      linkedTemplateDescriptions: [],
+      depositCount: 2,
+      depositTotal: 500,
+    })
+  })
+
+  it('sums deposits in cents, without floating-point noise', () => {
+    const transfers = [
+      { kind: 'deposit' as const, amount: 0.1, transactionDescription: null },
+      { kind: 'deposit' as const, amount: 0.2, transactionDescription: null },
+    ]
+
+    // 0.1 + 0.2 === 0.30000000000000004
+    expect(summarizeGoalDeletionImpact(transfers, []).depositTotal).toBe(0.3)
+  })
+
+  it('names the expenses that block deletion for a withdrawal or a refund, never a deposit or opening balance', () => {
+    const transfers = [
+      { kind: 'opening_balance' as const, amount: 1000, transactionDescription: null },
+      { kind: 'deposit' as const, amount: 200, transactionDescription: null },
+      { kind: 'withdrawal' as const, amount: 300, transactionDescription: 'New laptop' },
+      { kind: 'refund' as const, amount: 50, transactionDescription: 'Store refund' },
+    ]
+
+    expect(summarizeGoalDeletionImpact(transfers, []).linkedExpenseDescriptions).toEqual(['New laptop', 'Store refund'])
+  })
+
+  it('deduplicates recurring template names', () => {
+    expect(summarizeGoalDeletionImpact([], ['Car payment', 'Car payment', 'Rent']).linkedTemplateDescriptions).toEqual([
+      'Car payment',
+      'Rent',
+    ])
   })
 })

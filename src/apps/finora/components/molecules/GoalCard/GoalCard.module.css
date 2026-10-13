@@ -76,8 +76,16 @@
   @apply mt-4 flex flex-col gap-2;
 }
 
+.hint {
+  @apply text-xs text-finora-ink-muted;
+}
+
 .addFundsInput {
   @apply rounded-lg border border-finora-border px-3 py-2 text-sm;
+}
+
+.dateField {
+  @apply flex flex-col gap-1 text-xs text-finora-ink;
 }
 
 .addFundsActions {

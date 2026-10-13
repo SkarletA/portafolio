@@ -91,15 +91,28 @@ describe('GoalActivity', () => {
     expect(screen.queryByTestId('goal-activity-transfer-r1-delete-icon')).not.toBeInTheDocument()
   })
 
-  it('offers deletion for deposits only', () => {
+  it('offers deletion for deposits and the opening balance, never a withdrawal or refund', () => {
     const { onDeleteDeposit } = renderActivity()
 
     expect(screen.queryByTestId('goal-activity-transfer-w1-delete-icon')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('goal-activity-transfer-o1-delete-icon')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('goal-activity-transfer-r1-delete-icon')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('goal-activity-transfer-d1-delete-icon'))
-
     expect(onDeleteDeposit).toHaveBeenCalledWith('d1')
+
+    fireEvent.click(screen.getByTestId('goal-activity-transfer-o1-delete-icon'))
+    expect(onDeleteDeposit).toHaveBeenCalledWith('o1')
+  })
+
+  it('labels the opening balance delete button differently from a deposit', () => {
+    renderActivity()
+
+    expect(screen.getByTestId('goal-activity-transfer-d1-delete-icon')).toHaveAccessibleName(
+      'activity.deleteDepositAriaLabel:{"amount":"$500.00","date":"Sep 23, 2026"}'
+    )
+    expect(screen.getByTestId('goal-activity-transfer-o1-delete-icon')).toHaveAccessibleName(
+      'activity.deleteOpeningBalanceAriaLabel:{"amount":"$2,000.00","date":"May 10, 2026"}'
+    )
   })
 
   it('disables deleting while a deletion is in progress and shows its error', () => {

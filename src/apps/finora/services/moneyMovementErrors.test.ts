@@ -6,6 +6,7 @@ describe('parseMoneyMovementError', () => {
     expect(parseMoneyMovementError({ code: 'P0001', message: 'insufficient_goal_funds', details: '5200.00' })).toEqual({
       code: 'insufficient_goal_funds',
       available: 5200,
+      detail: '5200.00',
     })
   })
 
@@ -13,10 +14,12 @@ describe('parseMoneyMovementError', () => {
     expect(parseMoneyMovementError({ code: 'P0001', message: 'goal_balance_negative', details: 'some-goal-id' })).toEqual({
       code: 'goal_balance_negative',
       available: null,
+      detail: 'some-goal-id',
     })
     expect(parseMoneyMovementError({ code: 'P0001', message: 'goal_not_found' })).toEqual({
       code: 'goal_not_found',
       available: null,
+      detail: null,
     })
   })
 
@@ -26,7 +29,7 @@ describe('parseMoneyMovementError', () => {
     'refund_before_purchase',
     'purchase_has_linked_refunds',
   ])('reads the refund link code %s', (code) => {
-    expect(parseMoneyMovementError({ code: 'P0001', message: code })).toEqual({ code, available: null })
+    expect(parseMoneyMovementError({ code: 'P0001', message: code })).toEqual({ code, available: null, detail: null })
   })
 
   it.each([
@@ -36,13 +39,34 @@ describe('parseMoneyMovementError', () => {
     'shares_do_not_match_amount',
     'household_required_for_household_expense',
   ])('reads the shared expense code %s', (code) => {
-    expect(parseMoneyMovementError({ code: 'P0001', message: code })).toEqual({ code, available: null })
+    expect(parseMoneyMovementError({ code: 'P0001', message: code })).toEqual({ code, available: null, detail: null })
   })
 
   it('reads how much can still be refunded from refund_exceeds_purchase', () => {
     expect(parseMoneyMovementError({ code: 'P0001', message: 'refund_exceeds_purchase', details: '70.00' })).toEqual({
       code: 'refund_exceeds_purchase',
       available: 70,
+      detail: '70.00',
+    })
+  })
+
+  it('reads the names blocking a Goal deletion from goal_has_linked_expenses', () => {
+    expect(
+      parseMoneyMovementError({ code: 'P0001', message: 'goal_has_linked_expenses', details: 'New laptop, Car repair' })
+    ).toEqual({
+      code: 'goal_has_linked_expenses',
+      available: null,
+      detail: 'New laptop, Car repair',
+    })
+  })
+
+  it('reads the template names blocking a Goal deletion from goal_has_linked_recurring_templates', () => {
+    expect(
+      parseMoneyMovementError({ code: 'P0001', message: 'goal_has_linked_recurring_templates', details: 'Car payment' })
+    ).toEqual({
+      code: 'goal_has_linked_recurring_templates',
+      available: null,
+      detail: 'Car payment',
     })
   })
 

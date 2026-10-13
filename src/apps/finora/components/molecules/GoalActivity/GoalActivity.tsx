@@ -25,7 +25,7 @@ interface GoalActivityProps {
 /**
  * The money that moved into and out of a Goal: what was already saved, each
  * deposit, and each withdrawal with a link to the expense it covered. Only
- * deposits can be deleted.
+ * deposits and the opening balance can be deleted (ADR-004).
  */
 export function GoalActivity({
   goalName,
@@ -100,13 +100,16 @@ export function GoalActivity({
                 {isWithdrawal ? '−' : '+'}
                 {amount}
               </span>
-              {transfer.kind === 'deposit' && (
+              {(transfer.kind === 'deposit' || transfer.kind === 'opening_balance') && (
                 <button
                   type="button"
                   data-transfer-id={transfer.id}
                   onClick={handleDeleteClick}
                   disabled={deletingId !== null}
-                  aria-label={t('activity.deleteDepositAriaLabel', { amount, date })}
+                  aria-label={t(
+                    transfer.kind === 'deposit' ? 'activity.deleteDepositAriaLabel' : 'activity.deleteOpeningBalanceAriaLabel',
+                    { amount, date }
+                  )}
                   className={s.deleteIcon}
                   data-testid={`goal-activity-transfer-${transfer.id}-delete-icon`}
                 >

@@ -2,12 +2,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AddGoal } from './AddGoal'
-import { createGoal, updateGoal } from '@services/goalsService'
+import { createGoal, deleteGoal, getGoalDeletionImpact, updateGoal } from '@services/goalsService'
 import { useGoals } from '@hooks/useGoals'
 
 vi.mock('@services/goalsService', () => ({
   createGoal: vi.fn(),
   updateGoal: vi.fn(),
+  deleteGoal: vi.fn(),
+  getGoalDeletionImpact: vi.fn(),
 }))
 vi.mock('@hooks/useGoals', () => ({ useGoals: vi.fn() }))
 vi.mock('@context/CurrencyContext', () => ({ useCurrency: () => ({ currency: 'USD', setCurrency: vi.fn() }) }))
@@ -61,6 +63,8 @@ describe('AddGoal', () => {
   beforeEach(() => {
     vi.mocked(createGoal).mockReset()
     vi.mocked(updateGoal).mockReset()
+    vi.mocked(deleteGoal).mockReset()
+    vi.mocked(getGoalDeletionImpact).mockReset()
     vi.mocked(useGoals).mockReset()
   })
 
@@ -140,6 +144,151 @@ describe('AddGoal', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('form.notFound')
       expect(screen.getByTestId('edit-goal-back-link')).toBeInTheDocument()
       expect(screen.queryByTestId('edit-goal-name-input')).not.toBeInTheDocument()
+    })
+
+    it('has no delete button in create mode', () => {
+      renderCreate()
+
+      expect(screen.queryByTestId('add-goal-delete-button')).not.toBeInTheDocument()
+    })
+
+    it('confirms how many deposits and how much money will stop counting, then deletes', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({
+        data: { linkedExpenseDescriptions: [], linkedTemplateDescriptions: [], depositCount: 2, depositTotal: 500 },
+        error: null,
+      } as never)
+      vi.mocked(deleteGoal).mockResolvedValue({ error: null } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+
+      expect(await screen.findByTestId('edit-goal-delete-confirm-body')).toHaveTextContent(
+        'goals:form.deleteGoalConfirmBody:{"count":2,"amount":"$500.00"}'
+      )
+      expect(getGoalDeletionImpact).toHaveBeenCalledWith('g1')
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-confirm-button'))
+
+      await waitFor(() => expect(deleteGoal).toHaveBeenCalledWith('g1'))
+      expect(await screen.findByText('goals list')).toBeInTheDocument()
+    })
+
+    it('says a goal with no deposits or opening balance has no balance impact', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({
+        data: { linkedExpenseDescriptions: [], linkedTemplateDescriptions: [], depositCount: 0, depositTotal: 0 },
+        error: null,
+      } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+
+      expect(await screen.findByTestId('edit-goal-delete-confirm-body')).toHaveTextContent(
+        'goals:form.deleteGoalConfirmBodyEmpty'
+      )
+    })
+
+    it('blocks deletion and names the linked expenses and recurring templates, with no confirm button', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({
+        data: {
+          linkedExpenseDescriptions: ['New laptop'],
+          linkedTemplateDescriptions: ['Car payment'],
+          depositCount: 0,
+          depositTotal: 0,
+        },
+        error: null,
+      } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+
+      expect(await screen.findByTestId('edit-goal-delete-blocked-expenses')).toHaveTextContent(
+        'goals:form.deleteGoalBlockedExpenses:{"names":"New laptop"}'
+      )
+      expect(screen.getByTestId('edit-goal-delete-blocked-templates')).toHaveTextContent(
+        'goals:form.deleteGoalBlockedTemplates:{"names":"Car payment"}'
+      )
+      expect(screen.queryByTestId('edit-goal-delete-confirm-button')).not.toBeInTheDocument()
+      expect(deleteGoal).not.toHaveBeenCalled()
+    })
+
+    it('reports an error when checking what deleting the goal would do fails', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({ data: null, error: new Error('boom') } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('goals:form.deleteGoalCheckError')
+      expect(deleteGoal).not.toHaveBeenCalled()
+    })
+
+    it('treats goal_not_found on delete as already deleted and returns to the goals list', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({
+        data: { linkedExpenseDescriptions: [], linkedTemplateDescriptions: [], depositCount: 0, depositTotal: 0 },
+        error: null,
+      } as never)
+      vi.mocked(deleteGoal).mockResolvedValue({ error: { code: 'P0001', message: 'goal_not_found' } } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+      fireEvent.click(await screen.findByTestId('edit-goal-delete-confirm-button'))
+
+      expect(await screen.findByText('goals list')).toBeInTheDocument()
+    })
+
+    it('re-shows the blocked view when a dependency appears between the check and the delete', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({
+        data: { linkedExpenseDescriptions: [], linkedTemplateDescriptions: [], depositCount: 1, depositTotal: 100 },
+        error: null,
+      } as never)
+      vi.mocked(deleteGoal).mockResolvedValue({
+        error: { code: 'P0001', message: 'goal_has_linked_expenses', details: 'New laptop' },
+      } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+      fireEvent.click(await screen.findByTestId('edit-goal-delete-confirm-button'))
+
+      expect(await screen.findByTestId('edit-goal-delete-blocked-expenses')).toHaveTextContent(
+        'goals:form.deleteGoalBlockedExpenses:{"names":"New laptop"}'
+      )
+      expect(screen.queryByTestId('edit-goal-delete-confirm-button')).not.toBeInTheDocument()
+    })
+
+    it('shows a generic error and keeps the confirm modal open for any other delete failure', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({
+        data: { linkedExpenseDescriptions: [], linkedTemplateDescriptions: [], depositCount: 0, depositTotal: 0 },
+        error: null,
+      } as never)
+      vi.mocked(deleteGoal).mockResolvedValue({ error: { message: 'boom' } } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+      fireEvent.click(await screen.findByTestId('edit-goal-delete-confirm-button'))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('goals:form.deleteGoalError')
+      expect(screen.queryByText('goals list')).not.toBeInTheDocument()
+    })
+
+    it('cancels the delete confirmation without deleting', async () => {
+      mockGoals([goal])
+      vi.mocked(getGoalDeletionImpact).mockResolvedValue({
+        data: { linkedExpenseDescriptions: [], linkedTemplateDescriptions: [], depositCount: 1, depositTotal: 100 },
+        error: null,
+      } as never)
+      renderEdit()
+
+      fireEvent.click(screen.getByTestId('edit-goal-delete-button'))
+      fireEvent.click(await screen.findByTestId('edit-goal-delete-cancel-button'))
+
+      expect(screen.queryByTestId('edit-goal-delete-confirm-body')).not.toBeInTheDocument()
+      expect(deleteGoal).not.toHaveBeenCalled()
     })
   })
 })

@@ -1,9 +1,10 @@
 // The stable error codes raised by the save_transaction / create_goal
-// (and update_goal) functions and the Goal balance constraint - see
-// supabase/migrations/20260923120000_goal_transfers.sql,
+// (and update_goal / delete_goal) functions and the Goal balance constraint -
+// see supabase/migrations/20260923120000_goal_transfers.sql,
 // supabase/migrations/20260928000000_refund_links.sql,
 // supabase/migrations/20260930150000_shared_expense_split.sql,
 // supabase/migrations/20261001090000_household_expense_tag_and_budget.sql,
+// supabase/migrations/20261013090000_goal_deletion_and_dated_deposits.sql,
 // docs/adr/004-goal-transfers.md,
 // docs/adr/006-reimbursement-purchase-links.md,
 // docs/adr/009-shared-expense-split.md and
@@ -18,6 +19,8 @@ const CODES = [
   'goal_not_found',
   'insufficient_goal_funds',
   'goal_balance_negative',
+  'goal_has_linked_expenses',
+  'goal_has_linked_recurring_templates',
   'invalid_refund_link',
   'refund_category_mismatch',
   'refund_before_purchase',
@@ -40,12 +43,20 @@ const RAISED_EXCEPTION = 'P0001'
 export interface MoneyMovementError {
   code: MoneyMovementErrorCode
   /**
-   * The amount the code carries, when it has one. For insufficient_goal_funds:
-   * the Goal's balance when the save was attempted. For refund_exceeds_purchase
-   * while saving a reimbursement: what can still be refunded; while saving a
-   * purchase: what is already refunded, the least its amount can be.
+   * The amount the code carries, when it has one and it parses as a number.
+   * For insufficient_goal_funds: the Goal's balance when the save was
+   * attempted. For refund_exceeds_purchase while saving a reimbursement:
+   * what can still be refunded; while saving a purchase: what is already
+   * refunded, the least its amount can be.
    */
   available: number | null
+  /**
+   * The code's raw detail text, unparsed. For goal_has_linked_expenses and
+   * goal_has_linked_recurring_templates (ADR-004): the comma-separated
+   * names of what is blocking the Goal's deletion. Null when the code
+   * carries no detail.
+   */
+  detail: string | null
 }
 
 /** Recognizes one of the codes above in a Supabase error; null for any other error. */
@@ -54,11 +65,13 @@ export function parseMoneyMovementError(
 ): MoneyMovementError | null {
   if (!error || error.code !== RAISED_EXCEPTION || !error.message || !KNOWN_CODES.has(error.message)) return null
 
-  const available = error.details ? Number(error.details) : NaN
+  const detail = error.details ?? null
+  const available = detail ? Number(detail) : NaN
 
   return {
     code: error.message as MoneyMovementErrorCode,
     available: Number.isFinite(available) ? available : null,
+    detail,
   }
 }
 

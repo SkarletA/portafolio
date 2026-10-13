@@ -182,8 +182,11 @@ to.
   spent the refunded money, like deleting a deposit (ADR-004).
 - **One reimbursement cannot be split across several purchases.**
 - **Dashboard balance still ignores reimbursements** (pre-existing, out of scope).
-- **Goals cannot be deleted** while any transfer references them, so a refund's
-  Goal cannot disappear.
+- **A Goal cannot be deleted while a `withdrawal` or `refund` transfer still
+  references it** ([ADR-004 revision](./004-goal-transfers.md)); this is why
+  a refund's Goal can never disappear while the refund stays linked. A Goal
+  whose only transfers are deposits or an opening balance can be deleted,
+  which also deletes those transfers.
 - **Alternatives considered (rejected):**
   - *A `transaction_refund_links` table with an allocated amount*: allows one
     refund to be split across purchases, but adds a second invariant (allocations
@@ -207,3 +210,10 @@ to.
   - *Prorating a refund across installments*: not modelled anywhere today.
   - *Prefilling the remaining amount into the input*: a computed amount sent to
     the database (ADR-005).
+
+## Revision history
+
+- 2026-10-13: narrowed "Goals cannot be deleted while any transfer
+  references them" to `withdrawal`/`refund` transfers only, matching
+  ADR-004's revision allowing deletion of a Goal whose only transfers are
+  deposits or an opening balance. No other decision in this ADR changes.

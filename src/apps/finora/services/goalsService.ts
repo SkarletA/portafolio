@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
-import type { GoalTransfer } from '@domain/goal'
+import { summarizeGoalDeletionImpact } from '@domain/goal'
+import type { GoalDeletionImpact, GoalTransfer, GoalTransferKind } from '@domain/goal'
 
 export async function getGoals() {
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -74,8 +75,51 @@ export function getGoalTransfers(goalId: string) {
     .order('created_at', { ascending: false })
 }
 
-// Only deposits can be deleted (RLS). The database rejects it with
-// goal_balance_negative when that money was already used by a withdrawal.
+// Only deposits and opening balances can be deleted (RLS) - never a
+// withdrawal or refund. The database rejects it with goal_balance_negative
+// when that money was already used. See docs/adr/004-goal-transfers.md.
 export function deleteGoalDeposit(transferId: string) {
-  return supabase.from('goal_transfers').delete().eq('id', transferId).eq('kind', 'deposit')
+  return supabase.from('goal_transfers').delete().eq('id', transferId)
+}
+
+// Deletes the Goal and its remaining transfers (necessarily only deposits
+// and/or an opening balance) atomically. Rejected with
+// goal_has_linked_expenses or goal_has_linked_recurring_templates (ADR-004)
+// if anything still depends on it - callers should pre-check with
+// getGoalDeletionImpact to avoid surprising the user, but the database is
+// the final authority.
+export function deleteGoal(id: string) {
+  return supabase.rpc('delete_goal', { p_id: id })
+}
+
+// What deleting a Goal would do: the expenses/templates that block it, or
+// (when nothing does) how many deposits and how much money would stop
+// counting in their months' balance. See docs/adr/004-goal-transfers.md.
+export async function getGoalDeletionImpact(
+  goalId: string
+): Promise<{ data: GoalDeletionImpact | null; error: Error | null }> {
+  const [transfersResult, templatesResult] = await Promise.all([
+    supabase
+      .from('goal_transfers')
+      .select('kind, amount, transaction:transactions(description)')
+      .eq('goal_id', goalId),
+    supabase.from('recurring_expense_terms').select('description').eq('savings_goal_id', goalId),
+  ])
+
+  if (transfersResult.error) return { data: null, error: transfersResult.error }
+  if (templatesResult.error) return { data: null, error: templatesResult.error }
+
+  const transferRows = (transfersResult.data ?? []) as unknown as {
+    kind: GoalTransferKind
+    amount: number
+    transaction: { description: string } | null
+  }[]
+  const transfers = transferRows.map((t) => ({
+    kind: t.kind,
+    amount: t.amount,
+    transactionDescription: t.transaction?.description ?? null,
+  }))
+  const templateDescriptions = (templatesResult.data ?? []).map((r) => r.description)
+
+  return { data: summarizeGoalDeletionImpact(transfers, templateDescriptions), error: null }
 }
