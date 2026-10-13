@@ -128,7 +128,19 @@ describe('useAnalytics', () => {
       undefined
     )
     expect(getTrendData).toHaveBeenCalledWith('month', undefined, undefined)
-    expect(getPeriodComparison).toHaveBeenCalledWith('month', undefined, undefined)
+    // getPeriodComparison no longer re-fetches the current period - it
+    // reuses what the hook already fetched above for it.
+    expect(getPeriodComparison).toHaveBeenCalledWith(
+      'month',
+      {
+        stats: { totalSpent: 500, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 },
+        categories: [
+          { category_id: 'c1', name: 'Food', icon: null, color: '#2563eb', translationKey: null, amount: 500, percentage: 100 },
+        ],
+      },
+      undefined,
+      undefined
+    )
   })
 
   it('refetches with the requested period type', async () => {
@@ -140,7 +152,9 @@ describe('useAnalytics', () => {
     renderHook(() => useAnalytics('year'))
 
     await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('year', undefined, undefined))
-    expect(getPeriodComparison).toHaveBeenCalledWith('year', undefined, undefined)
+    await waitFor(() =>
+      expect(getPeriodComparison).toHaveBeenCalledWith('year', { stats: emptyStats, categories: [] }, undefined, undefined)
+    )
   })
 
   it('treats an empty period as a valid, non-error state', async () => {
@@ -238,7 +252,13 @@ describe('useAnalytics', () => {
           'u2',
         ])
       )
-      expect(getPeriodComparison).toHaveBeenCalledWith('month', ['u1', 'u2'])
+      // getPeriodComparison no longer re-fetches the current period's stats
+      // (the headline total only needs the combined stats already fetched
+      // above); its own category comparison is unused for the household
+      // view, so current.categories is just [].
+      await waitFor(() =>
+        expect(getPeriodComparison).toHaveBeenCalledWith('month', { stats: emptyStats, categories: [] }, ['u1', 'u2'])
+      )
     })
 
     it("fetches each member's category spend via the shared household-attributed query, for the current and previous period", async () => {

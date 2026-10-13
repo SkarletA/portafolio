@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  buildPeriodComparison,
   getHouseholdSpendingByCategory,
   getHouseholdTrendData,
   getMonthlyStats,
+  getPeriodComparison,
   getTrendData,
   grossSpendByBucketKey,
   sumLedgerTotals,
@@ -11,6 +13,7 @@ import { getLocalCalendarDate } from '@domain/date'
 
 const tables: Record<string, unknown[]> = {}
 const filterCalls: [string, ...unknown[]][] = []
+const fromCalls: string[] = []
 
 // A thenable query builder: every filter returns it (and is recorded),
 // awaiting it yields the table's rows.
@@ -31,7 +34,7 @@ function query(table: string) {
 vi.mock('./supabaseClient', () => ({
   supabase: {
     auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u1' } }, error: null }) },
-    from: (table: string) => query(table),
+    from: (table: string) => (fromCalls.push(table), query(table)),
   },
 }))
 
@@ -462,5 +465,76 @@ describe('getHouseholdTrendData (ADR-010/011 attribution)', () => {
 
     expect(error).toBeNull()
     expect(data?.find((point) => point.date === todayIso)).toEqual({ date: todayIso, own: 5200, partner: 9500 })
+  })
+})
+
+describe('buildPeriodComparison', () => {
+  it('builds the headline total, its percent change, and the per-category comparison from both periods', () => {
+    const current = {
+      stats: { totalSpent: 500, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 },
+      categories: [{ category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 500, percentage: 100 }],
+    }
+    const previous = {
+      stats: { totalSpent: 400, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 900, avgPerDay: 40, savingsRate: 55 },
+      categories: [{ category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 400, percentage: 100 }],
+    }
+
+    expect(buildPeriodComparison(current, previous)).toEqual({
+      currentTotal: 500,
+      previousTotal: 400,
+      totalPercentChange: 25,
+      hasPreviousData: true,
+      categories: [expect.objectContaining({ category_id: 'c1', currentAmount: 500, previousAmount: 400 })],
+    })
+  })
+
+  it('reports no previous data when the previous period had neither spend nor income', () => {
+    const current = { stats: { totalSpent: 500, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 }, categories: [] }
+    const previous = { stats: { totalSpent: 0, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 0, avgPerDay: 0, savingsRate: 0 }, categories: [] }
+
+    expect(buildPeriodComparison(current, previous).hasPreviousData).toBe(false)
+  })
+})
+
+describe('getPeriodComparison (only fetches the previous period)', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(tables)) delete tables[key]
+    filterCalls.length = 0
+    fromCalls.length = 0
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("builds the comparison from the caller's already-fetched current period, fetching only the previous one", async () => {
+    tables.transactions = [{ ...expense(300), date: '2026-08-05', installment_months: 1 }]
+    tables.goal_transfers = []
+
+    const current = {
+      stats: { totalSpent: 500, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 },
+      categories: [{ category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 500, percentage: 100 }],
+    }
+
+    const { data, error } = await getPeriodComparison('month', current)
+
+    expect(error).toBeNull()
+    expect(data?.currentTotal).toBe(500)
+    expect(data?.previousTotal).toBe(300)
+    // Two transactions queries for the previous period (one for its stats,
+    // one for its category breakdown) - the current period, already
+    // supplied by the caller, is never fetched again (it would be 4
+    // queries, not 2, if it still were).
+    expect(fromCalls.filter((table) => table === 'transactions')).toHaveLength(2)
+  })
+
+  it('forwards householdMemberIds/partnerId to the previous period fetch only', async () => {
+    tables.transactions = []
+    tables.goal_transfers = []
+
+    await getPeriodComparison('month', { stats: null, categories: [] }, undefined, 'u2')
+
+    expect(filterCalls).toContainEqual(['or', 'user_id.eq.u1,and(user_id.eq.u2,is_shared.eq.true)'])
   })
 })

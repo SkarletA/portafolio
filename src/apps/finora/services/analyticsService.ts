@@ -510,37 +510,58 @@ export function buildCategoryComparison(
   return categories
 }
 
-export async function getPeriodComparison(periodType: PeriodType, householdMemberIds?: string[], partnerId?: string) {
-  const { current, previous } = getPeriodRange(periodType, new Date())
+export interface PeriodTotals {
+  stats: MonthlyStats | null
+  categories: CategorySpending[]
+}
 
-  const [
-    { data: currentStats, error: currentStatsError },
-    { data: previousStats, error: previousStatsError },
-    { data: currentCategories, error: currentCategoriesError },
-    { data: previousCategories, error: previousCategoriesError },
-  ] = await Promise.all([
-    getMonthlyStats(current, householdMemberIds, partnerId),
-    getMonthlyStats(previous, householdMemberIds, partnerId),
-    getSpendingByCategory(current, householdMemberIds, partnerId),
-    getSpendingByCategory(previous, householdMemberIds, partnerId),
-  ])
+// Pure - no I/O - so a caller that already fetched the current period's
+// stats/categories (every caller of getPeriodComparison below does, for its
+// own stats/breakdown) never has to fetch them a second time just to build
+// the comparison. Performance note (perceived Analytics lag on tab/period
+// switch): getPeriodComparison used to re-fetch the current period itself,
+// duplicating the same transactions query useAnalytics.ts already made in
+// the same refetch - harmless before this got heavier once "Mine" queries
+// started embedding transaction_shares (ADR-009's revision), but worth
+// cutting now that each duplicate query costs more.
+export function buildPeriodComparison(current: PeriodTotals, previous: PeriodTotals): PeriodComparison {
+  const hasPreviousData = !!previous.stats && (previous.stats.totalSpent > 0 || previous.stats.totalIncome > 0)
+  const categories = buildCategoryComparison(current.categories, previous.categories)
 
-  const error = currentStatsError || previousStatsError || currentCategoriesError || previousCategoriesError
-  if (error) return { data: null, error }
+  const currentTotal = current.stats?.totalSpent ?? 0
+  const previousTotal = previous.stats?.totalSpent ?? 0
 
-  const hasPreviousData = !!previousStats && (previousStats.totalSpent > 0 || previousStats.totalIncome > 0)
-  const categories = buildCategoryComparison(currentCategories ?? [], previousCategories ?? [])
-
-  const currentTotal = currentStats?.totalSpent ?? 0
-  const previousTotal = previousStats?.totalSpent ?? 0
-
-  const comparison: PeriodComparison = {
+  return {
     currentTotal,
     previousTotal,
     totalPercentChange: getPercentChange(currentTotal, previousTotal),
     categories,
     hasPreviousData,
   }
+}
 
-  return { data: comparison, error: null }
+// Fetches only the previous period - the caller already has the current
+// one (see buildPeriodComparison above) - and builds the comparison from
+// both.
+export async function getPeriodComparison(
+  periodType: PeriodType,
+  current: PeriodTotals,
+  householdMemberIds?: string[],
+  partnerId?: string
+) {
+  const { previous } = getPeriodRange(periodType, new Date())
+
+  const [{ data: previousStats, error: previousStatsError }, { data: previousCategories, error: previousCategoriesError }] =
+    await Promise.all([
+      getMonthlyStats(previous, householdMemberIds, partnerId),
+      getSpendingByCategory(previous, householdMemberIds, partnerId),
+    ])
+
+  const error = previousStatsError || previousCategoriesError
+  if (error) return { data: null, error }
+
+  return {
+    data: buildPeriodComparison(current, { stats: previousStats, categories: previousCategories ?? [] }),
+    error: null,
+  }
 }

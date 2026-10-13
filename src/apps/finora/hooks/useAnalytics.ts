@@ -108,21 +108,49 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
         { data: expensesData, error: expensesError },
         { data: categoriesData, error: categoriesError },
         { data: trendPoints, error: trendError },
-        { data: comparisonData, error: comparisonError },
       ] = await Promise.all([
         getMonthlyStats(current, undefined, minePartnerId),
         getExpensesByCategory(current, undefined, minePartnerId),
         getCategories(),
         getTrendData(periodType, undefined, minePartnerId),
-        getPeriodComparison(periodType, undefined, minePartnerId),
       ])
 
       if (!mountedRef.current) return
 
-      const fetchError = statsError || expensesError || categoriesError || trendError || comparisonError
+      const batchError = statsError || expensesError || categoriesError || trendError
 
-      if (fetchError) {
-        setError(fetchError.message)
+      if (batchError) {
+        setError(batchError.message)
+        setStats(null)
+        setSpendingByCategory([])
+        setCategories([])
+        setRawByCategory({})
+        setTrendData([])
+        setComparison(null)
+        setHouseholdBreakdown(null)
+        setHouseholdRaw(null)
+        setHouseholdTrend([])
+        setHouseholdComparison(null)
+        setLoading(false)
+        return
+      }
+
+      const loadedCategories = (categoriesData ?? []) as Category[]
+      const currentSpendingByCategory = buildCategorySpending(expensesData?.totals ?? {}, loadedCategories)
+
+      // Only the previous period still needs fetching - the current one is
+      // already above, so getPeriodComparison no longer re-asks for it.
+      const { data: comparisonData, error: comparisonError } = await getPeriodComparison(
+        periodType,
+        { stats: statsData, categories: currentSpendingByCategory },
+        undefined,
+        minePartnerId
+      )
+
+      if (!mountedRef.current) return
+
+      if (comparisonError) {
+        setError(comparisonError.message)
         setStats(null)
         setSpendingByCategory([])
         setCategories([])
@@ -130,9 +158,8 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
         setTrendData([])
         setComparison(null)
       } else {
-        const loadedCategories = (categoriesData ?? []) as Category[]
         setStats(statsData)
-        setSpendingByCategory(buildCategorySpending(expensesData?.totals ?? {}, loadedCategories))
+        setSpendingByCategory(currentSpendingByCategory)
         setCategories(loadedCategories)
         setRawByCategory(expensesData?.raw ?? {})
         setTrendData(trendPoints ?? [])
@@ -156,24 +183,46 @@ export function useAnalytics(periodType: PeriodType = 'month', viewMode: Analyti
       { data: currentSpending, error: currentSpendingError },
       { data: previousSpending, error: previousSpendingError },
       { data: trendPoints, error: trendError },
-      { data: headlineComparison, error: headlineError },
       { data: categoriesData, error: categoriesError },
     ] = await Promise.all([
       getMonthlyStats(current, householdMemberIds),
       getHouseholdSpendingByCategory(current, members),
       getHouseholdSpendingByCategory(previous, members),
       getHouseholdTrendData(periodType, members),
-      getPeriodComparison(periodType, householdMemberIds),
       getCategories(),
     ])
 
     if (!mountedRef.current) return
 
-    const fetchError =
-      statsError || currentSpendingError || previousSpendingError || trendError || headlineError || categoriesError
+    const batchError = statsError || currentSpendingError || previousSpendingError || trendError || categoriesError
 
-    if (fetchError) {
-      setError(fetchError.message)
+    if (batchError) {
+      setError(batchError.message)
+      setStats(null)
+      setCategories([])
+      setHouseholdBreakdown(null)
+      setHouseholdRaw(null)
+      setHouseholdTrend([])
+      setHouseholdComparison(null)
+      setLoading(false)
+      return
+    }
+
+    // The headline total only needs the current period's stats, already
+    // fetched above - only the previous period's is fetched here. Its
+    // own category comparison is unused below (own/partner come from
+    // currentSpending/previousSpending instead), so current.categories is
+    // just [].
+    const { data: headlineComparison, error: headlineError } = await getPeriodComparison(
+      periodType,
+      { stats: statsData, categories: [] },
+      householdMemberIds
+    )
+
+    if (!mountedRef.current) return
+
+    if (headlineError) {
+      setError(headlineError.message)
       setStats(null)
       setCategories([])
       setHouseholdBreakdown(null)
