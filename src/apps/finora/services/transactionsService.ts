@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient'
 import type { Transaction, TransactionType } from '@domain/transaction'
-import { getHouseholdAttributedAmount } from '@domain/transaction'
+import { getHouseholdAttributedAmount, getOwnAttributedAmount } from '@domain/transaction'
 import { getLocalCalendarDate } from '@domain/date'
 import type { DateRange } from '@domain/analytics'
 import type { Category } from '@domain/category'
@@ -204,6 +204,24 @@ async function loadRefundablePurchases(options: RefundablePurchaseOptions) {
   return { data, error: null }
 }
 
+// ADR-018 revision: how many one-off Case A shared expenses the caller's
+// current partner recorded - each one names the caller as the other party
+// by construction (ADR-009's "participants are fixed"), and once the
+// household is left, RLS stops letting the caller read them at all
+// (ADR-007), permanently losing their own share's figure for each one. Used
+// only for the leave-household confirmation's count, not for any total.
+export function getSharedExpenseCountFromPartner(partnerId: string) {
+  return catchServiceErrors(() => loadSharedExpenseCountFromPartner(partnerId))
+}
+
+async function loadSharedExpenseCountFromPartner(partnerId: string) {
+  const { data, error } = await supabase.from('transactions').select('id').eq('user_id', partnerId).eq('is_shared', true)
+
+  if (error) return { data: null, error }
+
+  return { data: (data ?? []).length, error: null }
+}
+
 function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
@@ -224,35 +242,35 @@ export function getCurrentMonthRange() {
 // every member's rows instead of only the caller's own (ADR-011's "full
 // visibility, no tagging" for a combined Analytics/Dashboard view) - the same
 // optional-parameter shape getTransactions (PR5) and getBudgets (PR8) already
-// use. Omitted or empty, behaves exactly as before (ADR-010's household
-// budget keeps calling this with no household ids, unaffected).
-export function getExpensesByCategory(range: { start: string; end: string }, householdMemberIds?: string[]) {
-  return catchServiceErrors(() => loadExpensesByCategory(range, householdMemberIds))
+// use. Omitted or empty, the caller's own entries are each already attributed
+// (see getOwnAttributedEntries) rather than the row's raw amount - a Case A
+// share counts for whoever it belongs to, own-recorded or not. See
+// docs/adr/009-shared-expense-split.md.
+//
+// partnerId: the caller's current accepted household partner, when there is
+// one and this is being called for their own ("mine") view, not the combined
+// one - forwarded to getOwnAttributedEntries. Ignored when householdMemberIds
+// widens to the combined view (ADR-010's household budget keeps calling this
+// with no household ids and no partnerId, unaffected).
+export function getExpensesByCategory(
+  range: { start: string; end: string },
+  householdMemberIds?: string[],
+  partnerId?: string
+) {
+  return catchServiceErrors(() => loadExpensesByCategory(range, householdMemberIds, partnerId))
 }
 
 async function loadExpensesByCategory(
   { start, end }: { start: string; end: string },
-  householdMemberIds?: string[]
+  householdMemberIds?: string[],
+  partnerId?: string
 ) {
-  const { data: userData, error: userError } = await supabase.auth.getUser()
+  const isHouseholdCombined = !!householdMemberIds && householdMemberIds.length > 0
 
-  if (userError) return { data: null, error: userError }
-  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
-
-  const userIds = householdMemberIds && householdMemberIds.length > 0 ? householdMemberIds : [userData.user.id]
-
-  const [{ data: rows, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
-    supabase
-      .from('transactions')
-      .select('category_id, amount, type, date, installment_months, funding_source')
-      .in('user_id', userIds)
-      .in('type', ['expense', 'reimbursement'])
-      // A financed purchase dated before the range can still have an
-      // installment inside it; for single payments last_installment_date is
-      // the date itself, so this is the plain date filter. See
-      // docs/adr/003-installments-and-savings-funding.md.
-      .lte('date', end)
-      .gte('last_installment_date', start),
+  const [{ data: entriesData, error: rowsError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
+    isHouseholdCombined
+      ? loadCombinedExpenseEntries({ start, end }, householdMemberIds)
+      : getOwnAttributedEntries({ start, end }, { partnerId }),
     getCategories(),
   ])
 
@@ -260,7 +278,7 @@ async function loadExpensesByCategory(
   if (categoriesError) return { data: null, error: categoriesError }
 
   const categories = (categoriesData ?? []) as Category[]
-  const entries = expandLedgerRowsInRange(rows ?? [], { start, end })
+  const entries = entriesData ?? []
 
   // `totals` rolls each category's subcategories into it (for showing a
   // budget's or a chart's overall total); `raw` keeps each category's own
@@ -279,6 +297,26 @@ async function loadExpensesByCategory(
   }
 
   return { data, error: null }
+}
+
+// The household-combined, full-visibility fetch getExpensesByCategory falls
+// back to when householdMemberIds widens to both members - unchanged from
+// before this PR: every expense/reimbursement row of both members, tagged or
+// not, at its raw amount (ADR-011's "full visibility" for the combined
+// totals and breakdowns, which already attribute separately via
+// getHouseholdAttributedEntries where that applies).
+async function loadCombinedExpenseEntries({ start, end }: { start: string; end: string }, userIds: string[]) {
+  const { data: rows, error } = await supabase
+    .from('transactions')
+    .select('category_id, amount, type, date, installment_months, funding_source')
+    .in('user_id', userIds)
+    .in('type', ['expense', 'reimbursement'])
+    .lte('date', end)
+    .gte('last_installment_date', start)
+
+  if (error) return { data: null, error }
+
+  return { data: expandLedgerRowsInRange(rows ?? [], { start, end }), error: null }
 }
 
 interface HouseholdLedgerRow extends ScheduledRow {
@@ -354,6 +392,64 @@ function attributeEntries(rows: HouseholdLedgerRow[], memberId: string): Househo
     funding_source: row.funding_source,
     amount: getHouseholdAttributedAmount(row, memberId),
   }))
+}
+
+// The caller's own ledger for a range, each entry already showing what's
+// actually theirs - an unshared or household-tagged (Case B) expense of
+// their own in full, and a Case A share by their own transaction_shares.amount
+// regardless of which of the two household members recorded the row. This is
+// what every "my own spend" consumer (Dashboard, Analytics' Mine view, an
+// individual budget, the trend/daily/comparison breakdowns, insights) should
+// read instead of the row's raw amount. See docs/adr/009-shared-expense-split.md.
+//
+// partnerId: the caller's current accepted household partner, when there is
+// one - used only to find the partner's own Case A rows that name the caller
+// (never their unflagged or Case B rows, which are never the caller's to
+// begin with). Omitted (no accepted household), this reads exactly the
+// caller's own rows, each still correctly attributed if historically shared.
+export function getOwnAttributedEntries(range: { start: string; end: string }, options?: { partnerId?: string }) {
+  return catchServiceErrors(() => loadOwnAttributedEntries(range, options))
+}
+
+const OWN_LEDGER_SELECT =
+  'category_id, amount, type, date, installment_months, funding_source, user_id, is_shared, is_household_expense, shares:transaction_shares(user_id, amount)'
+
+async function loadOwnAttributedEntries(
+  { start, end }: { start: string; end: string },
+  { partnerId }: { partnerId?: string } = {}
+) {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+
+  if (userError) return { data: null, error: userError }
+  if (!userData.user) return { data: null, error: new Error('Not authenticated') }
+
+  const ownId = userData.user.id
+
+  // Every one of the caller's own rows, plus - only when there is an
+  // accepted partner - their shared (Case A) rows too, never their unflagged
+  // or Case B ones. Same or(...)/and(...) shape getBudgets (ADR-010) already
+  // uses to widen past RLS's own id-based filter without over-fetching.
+  let query = supabase.from('transactions').select(OWN_LEDGER_SELECT).lte('date', end).gte('last_installment_date', start)
+
+  query = partnerId
+    ? query.or(`user_id.eq.${ownId},and(user_id.eq.${partnerId},is_shared.eq.true)`)
+    : query.eq('user_id', ownId)
+
+  const { data: rows, error: rowsError } = await query
+
+  if (rowsError) return { data: null, error: rowsError }
+
+  const entries = expandLedgerRowsInRange((rows ?? []) as unknown as HouseholdLedgerRow[], { start, end })
+
+  const data: HouseholdAttributedRow[] = entries.map((row) => ({
+    category_id: row.category_id,
+    type: row.type,
+    date: row.date,
+    funding_source: row.funding_source,
+    amount: getOwnAttributedAmount(row, ownId),
+  }))
+
+  return { data, error: null }
 }
 
 export interface HouseholdContributionsByCategory {

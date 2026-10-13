@@ -361,6 +361,14 @@ describe('useBudgets', () => {
       { start: '2026-09-01', end: '2026-09-30', dayOfMonth: 11 },
       { ownId: 'u1', partnerId: 'u2' }
     )
+    // An individual budget's own spend still needs the partner's id, so a
+    // Case A share the caller recorded attributes to their own part, not the
+    // full amount - see docs/adr/009-shared-expense-split.md.
+    expect(getExpensesByCategory).toHaveBeenCalledWith(
+      { start: '2026-09-01', end: '2026-09-30', dayOfMonth: 11 },
+      undefined,
+      'u2'
+    )
   })
 
   it('computes a household budget\'s spend from both members\' tagged contributions, not the blanket category total', async () => {

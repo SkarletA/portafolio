@@ -10,6 +10,7 @@ import { useProfile } from '@hooks/useProfile'
 import { useHousehold } from '@context/HouseholdContext'
 import { updateProfile } from '@services/profilesService'
 import { getActiveHouseholdLinkedRecurringExpenses } from '@services/recurringExpensesService'
+import { getSharedExpenseCountFromPartner } from '@services/transactionsService'
 
 vi.mock('@context/AuthContext', () => ({ useAuth: vi.fn() }))
 vi.mock('@context/ThemeContext', () => ({ useTheme: vi.fn() }))
@@ -23,6 +24,9 @@ vi.mock('@services/profilesService', () => ({
 }))
 vi.mock('@services/recurringExpensesService', () => ({
   getActiveHouseholdLinkedRecurringExpenses: vi.fn(),
+}))
+vi.mock('@services/transactionsService', () => ({
+  getSharedExpenseCountFromPartner: vi.fn(),
 }))
 
 const profile = {
@@ -94,6 +98,7 @@ describe('Settings', () => {
   beforeEach(() => {
     vi.mocked(updateProfile).mockReset()
     vi.mocked(getActiveHouseholdLinkedRecurringExpenses).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(getSharedExpenseCountFromPartner).mockResolvedValue({ data: 0, error: null } as never)
   })
 
   it('renders the profile form pre-filled from useProfile', () => {
@@ -357,6 +362,35 @@ describe('Settings', () => {
       fireEvent.click(screen.getByTestId('settings-household-leave-button'))
 
       expect(await screen.findByTestId('settings-leave-household-affected-list')).toHaveTextContent('Rent')
+      expect(leave).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('settings-leave-household-shared-count')).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('settings-leave-household-confirm-button'))
+      await waitFor(() => expect(leave).toHaveBeenCalled())
+    })
+
+    // ADR-018 revision: a one-off shared expense the partner recorded warns
+    // too, even with no affected recurring template - the caller is about to
+    // lose visibility into their own share of it (ADR-007/009).
+    it('warns about one-off shared expenses recorded by the partner, even with no affected recurring template', async () => {
+      const leave = vi.fn()
+      vi.mocked(getSharedExpenseCountFromPartner).mockResolvedValue({ data: 3, error: null } as never)
+      mockHooks({
+        household: {
+          ownMember: { id: 'm1', household_id: 'h1', user_id: 'u1', status: 'accepted', invited_by: 'u1' },
+          partnerMember: { id: 'm2', household_id: 'h1', user_id: 'u2', status: 'accepted', invited_by: 'u1' },
+          partner: { user_id: 'u2', first_name: 'Bel', last_name: 'Suarez', avatar_url: null },
+          leave,
+        },
+      })
+      renderSettings()
+
+      fireEvent.click(screen.getByTestId('settings-household-leave-button'))
+
+      expect(await screen.findByTestId('settings-leave-household-shared-count')).toHaveTextContent(
+        'household:settings.leaveWarningSharedCount:{"count":3}'
+      )
+      expect(screen.queryByTestId('settings-leave-household-affected-list')).not.toBeInTheDocument()
       expect(leave).not.toHaveBeenCalled()
 
       fireEvent.click(screen.getByTestId('settings-leave-household-confirm-button'))

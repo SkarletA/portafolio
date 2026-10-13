@@ -607,6 +607,28 @@ Do not create ADRs for trivial implementation details.
 
 ---
 
+# ADRs Are Living Documents
+
+An ADR is not a historical transcript of the moment a decision was made - it
+is the current, authoritative description of that decision today.
+
+* When a later change refines or reverses something an existing ADR decided,
+  edit that ADR in place: update its Status/Decision/Consequences sections to
+  state the final rule, as if it were being written now. Do not leave the old
+  wording standing next to a note saying it no longer applies - git history
+  already preserves the old text.
+* Append a "Revision history" section at the end of the ADR (date, what
+  changed, why, and which PR/commit). This is the only place the old decision
+  is narrated.
+* Create a new ADR only for a genuinely new decision - one the amended ADR
+  never made and could not be read as having made. Do not create a new ADR
+  whose entire content is "ADR-00X now means Y instead of X"; that is an edit
+  to ADR-00X.
+* Only edit the ADR(s) that actually contain the decision being changed. Do
+  not mass-rewrite every ADR that merely references or builds on it.
+
+---
+
 # Claude Code Workflow
 
 Claude Code should work incrementally.

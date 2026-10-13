@@ -22,8 +22,10 @@
     "declineButton": "Decline invitation",
     "cancelInviteButton": "Cancel invitation",
     "leaveButton": "Leave household",
-  "leaveWarningTitle": "Active recurring expenses will be affected",
-  "leaveWarningText": "These recurring expenses are shared or tagged as the household's. Once you leave, their next charge will post unshared, and they will keep posting that way unless a household is formed again.",
+    "leaveWarningTitle": "This will affect shared household expenses",
+    "leaveWarningText": "These recurring expenses are shared or tagged as the household's. Once you leave, their next charge will post unshared, and they will keep posting that way unless a household is formed again.",
+    "leaveWarningSharedCount": "You will also stop seeing your part of {{count}} shared expense your partner recorded, and it will no longer show in your own figures.",
+    "leaveWarningSharedCount_other": "You will also stop seeing your part of {{count}} shared expenses your partner recorded, and they will no longer show in your own figures.",
     "inviteSuccess": "Invitation sent."
   },
   "errors": {

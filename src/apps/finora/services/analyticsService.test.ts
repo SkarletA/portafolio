@@ -1,15 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  buildPeriodComparison,
   getHouseholdSpendingByCategory,
   getHouseholdTrendData,
   getMonthlyStats,
+  getPeriodComparison,
   getTrendData,
   grossSpendByBucketKey,
   sumLedgerTotals,
 } from './analyticsService'
+import { getLocalCalendarDate } from '@domain/date'
 
 const tables: Record<string, unknown[]> = {}
 const filterCalls: [string, ...unknown[]][] = []
+const fromCalls: string[] = []
 
 // A thenable query builder: every filter returns it (and is recorded),
 // awaiting it yields the table's rows.
@@ -30,14 +34,18 @@ function query(table: string) {
 vi.mock('./supabaseClient', () => ({
   supabase: {
     auth: { getUser: () => Promise.resolve({ data: { user: { id: 'u1' } }, error: null }) },
-    from: (table: string) => query(table),
+    from: (table: string) => (fromCalls.push(table), query(table)),
   },
 }))
 
+// user_id: 'u1' matches the mocked auth user above - getOwnAttributedAmount
+// (ADR-009 revision) needs it on every row to tell the caller's own rows
+// from a partner's, which real RLS-filtered rows always carry.
 const expense = (amount: number, funding_source: 'income' | 'savings' = 'income') => ({
   type: 'expense' as const,
   funding_source,
   amount,
+  user_id: 'u1',
 })
 
 describe('sumLedgerTotals', () => {
@@ -104,7 +112,7 @@ describe('getMonthlyStats', () => {
     tables.transactions = [
       { ...expense(0.1), date: '2026-09-02', installment_months: 1 },
       { ...expense(0.2), date: '2026-09-03', installment_months: 1 },
-      { type: 'income', funding_source: 'income', amount: 1, date: '2026-09-04', installment_months: 1 },
+      { type: 'income', funding_source: 'income', amount: 1, date: '2026-09-04', installment_months: 1, user_id: 'u1' },
     ]
     tables.goal_transfers = [{ amount: 0.1 }, { amount: 0.2 }]
 
@@ -121,9 +129,9 @@ describe('getMonthlyStats', () => {
   // funding_source 'income', and they net the savings rate exactly as before.
   it('nets every existing reimbursement against the savings rate exactly as before ADR-006', async () => {
     tables.transactions = [
-      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1 },
+      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1, user_id: 'u1' },
       { ...expense(400), date: '2026-09-02', installment_months: 1 },
-      { type: 'reimbursement', funding_source: 'income', amount: 100, date: '2026-09-05', installment_months: 1 },
+      { type: 'reimbursement', funding_source: 'income', amount: 100, date: '2026-09-05', installment_months: 1, user_id: 'u1' },
     ]
     tables.goal_transfers = []
 
@@ -136,10 +144,10 @@ describe('getMonthlyStats', () => {
 
   it('does not raise the savings rate or income for a reimbursement returned to a Goal', async () => {
     tables.transactions = [
-      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1 },
+      { type: 'income', funding_source: 'income', amount: 1000, date: '2026-09-01', installment_months: 1, user_id: 'u1' },
       { ...expense(400), date: '2026-09-02', installment_months: 1 },
       { ...expense(200, 'savings'), date: '2026-09-03', installment_months: 1 },
-      { type: 'reimbursement', funding_source: 'savings', amount: 200, date: '2026-09-05', installment_months: 1 },
+      { type: 'reimbursement', funding_source: 'savings', amount: 200, date: '2026-09-05', installment_months: 1, user_id: 'u1' },
     ]
     tables.goal_transfers = []
 
@@ -166,7 +174,16 @@ describe('getMonthlyStats', () => {
 
     await getMonthlyStats(range)
 
-    expect(filterCalls).toContainEqual(['in', 'user_id', ['u1']])
+    expect(filterCalls).toContainEqual(['eq', 'user_id', 'u1'])
+  })
+
+  it('widens to the caller and their partner (or-ed, partner restricted to Case A) when a partnerId is given', async () => {
+    tables.transactions = []
+    tables.goal_transfers = []
+
+    await getMonthlyStats(range, undefined, 'u2')
+
+    expect(filterCalls).toContainEqual(['or', 'user_id.eq.u1,and(user_id.eq.u2,is_shared.eq.true)'])
   })
 
   it('filters to every given household member instead (ADR-011)', async () => {
@@ -176,6 +193,94 @@ describe('getMonthlyStats', () => {
     await getMonthlyStats(range, ['u1', 'u2'])
 
     expect(filterCalls).toContainEqual(['in', 'user_id', ['u1', 'u2']])
+  })
+
+  // ADR-009 revision: the individual ("Mine") view counts each person's own
+  // share, not the full amount, for a Case A shared expense - whether the
+  // caller recorded it or their partner did.
+  describe('Mine attribution for a Case A shared expense (ADR-009 revision)', () => {
+    it("counts only the caller's own share, not the full amount, for a shared expense they recorded", async () => {
+      tables.transactions = [
+        {
+          type: 'expense',
+          funding_source: 'income',
+          amount: 15200,
+          date: '2026-09-05',
+          installment_months: 1,
+          user_id: 'u1',
+          is_shared: true,
+          is_household_expense: false,
+          shares: [
+            { user_id: 'u1', amount: 5200 },
+            { user_id: 'u2', amount: 10000 },
+          ],
+        },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range, undefined, 'u2')
+
+      expect(data?.totalSpent).toBe(5200)
+    })
+
+    it("counts the caller's share of a shared expense their partner recorded, not 0", async () => {
+      tables.transactions = [
+        {
+          type: 'expense',
+          funding_source: 'income',
+          amount: 15200,
+          date: '2026-09-05',
+          installment_months: 1,
+          user_id: 'u2',
+          is_shared: true,
+          is_household_expense: false,
+          shares: [
+            { user_id: 'u1', amount: 5200 },
+            { user_id: 'u2', amount: 10000 },
+          ],
+        },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range, undefined, 'u2')
+
+      expect(data?.totalSpent).toBe(5200)
+    })
+
+    it('leaves an unshared expense of its own at the full amount, unaffected by this revision', async () => {
+      tables.transactions = [
+        { ...expense(400), date: '2026-09-02', installment_months: 1, user_id: 'u1', is_shared: false, is_household_expense: false, shares: [] },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range, undefined, 'u2')
+
+      expect(data?.totalSpent).toBe(400)
+    })
+
+    it('without a partnerId (no accepted household), still attributes a historically-shared row of its own', async () => {
+      tables.transactions = [
+        {
+          type: 'expense',
+          funding_source: 'income',
+          amount: 15200,
+          date: '2026-09-05',
+          installment_months: 1,
+          user_id: 'u1',
+          is_shared: true,
+          is_household_expense: false,
+          shares: [
+            { user_id: 'u1', amount: 5200 },
+            { user_id: 'u2', amount: 10000 },
+          ],
+        },
+      ]
+      tables.goal_transfers = []
+
+      const { data } = await getMonthlyStats(range)
+
+      expect(data?.totalSpent).toBe(5200)
+    })
   })
 })
 
@@ -334,7 +439,10 @@ describe('getHouseholdTrendData (ADR-010/011 attribution)', () => {
   })
 
   it("splits a Case A transaction's amount into the right trend bucket for each member", async () => {
-    const todayIso = new Date().toISOString().slice(0, 10)
+    // getTrendWindow('day') builds its bucket list from getLocalCalendarDate()
+    // (the suite's Mexico City local date), not the machine's raw UTC date -
+    // the two disagree for part of the day, which is what made this flake.
+    const todayIso = getLocalCalendarDate().toISOString().slice(0, 10)
     tables.transactions = [
       {
         category_id: 'housing',
@@ -357,5 +465,76 @@ describe('getHouseholdTrendData (ADR-010/011 attribution)', () => {
 
     expect(error).toBeNull()
     expect(data?.find((point) => point.date === todayIso)).toEqual({ date: todayIso, own: 5200, partner: 9500 })
+  })
+})
+
+describe('buildPeriodComparison', () => {
+  it('builds the headline total, its percent change, and the per-category comparison from both periods', () => {
+    const current = {
+      stats: { totalSpent: 500, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 },
+      categories: [{ category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 500, percentage: 100 }],
+    }
+    const previous = {
+      stats: { totalSpent: 400, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 900, avgPerDay: 40, savingsRate: 55 },
+      categories: [{ category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 400, percentage: 100 }],
+    }
+
+    expect(buildPeriodComparison(current, previous)).toEqual({
+      currentTotal: 500,
+      previousTotal: 400,
+      totalPercentChange: 25,
+      hasPreviousData: true,
+      categories: [expect.objectContaining({ category_id: 'c1', currentAmount: 500, previousAmount: 400 })],
+    })
+  })
+
+  it('reports no previous data when the previous period had neither spend nor income', () => {
+    const current = { stats: { totalSpent: 500, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 }, categories: [] }
+    const previous = { stats: { totalSpent: 0, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 0, avgPerDay: 0, savingsRate: 0 }, categories: [] }
+
+    expect(buildPeriodComparison(current, previous).hasPreviousData).toBe(false)
+  })
+})
+
+describe('getPeriodComparison (only fetches the previous period)', () => {
+  beforeEach(() => {
+    for (const key of Object.keys(tables)) delete tables[key]
+    filterCalls.length = 0
+    fromCalls.length = 0
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("builds the comparison from the caller's already-fetched current period, fetching only the previous one", async () => {
+    tables.transactions = [{ ...expense(300), date: '2026-08-05', installment_months: 1 }]
+    tables.goal_transfers = []
+
+    const current = {
+      stats: { totalSpent: 500, totalCoveredBySavings: 0, totalDepositedToGoals: 0, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 },
+      categories: [{ category_id: 'c1', name: 'Food', icon: null, color: null, translationKey: null, amount: 500, percentage: 100 }],
+    }
+
+    const { data, error } = await getPeriodComparison('month', current)
+
+    expect(error).toBeNull()
+    expect(data?.currentTotal).toBe(500)
+    expect(data?.previousTotal).toBe(300)
+    // Two transactions queries for the previous period (one for its stats,
+    // one for its category breakdown) - the current period, already
+    // supplied by the caller, is never fetched again (it would be 4
+    // queries, not 2, if it still were).
+    expect(fromCalls.filter((table) => table === 'transactions')).toHaveLength(2)
+  })
+
+  it('forwards householdMemberIds/partnerId to the previous period fetch only', async () => {
+    tables.transactions = []
+    tables.goal_transfers = []
+
+    await getPeriodComparison('month', { stats: null, categories: [] }, undefined, 'u2')
+
+    expect(filterCalls).toContainEqual(['or', 'user_id.eq.u1,and(user_id.eq.u2,is_shared.eq.true)'])
   })
 })

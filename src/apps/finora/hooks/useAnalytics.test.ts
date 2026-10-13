@@ -119,14 +119,28 @@ describe('useAnalytics', () => {
     expect(result.current.error).toBeNull()
     expect(getMonthlyStats).toHaveBeenCalledWith(
       expect.objectContaining({ start: expect.any(String), end: expect.any(String) }),
+      undefined,
       undefined
     )
     expect(getExpensesByCategory).toHaveBeenCalledWith(
       expect.objectContaining({ start: expect.any(String), end: expect.any(String) }),
+      undefined,
       undefined
     )
-    expect(getTrendData).toHaveBeenCalledWith('month', undefined)
-    expect(getPeriodComparison).toHaveBeenCalledWith('month', undefined)
+    expect(getTrendData).toHaveBeenCalledWith('month', undefined, undefined)
+    // getPeriodComparison no longer re-fetches the current period - it
+    // reuses what the hook already fetched above for it.
+    expect(getPeriodComparison).toHaveBeenCalledWith(
+      'month',
+      {
+        stats: { totalSpent: 500, totalIncome: 1000, avgPerDay: 50, savingsRate: 50 },
+        categories: [
+          { category_id: 'c1', name: 'Food', icon: null, color: '#2563eb', translationKey: null, amount: 500, percentage: 100 },
+        ],
+      },
+      undefined,
+      undefined
+    )
   })
 
   it('refetches with the requested period type', async () => {
@@ -137,8 +151,10 @@ describe('useAnalytics', () => {
 
     renderHook(() => useAnalytics('year'))
 
-    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('year', undefined))
-    expect(getPeriodComparison).toHaveBeenCalledWith('year', undefined)
+    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('year', undefined, undefined))
+    await waitFor(() =>
+      expect(getPeriodComparison).toHaveBeenCalledWith('year', { stats: emptyStats, categories: [] }, undefined, undefined)
+    )
   })
 
   it('treats an empty period as a valid, non-error state', async () => {
@@ -175,7 +191,7 @@ describe('useAnalytics', () => {
     expect(result.current.error).toBe('Network error')
   })
 
-  it('stays "mine" (self-only) by default even with an accepted household', async () => {
+  it('stays "mine" (self-only) by default even with an accepted household, still attributing its own share', async () => {
     vi.mocked(useHousehold).mockReturnValue({ ownMember: acceptedOwn, partnerMember: acceptedPartner } as never)
     vi.mocked(getMonthlyStats).mockResolvedValue({ data: emptyStats, error: null } as never)
     vi.mocked(getExpensesByCategory).mockResolvedValue({ data: emptyExpenses, error: null } as never)
@@ -184,7 +200,10 @@ describe('useAnalytics', () => {
 
     const { result } = renderHook(() => useAnalytics('month'))
 
-    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined))
+    // householdMemberIds stays undefined (the combined view is not in play),
+    // but the accepted partner's id is still forwarded for attribution -
+    // see docs/adr/009-shared-expense-split.md.
+    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined, 'u2'))
     expect(result.current.isHouseholdView).toBe(false)
     expect(getHouseholdSpendingByCategory).not.toHaveBeenCalled()
   })
@@ -197,7 +216,7 @@ describe('useAnalytics', () => {
 
     renderHook(() => useAnalytics('month', 'household'))
 
-    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined))
+    await waitFor(() => expect(getTrendData).toHaveBeenCalledWith('month', undefined, undefined))
   })
 
   describe('household view (ADR-010/011 attribution)', () => {
@@ -233,7 +252,13 @@ describe('useAnalytics', () => {
           'u2',
         ])
       )
-      expect(getPeriodComparison).toHaveBeenCalledWith('month', ['u1', 'u2'])
+      // getPeriodComparison no longer re-fetches the current period's stats
+      // (the headline total only needs the combined stats already fetched
+      // above); its own category comparison is unused for the household
+      // view, so current.categories is just [].
+      await waitFor(() =>
+        expect(getPeriodComparison).toHaveBeenCalledWith('month', { stats: emptyStats, categories: [] }, ['u1', 'u2'])
+      )
     })
 
     it("fetches each member's category spend via the shared household-attributed query, for the current and previous period", async () => {
@@ -311,7 +336,7 @@ describe('useAnalytics', () => {
       })
 
       await waitFor(() => expect(result.current.selectedBucket).toBe('2026-09-01'))
-      expect(getExpensesByCategory).toHaveBeenLastCalledWith({ start: '2026-09-01', end: '2026-09-30' }, undefined)
+      expect(getExpensesByCategory).toHaveBeenLastCalledWith({ start: '2026-09-01', end: '2026-09-30' }, undefined, undefined)
       await waitFor(() =>
         expect(result.current.bucketSpendingByCategory).toEqual([
           { category_id: 'c1', name: 'Food', icon: null, color: '#2563eb', translationKey: null, amount: 300, percentage: 100 },

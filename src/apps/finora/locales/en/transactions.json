@@ -129,7 +129,7 @@
     "refundGoalNotice": "This purchase was paid from the {{goal}} goal. The {{amount}} refunded will go back to it and will not raise the budget limit or the savings rate.",
     "sharedExpense": "Household expense",
     "shareExpense": "Split the amount with {{partner}}",
-    "sharedHint": "The full amount still counts against your own budget. This only records who put in how much.",
+    "sharedHint": "Your own part counts against your own budget; your partner's part counts against theirs.",
     "sharedDisabledHint": "Can't share a financed or savings-funded expense yet.",
     "yourSharePart": "Your part",
     "partnerSharePart": "{{partner}}'s part: {{amount}}",

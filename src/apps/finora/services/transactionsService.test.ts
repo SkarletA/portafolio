@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PurchaseHasLinkedRefundsError } from './moneyMovementErrors'
-import { deleteTransaction, getRefundablePurchases, getTransactions, saveTransaction } from './transactionsService'
+import {
+  deleteTransaction,
+  getRefundablePurchases,
+  getSharedExpenseCountFromPartner,
+  getTransactions,
+  saveTransaction,
+} from './transactionsService'
 
 interface Call {
   table: string
@@ -237,5 +243,27 @@ describe('getRefundablePurchases', () => {
         ['not', 'category_id', 'is', null],
       ])
     )
+  })
+})
+
+describe('getSharedExpenseCountFromPartner (ADR-018 revision)', () => {
+  it('counts the shared (Case A) expenses the given partner recorded', async () => {
+    selectResult = () => ({ data: [{ id: 't1' }, { id: 't2' }, { id: 't3' }], error: null })
+
+    const { data, error } = await getSharedExpenseCountFromPartner('u2')
+
+    expect(error).toBeNull()
+    expect(data).toBe(3)
+  })
+
+  it('filters to the given partner and to shared expenses only', async () => {
+    selectResult = () => ({ data: [], error: null })
+
+    await getSharedExpenseCountFromPartner('u2')
+
+    expect(calls[calls.length - 1]?.filters).toEqual([
+      ['eq', 'user_id', 'u2'],
+      ['eq', 'is_shared', true],
+    ])
   })
 })
