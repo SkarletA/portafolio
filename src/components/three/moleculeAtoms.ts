@@ -4,7 +4,8 @@ export interface MoleculeAtom {
   symbol: string
   name: string
   group: Group
-  description: string
+  /** Clave en locales/{es,en}/common.json -> molecule.atoms.* (tooltip del Hero). */
+  descriptionKey: string
 }
 
 /**
@@ -14,15 +15,15 @@ export interface MoleculeAtom {
  * `profile.elements` (la tabla periódica completa).
  */
 export const MOLECULE_ATOMS: MoleculeAtom[] = [
-  { symbol: 'Re', name: 'React', group: 'frontend', description: 'Componentes y UI declarativa' },
-  { symbol: 'Nx', name: 'Next.js', group: 'frontend', description: 'Frameworks, SSR y rutas' },
-  { symbol: 'Ts', name: 'TypeScript', group: 'frontend', description: 'Tipos para sistemas que escalan' },
-  { symbol: 'No', name: 'Node.js', group: 'backend', description: 'Servicios y herramientas' },
-  { symbol: 'Su', name: 'Supabase', group: 'data', description: 'Backend as a service' },
-  { symbol: 'Al', name: 'Algolia', group: 'data', description: 'Búsqueda del catálogo' },
-  { symbol: 'Sb', name: 'Storybook', group: 'quality', description: 'Documentar y probar componentes' },
-  { symbol: 'Vt', name: 'Vitest', group: 'quality', description: 'Pruebas unitarias' },
-  { symbol: 'Vc', name: 'Vercel', group: 'infra', description: 'Deploy y edge' },
+  { symbol: 'Re', name: 'React', group: 'frontend', descriptionKey: 'molecule.atoms.react' },
+  { symbol: 'Nx', name: 'Next.js', group: 'frontend', descriptionKey: 'molecule.atoms.nextjs' },
+  { symbol: 'Ts', name: 'TypeScript', group: 'frontend', descriptionKey: 'molecule.atoms.typescript' },
+  { symbol: 'No', name: 'Node.js', group: 'backend', descriptionKey: 'molecule.atoms.nodejs' },
+  { symbol: 'Su', name: 'Supabase', group: 'data', descriptionKey: 'molecule.atoms.supabase' },
+  { symbol: 'Al', name: 'Algolia', group: 'data', descriptionKey: 'molecule.atoms.algolia' },
+  { symbol: 'Sb', name: 'Storybook', group: 'quality', descriptionKey: 'molecule.atoms.storybook' },
+  { symbol: 'Vt', name: 'Vitest', group: 'quality', descriptionKey: 'molecule.atoms.vitest' },
+  { symbol: 'Vc', name: 'Vercel', group: 'infra', descriptionKey: 'molecule.atoms.vercel' },
 ]
 
 /** Índice del sustituyente -> índice del átomo del anillo al que está unido. */

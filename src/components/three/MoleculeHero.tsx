@@ -1,15 +1,13 @@
 import { useCallback, useRef, useState } from 'react'
-import { GROUP_COLORS, GROUP_LABELS } from '@portfolio-data/groups'
-import type { Group } from '@portfolio-data/groups'
+import { useTranslation } from 'react-i18next'
+import { GROUP_COLORS, GROUP_KEYS } from '@portfolio-data/groups'
 import { StaticMoleculeFallback } from './StaticMoleculeFallback'
 import { useMoleculeScene } from './useMoleculeScene'
 import { isWebglSupported } from './webglSupport'
 import s from './MoleculeHero.module.css'
 
-const LEGEND_GROUPS = Object.keys(GROUP_LABELS) as Group[]
-const ACCESSIBLE_NAME = 'Molécula 3D interactiva donde cada átomo representa una tecnología de mi stack'
-
 export function MoleculeHero() {
+  const { t } = useTranslation()
   const [compiled, setCompiled] = useState(false)
   const [hintVisible, setHintVisible] = useState(true)
   const [webglSupported] = useState(isWebglSupported)
@@ -40,10 +38,11 @@ export function MoleculeHero() {
   const showFallback = !webglSupported || contextLost
 
   return (
-    <div ref={containerRef} className={s.stage} role="img" aria-label={ACCESSIBLE_NAME}>
+    <div ref={containerRef} className={s.stage} role="img" aria-label={t('molecule.accessibleName')}>
       <div className={s.top}>
         <p className={s.stateLabel} data-testid="hero-molecule-state-label">
-          estado: <b className={s.stateValue}>{compiled ? 'árbol de componentes' : 'molécula'}</b>
+          {t('molecule.stateLabel')}{' '}
+          <b className={s.stateValue}>{compiled ? t('molecule.stateTree') : t('molecule.stateMolecule')}</b>
         </p>
         <button
           type="button"
@@ -51,13 +50,11 @@ export function MoleculeHero() {
           onClick={handleMorphClick}
           data-testid="hero-molecule-morph-button"
         >
-          {compiled ? '← Volver a molécula' : 'Compilar → árbol de componentes'}
+          {compiled ? t('molecule.backButton') : t('molecule.compileButton')}
         </button>
       </div>
 
-      {webglSupported ? (
-        <canvas ref={canvasRef} className={s.canvas} aria-hidden="true" />
-      ) : null}
+      {webglSupported ? <canvas ref={canvasRef} className={s.canvas} aria-hidden="true" /> : null}
       {showFallback ? (
         <div className={s.fallback}>
           <StaticMoleculeFallback compiled={compiled} />
@@ -73,15 +70,15 @@ export function MoleculeHero() {
 
       {!showFallback && hintVisible ? (
         <p className={s.hint} aria-hidden="true">
-          arrastra para girar · toca un átomo
+          {t('molecule.hint')}
         </p>
       ) : null}
 
       <ul className={s.legend}>
-        {LEGEND_GROUPS.map((group) => (
+        {GROUP_KEYS.map((group) => (
           <li key={group} className={s.legendItem}>
             <span className={s.legendDot} style={{ '--c': GROUP_COLORS[group] } as React.CSSProperties} />
-            {GROUP_LABELS[group]}
+            {t(`groups.${group}`)}
           </li>
         ))}
       </ul>

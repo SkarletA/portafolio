@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -61,10 +62,16 @@ export function useMoleculeScene({
 }: UseMoleculeSceneOptions): UseMoleculeSceneResult {
   const [contextLost, setContextLost] = useState(false)
   const compiledRef = useRef(compiled)
+  const { t } = useTranslation()
+  const tRef = useRef(t)
 
   useEffect(() => {
     compiledRef.current = compiled
   }, [compiled])
+
+  useEffect(() => {
+    tRef.current = t
+  }, [t])
 
   useEffect(() => {
     if (!enabled) return
@@ -317,7 +324,7 @@ export function useMoleculeScene({
         hoveredIndex = index
         const atom = MOLECULE_ATOMS[index]
         if (tooltip.titleRef.current) tooltip.titleRef.current.textContent = atom.name
-        if (tooltip.descriptionRef.current) tooltip.descriptionRef.current.textContent = atom.description
+        if (tooltip.descriptionRef.current) tooltip.descriptionRef.current.textContent = tRef.current(atom.descriptionKey)
         if (tooltipEl) {
           const containerRect = container.getBoundingClientRect()
           const left = Math.min(event.clientX - containerRect.left + 14, containerRect.width - 230)

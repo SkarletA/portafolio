@@ -1,4 +1,5 @@
 import { Suspense, lazy } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { StaticMoleculeFallback } from '@portfolio-components/three/StaticMoleculeFallback'
 import { profile } from '@portfolio-data/profile'
 import s from './Hero.module.css'
@@ -11,10 +12,8 @@ const MoleculeHero = lazy(() =>
   import('@portfolio-components/three/MoleculeHero').then((module) => ({ default: module.MoleculeHero }))
 )
 
-const HIGHLIGHT_WORDS = ['química', 'código']
-
 export function Hero() {
-  const taglineParts = profile.tagline.split(new RegExp(`(${HIGHLIGHT_WORDS.join('|')})`))
+  const { t } = useTranslation()
 
   return (
     <section id="top" className={s.section}>
@@ -26,23 +25,15 @@ export function Hero() {
           <span className={s.nameGradient}>Araque</span>
         </h1>
         <p className={s.tagline}>
-          {taglineParts.map((part, i) =>
-            HIGHLIGHT_WORDS.includes(part) ? (
-              <em key={i} className={s.highlight}>
-                {part}
-              </em>
-            ) : (
-              part
-            )
-          )}
+          <Trans i18nKey="hero.tagline" components={{ em: <em className={s.highlight} /> }} />
         </p>
-        <p className={s.sub}>{profile.heroSub}</p>
+        <p className={s.sub}>{t('hero.sub')}</p>
         <div className={s.ctaRow}>
           <a className={s.ctaPrimary} href="#proyectos" data-testid="hero-view-projects-link">
-            Ver proyectos
+            {t('hero.ctaProjects')}
           </a>
           <a className={s.ctaSecondary} href="#contacto" data-testid="hero-talk-link">
-            Hablemos
+            {t('hero.ctaContact')}
           </a>
         </div>
       </div>

@@ -25,5 +25,10 @@ vi.mock('react-i18next', () => ({
     i18n: { language: 'en', changeLanguage: vi.fn() },
   }),
   Trans: ({ children }) => children,
+  // Pass-through: the mock doesn't need a real i18n instance, but App.tsx
+  // wraps its tree in <I18nextProvider> (the portfolio's own instance, kept
+  // separate from Finora's) and this keeps that render path working under
+  // the mock instead of failing on an undefined component.
+  I18nextProvider: ({ children }) => children,
   initReactI18next: { type: '3rdParty', init: () => {} },
 }))

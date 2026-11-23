@@ -19,3 +19,11 @@
 .brandDot {
   @apply text-scarlet;
 }
+
+.actions {
+  @apply flex items-center gap-4;
+}
+
+.languageToggle {
+  @apply rounded-md border border-line px-2 py-1 font-mono text-xs text-muted transition-colors hover:border-teal hover:text-fg;
+}

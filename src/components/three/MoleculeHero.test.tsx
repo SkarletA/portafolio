@@ -6,7 +6,7 @@ describe('MoleculeHero', () => {
   it('exposes an accessible name for the whole widget', () => {
     render(<MoleculeHero />)
 
-    expect(screen.getByRole('img', { name: /molécula 3d interactiva/i })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'molecule.accessibleName' })).toBeInTheDocument()
   })
 
   it('renders the static fallback and no canvas/tooltip when WebGL is unavailable (jsdom has no WebGL)', () => {
@@ -20,18 +20,19 @@ describe('MoleculeHero', () => {
   it('toggles state label and button copy when the morph button is activated', () => {
     render(<MoleculeHero />)
 
-    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('molécula')
+    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('molecule.stateMolecule')
     const button = screen.getByTestId('hero-molecule-morph-button')
     expect(button.tagName).toBe('BUTTON')
+    expect(button).toHaveTextContent('molecule.compileButton')
 
     fireEvent.click(button)
 
-    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('árbol de componentes')
-    expect(button).toHaveTextContent('Volver a molécula')
+    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('molecule.stateTree')
+    expect(button).toHaveTextContent('molecule.backButton')
 
     fireEvent.click(button)
 
-    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('molécula')
+    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('molecule.stateMolecule')
   })
 
   it('is a real button, operable from the keyboard without extra wiring', () => {
@@ -44,6 +45,16 @@ describe('MoleculeHero', () => {
     fireEvent.keyDown(button, { key: 'Enter', code: 'Enter' })
     fireEvent.click(button)
 
-    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('árbol de componentes')
+    expect(screen.getByTestId('hero-molecule-state-label')).toHaveTextContent('molecule.stateTree')
+  })
+
+  it('renders the color legend for all five groups', () => {
+    render(<MoleculeHero />)
+
+    expect(screen.getByText('groups.frontend')).toBeInTheDocument()
+    expect(screen.getByText('groups.backend')).toBeInTheDocument()
+    expect(screen.getByText('groups.data')).toBeInTheDocument()
+    expect(screen.getByText('groups.infra')).toBeInTheDocument()
+    expect(screen.getByText('groups.quality')).toBeInTheDocument()
   })
 })

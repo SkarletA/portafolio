@@ -1,0 +1,54 @@
+{
+  "header": {
+    "skipToContent": "Saltar al contenido",
+    "nav": {
+      "lab": "Laboratorio",
+      "laboratoria": "Formación",
+      "learning": "Aprendizaje",
+      "projects": "Proyectos",
+      "stack": "Stack",
+      "contact": "Contacto"
+    }
+  },
+  "menu": {
+    "ariaLabel": "Principal",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú"
+  },
+  "footer": {
+    "madeWith": "Hecho con React, mucha química y three.js."
+  },
+  "hero": {
+    "tagline": "Estudié <em>química</em>. Ahora hago que el <em>código</em> reaccione.",
+    "sub": "4+ años participando en plataformas e-commerce (catálogo, carrito, checkout) para un grupo retail multi-marca en México, Chile y Colombia. Me gusta entender cómo se combinan las piezas hasta que el sistema es estable.",
+    "ctaProjects": "Ver proyectos",
+    "ctaContact": "Hablemos"
+  },
+  "molecule": {
+    "accessibleName": "Molécula 3D interactiva donde cada átomo representa una tecnología de mi stack",
+    "stateLabel": "estado:",
+    "stateMolecule": "molécula",
+    "stateTree": "árbol de componentes",
+    "compileButton": "Compilar → árbol de componentes",
+    "backButton": "← Volver a molécula",
+    "hint": "arrastra para girar · toca un átomo",
+    "atoms": {
+      "react": "Componentes y UI declarativa",
+      "nextjs": "Frameworks, SSR y rutas",
+      "typescript": "Tipos para sistemas que escalan",
+      "nodejs": "Servicios y herramientas",
+      "supabase": "Backend as a service",
+      "algolia": "Búsqueda del catálogo",
+      "storybook": "Documentar y probar componentes",
+      "vitest": "Pruebas unitarias",
+      "vercel": "Deploy y edge"
+    }
+  },
+  "groups": {
+    "frontend": "Frontend",
+    "backend": "Backend",
+    "data": "Datos / búsqueda",
+    "infra": "Infraestructura",
+    "quality": "Calidad"
+  }
+}
