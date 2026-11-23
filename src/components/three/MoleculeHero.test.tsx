@@ -9,6 +9,14 @@ describe('MoleculeHero', () => {
     expect(screen.getByRole('img', { name: /molécula 3d interactiva/i })).toBeInTheDocument()
   })
 
+  it('renders the static fallback and no canvas/tooltip when WebGL is unavailable (jsdom has no WebGL)', () => {
+    const { container } = render(<MoleculeHero />)
+
+    expect(container.querySelector('canvas')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('hero-molecule-tooltip')).not.toBeInTheDocument()
+    expect(container.querySelector('svg')).toBeInTheDocument()
+  })
+
   it('toggles state label and button copy when the morph button is activated', () => {
     render(<MoleculeHero />)
 

@@ -39,3 +39,7 @@
 .ctaSecondary {
   @apply rounded-xl border border-line bg-panel px-5 py-3 font-mono text-sm text-fg transition-colors hover:border-teal;
 }
+
+.stagePlaceholder {
+  @apply relative aspect-stage overflow-hidden rounded-2xl border border-line bg-panel;
+}

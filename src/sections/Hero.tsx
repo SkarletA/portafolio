@@ -1,6 +1,15 @@
-import { MoleculeHero } from '@portfolio-components/three/MoleculeHero'
+import { Suspense, lazy } from 'react'
+import { StaticMoleculeFallback } from '@portfolio-components/three/StaticMoleculeFallback'
 import { profile } from '@portfolio-data/profile'
 import s from './Hero.module.css'
+
+// El chunk de three.js solo se descarga cuando el Hero realmente se monta,
+// no como parte del bundle principal del portafolio. Mientras carga, se ve
+// el mismo SVG estático que MoleculeHero usa como fallback sin WebGL, para
+// no dar un salto de layout.
+const MoleculeHero = lazy(() =>
+  import('@portfolio-components/three/MoleculeHero').then((module) => ({ default: module.MoleculeHero }))
+)
 
 const HIGHLIGHT_WORDS = ['química', 'código']
 
@@ -37,7 +46,15 @@ export function Hero() {
           </a>
         </div>
       </div>
-      <MoleculeHero />
+      <Suspense
+        fallback={
+          <div className={s.stagePlaceholder}>
+            <StaticMoleculeFallback compiled={false} />
+          </div>
+        }
+      >
+        <MoleculeHero />
+      </Suspense>
     </section>
   )
 }
