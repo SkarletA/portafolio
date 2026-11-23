@@ -57,6 +57,7 @@ export interface Profile {
   name: string
   role: string
   tagline: string
+  heroSub: string
   location: string
   availability: string
   email: string
@@ -85,6 +86,8 @@ export const profile: Profile = {
   name: 'Skarlet Araque',
   role: 'Frontend Developer · Product Tech Lead',
   tagline: 'Estudié química. Ahora hago que el código reaccione.',
+  heroSub:
+    '4+ años participando en plataformas e-commerce (catálogo, carrito, checkout) para un grupo retail multi-marca en México, Chile y Colombia. Me gusta entender cómo se combinan las piezas hasta que el sistema es estable.',
   location: 'San Mateo Atenco, Estado de México, México',
   availability: 'Abierta a roles remotos o híbridos',
   email: 'skarlet15m@gmail.com',
