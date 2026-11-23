@@ -1,7 +1,22 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Outfit', system-ui, sans-serif;
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --color-bg: #0a0c10;
+  --color-panel: #11151c;
+  --color-line: #1f2733;
+  --color-fg: #e8ecf1;
+  --color-muted: #8a96a8;
+  --color-scarlet: #ff4d5e;
+  --color-teal: #2dd4bf;
+  --color-amber: #fbbf24;
+  --color-violet: #a78bfa;
+  --color-blue: #60a5fa;
+
+  /* Legacy warm palette - still used by sections not yet migrated to the new
+     dark theme (About/Experience/Skills/Education/Hero/Projects/Contact/
+     Portrait/NotFound). Remove once every consumer above is rewritten. */
   --font-display: 'Fraunces', Georgia, serif;
   --color-ink: #0f1210;
   --color-ink-soft: #1a1f1c;
@@ -9,7 +24,6 @@
   --color-paper-muted: #d9d2c3;
   --color-ember: #e07a3d;
   --color-ember-soft: #f0b089;
-  --color-moss: #6f8f72;
 
   /* Reusable layout/typography values that don't fit Tailwind's native scale
      closely enough to round to it - kept here instead of repeating them as
@@ -28,13 +42,13 @@ html {
 
 body {
   margin: 0;
-  background: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--color-bg);
+  color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--color-ember);
-  color: var(--color-ink);
+  background: var(--color-scarlet);
+  color: var(--color-bg);
 }

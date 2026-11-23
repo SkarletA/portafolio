@@ -22,7 +22,7 @@ export function Menu({ links }: MenuProps) {
   }, [])
 
   return (
-    <nav aria-label="Primary">
+    <nav aria-label="Principal">
       {/* Desktop */}
       <ul className={s.desktopList}>
         {links.map((link) => (
@@ -42,7 +42,7 @@ export function Menu({ links }: MenuProps) {
       <button
         type="button"
         className={s.toggleButton}
-        aria-label={isOpen ? 'Close menu' : 'Open menu'}
+        aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
         aria-expanded={isOpen}
         aria-controls="mobile-navigation"
         onClick={handleToggleClick}

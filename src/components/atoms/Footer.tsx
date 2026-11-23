@@ -5,7 +5,7 @@ export function Footer() {
     <footer className={s.footer}>
       <div className={s.inner}>
         <p>© {new Date().getFullYear()} Skarlet Araque</p>
-        <p>Built with React, Vite and Tailwind CSS.</p>
+        <p>Hecho con React, mucha química y three.js.</p>
       </div>
     </footer>
   )
