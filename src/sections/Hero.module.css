@@ -1,21 +1,45 @@
 @reference '../index.css';
 
 .section {
-  @apply mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-12 md:grid-cols-hero md:pt-20 lg:grid-cols-hero-lg;
+  @apply mx-auto grid max-w-6xl items-center gap-10 px-6 pb-20 pt-12 md:grid-cols-2 md:pt-20;
 }
 
 .eyebrow {
-  @apply mb-4 text-sm font-medium uppercase tracking-hero-role text-ember;
+  @apply mb-4 font-mono text-sm text-teal tracking-eyebrow;
 }
 
 .name {
-  @apply font-display text-5xl leading-none text-paper md:text-6xl lg:text-7xl;
+  @apply font-sans text-5xl font-bold leading-none tracking-tight text-fg sm:text-6xl md:text-7xl;
+}
+
+.nameGradient {
+  @apply bg-gradient-to-r from-scarlet via-amber to-teal bg-clip-text text-transparent;
 }
 
 .tagline {
-  @apply mt-6 max-w-xl text-lg leading-relaxed text-paper-muted;
+  @apply mt-6 max-w-sm text-xl leading-snug text-fg sm:text-2xl;
 }
 
-.meta {
-  @apply mt-4 text-sm text-paper-muted;
+.highlight {
+  @apply font-normal not-italic text-teal;
+}
+
+.sub {
+  @apply mt-4 max-w-md text-muted;
+}
+
+.ctaRow {
+  @apply mt-8 flex flex-wrap gap-3;
+}
+
+.ctaPrimary {
+  @apply rounded-xl border border-scarlet bg-scarlet px-5 py-3 font-mono text-sm text-fg transition-transform hover:-translate-y-0.5;
+}
+
+.ctaSecondary {
+  @apply rounded-xl border border-line bg-panel px-5 py-3 font-mono text-sm text-fg transition-colors hover:border-teal;
+}
+
+.stagePlaceholder {
+  @apply relative aspect-stage overflow-hidden rounded-2xl border border-line bg-panel;
 }

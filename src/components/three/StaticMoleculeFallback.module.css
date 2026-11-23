@@ -1,0 +1,39 @@
+@reference '../../index.css';
+
+.svg {
+  @apply h-full w-full;
+}
+
+.bond {
+  @apply stroke-muted/50;
+  stroke-width: 1.5;
+}
+
+.cloud {
+  @apply fill-none stroke-teal/40;
+  stroke-width: 1.5;
+}
+
+.tile {
+  transition: transform 0.4s ease;
+}
+
+.tileRect {
+  @apply fill-panel;
+  stroke: var(--c);
+  stroke-width: 1.5;
+  rx: 6;
+}
+
+.tileSymbol {
+  @apply fill-fg font-sans font-bold;
+  font-size: 15px;
+  text-anchor: middle;
+}
+
+.tileName {
+  @apply font-mono;
+  fill: var(--c);
+  font-size: 7px;
+  text-anchor: middle;
+}

@@ -1,0 +1,54 @@
+{
+  "header": {
+    "skipToContent": "Skip to content",
+    "nav": {
+      "lab": "Lab",
+      "laboratoria": "Training",
+      "learning": "Learning",
+      "projects": "Projects",
+      "stack": "Stack",
+      "contact": "Contact"
+    }
+  },
+  "menu": {
+    "ariaLabel": "Primary",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "footer": {
+    "madeWith": "Made with React, lots of chemistry, and three.js."
+  },
+  "hero": {
+    "tagline": "I studied <em>chemistry</em>. Now I make <em>code</em> react.",
+    "sub": "4+ years working on e-commerce platforms (catalog, cart, checkout) for a multi-brand retail group in Mexico, Chile, and Colombia. I like understanding how the pieces fit together until the system is stable.",
+    "ctaProjects": "View projects",
+    "ctaContact": "Let's talk"
+  },
+  "molecule": {
+    "accessibleName": "Interactive 3D molecule where each atom represents a technology in my stack",
+    "stateLabel": "state:",
+    "stateMolecule": "molecule",
+    "stateTree": "component tree",
+    "compileButton": "Compile → component tree",
+    "backButton": "← Back to molecule",
+    "hint": "drag to rotate · tap an atom",
+    "atoms": {
+      "react": "Declarative components and UI",
+      "nextjs": "Frameworks, SSR, and routing",
+      "typescript": "Types for systems that scale",
+      "nodejs": "Services and tooling",
+      "supabase": "Backend as a service",
+      "algolia": "Catalog search",
+      "storybook": "Documenting and testing components",
+      "vitest": "Unit testing",
+      "vercel": "Deploy and edge"
+    }
+  },
+  "groups": {
+    "frontend": "Frontend",
+    "backend": "Backend",
+    "data": "Data / search",
+    "infra": "Infrastructure",
+    "quality": "Quality"
+  }
+}

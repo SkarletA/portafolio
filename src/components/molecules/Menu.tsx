@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import s from './Menu.module.css'
 
 interface MenuLink {
@@ -11,6 +12,7 @@ interface MenuProps {
 }
 
 export function Menu({ links }: MenuProps) {
+  const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
 
   const handleToggleClick = useCallback(() => {
@@ -22,7 +24,7 @@ export function Menu({ links }: MenuProps) {
   }, [])
 
   return (
-    <nav aria-label="Primary">
+    <nav aria-label={t('menu.ariaLabel')}>
       {/* Desktop */}
       <ul className={s.desktopList}>
         {links.map((link) => (
@@ -42,7 +44,7 @@ export function Menu({ links }: MenuProps) {
       <button
         type="button"
         className={s.toggleButton}
-        aria-label={isOpen ? 'Close menu' : 'Open menu'}
+        aria-label={isOpen ? t('menu.closeMenu') : t('menu.openMenu')}
         aria-expanded={isOpen}
         aria-controls="mobile-navigation"
         onClick={handleToggleClick}
