@@ -1,0 +1,23 @@
+@reference '../../../index.css';
+
+.tile {
+  @apply relative flex aspect-square flex-col justify-between rounded-lg border p-2 transition-transform duration-200 hover:scale-105;
+  border-color: var(--c);
+  background: color-mix(in srgb, var(--c) 8%, transparent);
+}
+
+.tile:hover {
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+}
+
+.index {
+  @apply font-mono text-xs text-muted;
+}
+
+.symbol {
+  @apply text-2xl font-bold leading-none text-fg;
+}
+
+.name {
+  @apply text-xs text-muted;
+}
