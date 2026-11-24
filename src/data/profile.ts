@@ -11,22 +11,23 @@ export interface ExperienceEntry {
   cardSummary?: string
 }
 
-export interface EducationEntry {
-  title: string
-  org: string
-  dates: string
-}
-
+// Clave estable para la etiqueta de cada certificación/diploma; el texto
+// visible vive en locales/{es,en}/continuingEducation.json -> certifications.*
+// (algunos, como nombres de cursos de Platzi, son iguales en ambos idiomas;
+// otros, como la certificación interna, no).
 export interface CertificationEntry {
-  label: string
+  key: string
   issuer: string
   dates?: string
   kind: 'certification' | 'diploma'
 }
 
+// Igual que CertificationEntry: el nombre del idioma y el nivel ("Nativo"/
+// "Native") se traducen vía locales/{es,en}/continuingEducation.json ->
+// languageNames.*/languageLevels.*.
 export interface LanguageEntry {
-  name: string
-  level: string
+  key: 'es' | 'en'
+  levelKey: 'native' | 'b1'
 }
 
 export interface ElementEntry {
@@ -35,26 +36,18 @@ export interface ElementEntry {
   group: Group
 }
 
-export interface LabAnalogy {
-  from: string
-  to: string
-  title: string
-  description: string
-}
-
-export interface LaboratoriaStep {
-  title: string
-  detail?: string
-}
-
 export interface Badge {
   name: string
   issuer: string
   year?: string
 }
 
-// El copy del Hero (tagline, texto de apoyo, CTAs) vive en locales/{es,en}/common.json
-// bajo "hero.*", no aquí, porque necesita una versión en cada idioma.
+// El copy del Hero (tagline, texto de apoyo, CTAs), de "Del laboratorio al
+// código" y de "Mi formación en Laboratoria" vive en
+// locales/{es,en}/{common,lab,laboratoria}.json, no aquí, porque necesita
+// una versión en cada idioma. Lo mismo aplica a la licenciatura en Química
+// (ver locales/{es,en}/continuingEducation.json -> education.*): ya no está
+// en este archivo.
 export interface Profile {
   name: string
   role: string
@@ -67,19 +60,12 @@ export interface Profile {
   summary: string[]
   competencies: string[]
   experience: ExperienceEntry[]
-  education: EducationEntry[]
   certifications: CertificationEntry[]
   languages: LanguageEntry[]
   credlyUrl: string
   /** Vacío hasta tener nombres reales de insignias - no se inventan. */
   badges: Badge[]
   elements: ElementEntry[]
-  labAnalogies: LabAnalogy[]
-  laboratoria: {
-    when: string
-    intro: string[]
-    timeline: LaboratoriaStep[]
-  }
 }
 
 export const profile: Profile = {
@@ -156,24 +142,17 @@ export const profile: Profile = {
       ],
     },
   ],
-  education: [
-    {
-      title: 'Licenciatura en Química (cursada 2009–2018)',
-      org: 'Universidad de Carabobo',
-      dates: '2009 – 2018',
-    },
-  ],
   certifications: [
-    { label: 'React', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'JavaScript', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'Git', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'Bases de datos y SQL Fundamentals', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'Certificación interna de gestión del desempeño', issuer: 'Lentes Galileo', kind: 'certification' },
-    { label: 'AWS Essentials', issuer: 'AWS', kind: 'diploma' },
+    { key: 'react', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'javascript', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'git', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'databases', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'internalPerformance', issuer: 'Lentes Galileo', kind: 'certification' },
+    { key: 'awsEssentials', issuer: 'AWS', kind: 'diploma' },
   ],
   languages: [
-    { name: 'Español', level: 'Nativo' },
-    { name: 'Inglés', level: 'B1' },
+    { key: 'es', levelKey: 'native' },
+    { key: 'en', levelKey: 'b1' },
   ],
   credlyUrl: 'https://www.credly.com/users/skarlet-araque/badges/credly',
   badges: [],
@@ -194,43 +173,4 @@ export const profile: Profile = {
     { symbol: 'Se', name: 'Sentry', group: 'infra' },
     { symbol: 'Gr', name: 'Grafana', group: 'infra' },
   ],
-  labAnalogies: [
-    {
-      from: 'método científico',
-      to: 'A/B testing',
-      title: 'Hipótesis, medición, conclusión',
-      description:
-        'Antes de decidir, mido. Experimentos en producto con métricas claras (OKRs, CSAT) en lugar de opiniones.',
-    },
-    {
-      from: 'balancear ecuaciones',
-      to: 'ADRs',
-      title: 'Nada se crea, todo se documenta',
-      description:
-        'Cada decisión de arquitectura tiene sus reactivos y sus productos: contexto, alternativas y consecuencias por escrito.',
-    },
-    {
-      from: 'catalizadores',
-      to: 'mentoring',
-      title: 'Acelerar sin consumirse',
-      description:
-        'Participo en un squad multidisciplinario y hago mentoring de 4 compañeros con 1:1 y pair programming, para que el equipo avance más rápido.',
-    },
-  ],
-  laboratoria: {
-    when: 'Dic 2021 – Jul 2022 · Front-End Developer Student',
-    intro: [
-      'Pasé de los laboratorios de química a escribir mi primera línea de JavaScript en Laboratoria, un bootcamp intensivo de desarrollo web.',
-      'Ahí aprendí los fundamentos que hoy sostienen mi trabajo: JavaScript, React, Node.js, Git, APIs REST y apps con Firebase, construyendo proyectos de principio a fin, uno más complejo que el anterior.',
-    ],
-    timeline: [
-      { title: 'Trivia Conociendo México' },
-      { title: 'Card Validation' },
-      { title: 'Data Lovers' },
-      { title: 'Social Network', detail: 'Aplicación web con React y Firebase' },
-      { title: 'Lab Notes' },
-      { title: 'Burger Queen · cliente', detail: 'Cliente en React para gestión de pedidos' },
-      { title: 'Burger Queen · API', detail: 'API REST con Node.js' },
-    ],
-  },
 }

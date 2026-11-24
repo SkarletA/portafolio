@@ -1,0 +1,57 @@
+@reference '../index.css';
+
+.section {
+  @apply border-t border-line;
+}
+
+.inner {
+  @apply mx-auto max-w-6xl px-6 py-20;
+}
+
+.heading {
+  @apply mb-8 flex items-baseline gap-3;
+}
+
+.number {
+  @apply font-mono text-sm text-scarlet;
+}
+
+.title {
+  @apply text-3xl font-bold tracking-tight text-fg md:text-4xl;
+}
+
+.grid {
+  @apply grid gap-9 md:grid-cols-2;
+}
+
+.block {
+  @apply flex flex-col gap-2;
+}
+
+.blockHeading {
+  @apply mt-4 font-mono text-xs uppercase tracking-eyebrow text-teal first:mt-0;
+}
+
+.educationLine {
+  @apply text-fg;
+}
+
+.languagesLine {
+  @apply text-muted;
+}
+
+.pillList {
+  @apply flex flex-wrap gap-2;
+}
+
+.pill {
+  @apply rounded-md border border-line bg-panel px-2 py-1 font-mono text-xs text-fg;
+}
+
+.pillMeta {
+  @apply text-muted;
+}
+
+.credlyLink {
+  @apply mt-1 inline-block font-mono text-sm text-teal transition-colors hover:text-fg;
+}

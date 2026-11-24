@@ -2,9 +2,11 @@ import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import enCommon from './locales/en/common.json'
+import enContinuingEducation from './locales/en/continuingEducation.json'
 import enLab from './locales/en/lab.json'
 import enLaboratoria from './locales/en/laboratoria.json'
 import esCommon from './locales/es/common.json'
+import esContinuingEducation from './locales/es/continuingEducation.json'
 import esLab from './locales/es/lab.json'
 import esLaboratoria from './locales/es/laboratoria.json'
 
@@ -23,13 +25,13 @@ portfolioI18n
   .use(initReactI18next)
   .init({
     resources: {
-      es: { common: esCommon, lab: esLab, laboratoria: esLaboratoria },
-      en: { common: enCommon, lab: enLab, laboratoria: enLaboratoria },
+      es: { common: esCommon, lab: esLab, laboratoria: esLaboratoria, continuingEducation: esContinuingEducation },
+      en: { common: enCommon, lab: enLab, laboratoria: enLaboratoria, continuingEducation: enContinuingEducation },
     },
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
     defaultNS: 'common',
-    ns: ['common', 'lab', 'laboratoria'],
+    ns: ['common', 'lab', 'laboratoria', 'continuingEducation'],
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

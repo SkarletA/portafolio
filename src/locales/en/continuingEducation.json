@@ -1,0 +1,32 @@
+{
+  "heading": "Continuing education",
+  "educationHeading": "Education",
+  "education": {
+    "degree": "Chemistry coursework (2009–2018)",
+    "org": "Universidad de Carabobo"
+  },
+  "certificationsHeading": "Certifications",
+  "certifications": {
+    "react": "React",
+    "javascript": "JavaScript",
+    "git": "Git",
+    "databases": "Databases and SQL Fundamentals",
+    "internalPerformance": "Internal performance management certification",
+    "awsEssentials": "AWS Essentials"
+  },
+  "certificationKindLabels": {
+    "certification": "Certification",
+    "diploma": "Diploma"
+  },
+  "languagesHeading": "Languages",
+  "languageNames": {
+    "es": "Spanish",
+    "en": "English"
+  },
+  "languageLevels": {
+    "native": "Native",
+    "b1": "B1"
+  },
+  "badgesHeading": "Badges",
+  "credlyLink": "View badges on Credly →"
+}

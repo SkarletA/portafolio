@@ -1,0 +1,32 @@
+{
+  "heading": "Formación continua",
+  "educationHeading": "Educación",
+  "education": {
+    "degree": "Licenciatura en Química (cursada 2009–2018)",
+    "org": "Universidad de Carabobo"
+  },
+  "certificationsHeading": "Certificaciones",
+  "certifications": {
+    "react": "React",
+    "javascript": "JavaScript",
+    "git": "Git",
+    "databases": "Bases de datos y SQL Fundamentals",
+    "internalPerformance": "Certificación interna de gestión del desempeño",
+    "awsEssentials": "AWS Essentials"
+  },
+  "certificationKindLabels": {
+    "certification": "Certificación",
+    "diploma": "Diploma"
+  },
+  "languagesHeading": "Idiomas",
+  "languageNames": {
+    "es": "Español",
+    "en": "Inglés"
+  },
+  "languageLevels": {
+    "native": "Nativo",
+    "b1": "B1"
+  },
+  "badgesHeading": "Insignias",
+  "credlyLink": "Ver insignias en Credly →"
+}
