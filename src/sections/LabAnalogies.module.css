@@ -8,6 +8,18 @@
   @apply mx-auto max-w-6xl px-6 py-20;
 }
 
+.headerRow {
+  @apply mb-8 flex flex-col items-start gap-6 md:flex-row md:items-center;
+}
+
+.portraitWrap {
+  @apply w-36 shrink-0 sm:w-44 md:w-48;
+}
+
+.headingBlock {
+  @apply min-w-0;
+}
+
 .heading {
   @apply mb-6 flex items-baseline gap-3;
 }
@@ -21,7 +33,7 @@
 }
 
 .intro {
-  @apply mb-8 max-w-prose text-muted;
+  @apply max-w-prose text-muted;
 }
 
 .grid {
