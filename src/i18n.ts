@@ -1,16 +1,27 @@
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
-import enCommon from './locales/en/common.json'
-import enContinuingEducation from './locales/en/continuingEducation.json'
-import enLab from './locales/en/lab.json'
-import enLaboratoria from './locales/en/laboratoria.json'
-import esCommon from './locales/es/common.json'
-import esContinuingEducation from './locales/es/continuingEducation.json'
-import esLab from './locales/es/lab.json'
-import esLaboratoria from './locales/es/laboratoria.json'
 
 export const LANGUAGE_STORAGE_KEY = 'portfolio-language'
+
+type JsonModule = { default: Record<string, unknown> }
+
+// Cada JSON en locales/<lng>/<namespace>.json se registra solo por existir -
+// agregar una nueva sección es agregar su archivo, no tocar este archivo.
+const localeModules = import.meta.glob<JsonModule>('./locales/*/*.json', { eager: true })
+
+function loadNamespaces(lng: 'es' | 'en'): Record<string, Record<string, unknown>> {
+  const namespaces: Record<string, Record<string, unknown>> = {}
+  const pattern = new RegExp(`/locales/${lng}/(.+)\\.json$`)
+  for (const [path, module] of Object.entries(localeModules)) {
+    const match = path.match(pattern)
+    if (match) namespaces[match[1]] = module.default
+  }
+  return namespaces
+}
+
+const esResources = loadNamespaces('es')
+const enResources = loadNamespaces('en')
 
 // Instancia propia (createInstance), separada de la de Finora
 // (src/apps/finora/i18n.ts, que usa el singleton global de 'i18next'): las
@@ -25,13 +36,13 @@ portfolioI18n
   .use(initReactI18next)
   .init({
     resources: {
-      es: { common: esCommon, lab: esLab, laboratoria: esLaboratoria, continuingEducation: esContinuingEducation },
-      en: { common: enCommon, lab: enLab, laboratoria: enLaboratoria, continuingEducation: enContinuingEducation },
+      es: esResources,
+      en: enResources,
     },
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
     defaultNS: 'common',
-    ns: ['common', 'lab', 'laboratoria', 'continuingEducation'],
+    ns: Object.keys(esResources),
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],

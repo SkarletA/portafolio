@@ -7,8 +7,6 @@ export interface ExperienceEntry {
   dates: string
   context?: string
   bullets: string[]
-  /** Resumen corto usado por la tarjeta "Ben & Frank" en la sección de Proyectos. */
-  cardSummary?: string
 }
 
 // Clave estable para la etiqueta de cada certificación/diploma; el texto
@@ -109,8 +107,6 @@ export const profile: Profile = {
         'Participé en la migración de páginas críticas del flujo de compra (categorías, carrito, checkout) de Odoo a una arquitectura React en Vercel y EKS, reemplazando un despliegue nocturno de varias horas por una arquitectura más rápida, basada en componentes y reutilizable, con A→B switching vía feature flags.',
         'Impulsé la integración de búsqueda con Algolia, implementé monitoreo con Sentry y Grafana, y colaboré en la gestión de Bloomreach y Google Analytics para dashboards, campañas, recomendaciones y experimentos A/B.',
       ],
-      cardSummary:
-        'Participé en la migración del flujo de compra de Odoo a React, Vercel y AWS EKS, la integración con Algolia y experimentos A/B con Bloomreach.',
     },
     {
       title: 'Frontend Developer (Mid)',

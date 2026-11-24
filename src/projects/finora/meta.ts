@@ -1,26 +1,10 @@
-export interface ProjectMeta {
-  slug: string
-  name: string
-  status: string
-  tagline: string
-  description: string
-  highlights: string[]
-}
+import type { ProjectMeta } from '../types'
 
 export const finora: ProjectMeta = {
   slug: 'finora',
   name: 'Finora',
-  status: 'In progress',
-  tagline: 'Personal expense management that helps people understand, organize, and act on their finances.',
-  description: 'A practical case study of React architecture, state management, data visualization, and product-oriented UX.',
-  highlights: [
-    'React application architecture',
-    'State management',
-    'Responsive UI development',
-    'Data visualization',
-    'Form handling and validation',
-    'API integration',
-    'UX/UI principles',
-    'Scalable frontend patterns',
-  ],
+  symbol: 'Fn',
+  accentColor: '#ff4d5e',
+  tags: ['react', 'typescript', 'storybook', 'ci'],
+  href: '/finora',
 }

@@ -1,45 +1,59 @@
 @reference '../index.css';
 
 .section {
-  @apply border-t border-paper/10;
+  @apply border-t border-line;
 }
 
 .inner {
   @apply mx-auto max-w-6xl px-6 py-20;
 }
 
+.heading {
+  @apply mb-8 flex items-baseline gap-3;
+}
+
+.number {
+  @apply font-mono text-sm text-scarlet;
+}
+
 .title {
-  @apply mb-12 font-display text-3xl text-paper md:text-4xl;
+  @apply text-3xl font-bold tracking-tight text-fg md:text-4xl;
 }
 
-.card {
-  @apply rounded-2xl border border-paper/10 bg-ink-soft p-8 md:p-12;
+.grid {
+  @apply grid gap-4 md:grid-cols-3;
 }
 
-.eyebrow {
-  @apply mb-3 text-sm uppercase tracking-eyebrow text-ember;
+.symbol {
+  @apply relative mb-4 flex h-14 w-14 flex-col items-center justify-center rounded-lg border-2 bg-bg/40 font-mono text-2xl font-bold text-fg;
+  border-color: var(--c);
 }
 
-.projectTitle {
-  @apply font-display text-4xl text-paper;
+.symbol small {
+  @apply absolute left-2 top-2 font-mono text-xs text-muted;
 }
 
-.tagline {
-  @apply mt-4 max-w-2xl text-lg text-paper-muted;
+.cardTitle {
+  @apply mb-1.5 text-xl font-semibold text-fg;
 }
 
-.description {
-  @apply mt-3 max-w-2xl text-paper-muted;
+.cardSubtitle {
+  @apply text-sm font-normal text-muted;
 }
 
-.highlights {
-  @apply mt-8 flex flex-wrap gap-2;
+.cardDescription {
+  @apply text-sm text-muted;
 }
 
-.highlight {
-  @apply rounded-full border border-paper/15 px-3 py-1 text-sm text-paper-muted;
+.tags {
+  @apply mt-4 flex flex-wrap gap-1.5;
 }
 
-.link {
-  @apply mt-8 inline-flex items-center gap-2 text-sm font-medium text-ember transition-colors hover:text-ember-soft;
+.tag {
+  @apply rounded-md bg-fg/5 px-2 py-1 font-mono text-xs text-fg/80;
+}
+
+.cta {
+  @apply mt-4 inline-block font-mono text-xs;
+  color: var(--c);
 }
