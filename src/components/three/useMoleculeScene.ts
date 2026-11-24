@@ -24,14 +24,33 @@ import {
   WebGLRenderer,
 } from 'three'
 import { GROUP_COLORS } from '@portfolio-data/groups'
-import { MOLECULE_ATOMS } from './moleculeAtoms'
-import { MOLECULE_EDGES, MOLECULE_POSITIONS, TREE_EDGES, TREE_POSITIONS } from './moleculeData'
+import { computeCameraDistance } from './cameraFraming'
+import { ELEMENT_NUMBERS, MOLECULE_ATOMS } from './moleculeAtoms'
+import { CONTENT_RADIUS, MOLECULE_EDGES, MOLECULE_POSITIONS, TREE_EDGES, TREE_POSITIONS } from './moleculeData'
 import { advanceProgress, interpolatePositions, normalizeAngle, smoothstep } from './morph'
 import { createTileTexture } from './tileTexture'
 
 const PARTICLE_COUNT = 220
 const PARTICLE_COLORS = ['#2dd4bf', '#ff4d5e', '#fbbf24']
 const UP = new Vector3(0, 1, 0)
+
+const CAMERA_FOV = 40
+// Margin beyond CONTENT_RADIUS so tiles never touch the canvas edge.
+const CAMERA_CONTENT_MARGIN = 1.3
+const TILE_SCALE = 0.8
+
+// Fixed base tilt so the ring never rests edge-on to the camera - the resting
+// tilt a benzene ring would naturally show, not a flat face-on disc.
+const BASE_ROTATION_X = -0.5
+// How far a drag may tilt away from BASE_ROTATION_X before clamping - keeps
+// the ring from ever reaching edge-on, where its sprites overlap in screen space.
+const ROTATION_X_DRAG_RANGE = 0.35
+// Idle autorotation is a bounded sway (±40°) instead of a full continuous
+// spin, which is what let the ring pass through an edge-on view on its own.
+// Built as a per-frame triangle wave (not sin(elapsed)) so it keeps going
+// smoothly from wherever a drag left rotationY, with no jump at hand-off.
+const AUTO_SWAY_AMPLITUDE = (40 * Math.PI) / 180
+const AUTO_SWAY_STEP = 0.004
 
 interface TooltipRefs {
   containerRef: RefObject<HTMLDivElement | null>
@@ -84,8 +103,7 @@ export function useMoleculeScene({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 
     const scene = new Scene()
-    const camera = new PerspectiveCamera(40, 1, 0.1, 100)
-    camera.position.set(0, 0, 10.8)
+    const camera = new PerspectiveCamera(CAMERA_FOV, 1, 0.1, 100)
     const group = new Group()
     scene.add(group)
 
@@ -109,10 +127,10 @@ export function useMoleculeScene({
     function buildSprites() {
       disposeSprites()
       sprites = MOLECULE_ATOMS.map((atom, i) => {
-        const texture = createTileTexture(atom.symbol, atom.name, i, GROUP_COLORS[atom.group])
+        const texture = createTileTexture(atom.symbol, atom.name, ELEMENT_NUMBERS[atom.symbol], GROUP_COLORS[atom.group])
         const material = new SpriteMaterial({ map: texture, transparent: true })
         const sprite = new Sprite(material)
-        sprite.scale.set(0.95, 0.95, 1)
+        sprite.scale.set(TILE_SCALE, TILE_SCALE, 1)
         sprite.userData.index = i
         group.add(sprite)
         return sprite
@@ -233,7 +251,9 @@ export function useMoleculeScene({
       const height = container.clientHeight
       if (width === 0 || height === 0) return
       renderer.setSize(width, height, false)
-      camera.aspect = width / height
+      const aspect = width / height
+      camera.aspect = aspect
+      camera.position.set(0, 0, computeCameraDistance(CAMERA_FOV, aspect, CONTENT_RADIUS * CAMERA_CONTENT_MARGIN))
       camera.updateProjectionMatrix()
     }
     resize()
@@ -265,8 +285,10 @@ export function useMoleculeScene({
     let previousCompiled = compiledRef.current
     let progress = target
     let rotationY = 0
-    let rotationX = 0
+    let rotationX = BASE_ROTATION_X
     let velocityY = 0
+    let swayDirection = 1
+    let swayAccumulated = 0
     let dragging = false
     let lastClientX = 0
     let lastClientY = 0
@@ -312,7 +334,10 @@ export function useMoleculeScene({
         lastClientY = event.clientY
         rotationY += dx * 0.008
         velocityY = dx * 0.008
-        rotationX = Math.max(-0.9, Math.min(0.9, rotationX + dy * 0.006))
+        rotationX = Math.max(
+          BASE_ROTATION_X - ROTATION_X_DRAG_RANGE,
+          Math.min(BASE_ROTATION_X + ROTATION_X_DRAG_RANGE, rotationX + dy * 0.006)
+        )
       }
 
       mouse.set(pointerNormalizedX, -pointerNormalizedY)
@@ -374,7 +399,14 @@ export function useMoleculeScene({
       if (!compiledRef.current) {
         if (!dragging) {
           velocityY *= 0.95
-          rotationY += velocityY + (reducedMotion ? 0 : 0.0035)
+          rotationY += velocityY
+          rotationX += (BASE_ROTATION_X - rotationX) * 0.08
+          if (!reducedMotion) {
+            rotationY += swayDirection * AUTO_SWAY_STEP
+            swayAccumulated += swayDirection * AUTO_SWAY_STEP
+            if (swayAccumulated >= AUTO_SWAY_AMPLITUDE) swayDirection = -1
+            else if (swayAccumulated <= -AUTO_SWAY_AMPLITUDE) swayDirection = 1
+          }
         }
       } else {
         rotationY += (0 - rotationY) * 0.08
@@ -387,7 +419,7 @@ export function useMoleculeScene({
       interpolatePositions(MOLECULE_POSITIONS, TREE_POSITIONS, eased, currentPositions)
       sprites.forEach((sprite, i) => {
         sprite.position.copy(currentPositions[i])
-        const scale = (hoveredIndex === i ? 1.12 : 1) * 0.95
+        const scale = (hoveredIndex === i ? 1.12 : 1) * TILE_SCALE
         sprite.scale.setScalar(scale)
       })
 

@@ -38,35 +38,37 @@ export function MoleculeHero() {
   const showFallback = !webglSupported || contextLost
 
   return (
-    <div ref={containerRef} className={s.stage} role="img" aria-label={t('molecule.accessibleName')}>
-      <div className={s.top}>
-        <p className={s.stateLabel} data-testid="hero-molecule-state-label">
-          {t('molecule.stateLabel')}{' '}
-          <b className={s.stateValue}>{compiled ? t('molecule.stateTree') : t('molecule.stateMolecule')}</b>
-        </p>
-        <button
-          type="button"
-          className={s.morphButton}
-          onClick={handleMorphClick}
-          data-testid="hero-molecule-morph-button"
-        >
-          {compiled ? t('molecule.backButton') : t('molecule.compileButton')}
-        </button>
+    <div className={s.wrapper}>
+      <div ref={containerRef} className={s.stage} role="img" aria-label={t('molecule.accessibleName')}>
+        <div className={s.top}>
+          <p className={s.stateLabel} data-testid="hero-molecule-state-label">
+            {t('molecule.stateLabel')}{' '}
+            <b className={s.stateValue}>{compiled ? t('molecule.stateTree') : t('molecule.stateMolecule')}</b>
+          </p>
+          <button
+            type="button"
+            className={s.morphButton}
+            onClick={handleMorphClick}
+            data-testid="hero-molecule-morph-button"
+          >
+            {compiled ? t('molecule.backButton') : t('molecule.compileButton')}
+          </button>
+        </div>
+
+        {webglSupported ? <canvas ref={canvasRef} className={s.canvas} aria-hidden="true" /> : null}
+        {showFallback ? (
+          <div className={s.fallback}>
+            <StaticMoleculeFallback compiled={compiled} />
+          </div>
+        ) : null}
+
+        {!showFallback ? (
+          <div ref={tooltipRef} className={s.tooltip} data-testid="hero-molecule-tooltip">
+            <strong ref={tooltipTitleRef} className={s.tooltipTitle} />
+            <span ref={tooltipDescriptionRef} className={s.tooltipDescription} />
+          </div>
+        ) : null}
       </div>
-
-      {webglSupported ? <canvas ref={canvasRef} className={s.canvas} aria-hidden="true" /> : null}
-      {showFallback ? (
-        <div className={s.fallback}>
-          <StaticMoleculeFallback compiled={compiled} />
-        </div>
-      ) : null}
-
-      {!showFallback ? (
-        <div ref={tooltipRef} className={s.tooltip} data-testid="hero-molecule-tooltip">
-          <strong ref={tooltipTitleRef} className={s.tooltipTitle} />
-          <span ref={tooltipDescriptionRef} className={s.tooltipDescription} />
-        </div>
-      ) : null}
 
       {!showFallback && hintVisible ? (
         <p className={s.hint} aria-hidden="true">
