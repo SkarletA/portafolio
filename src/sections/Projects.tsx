@@ -24,8 +24,8 @@ function ProjectCard({ index, meta, testId, children }: ProjectCardProps) {
   return (
     <Card accentColor={meta.accentColor} href={meta.href} testId={testId}>
       <div className={s.symbol}>
-        <small>{String(index).padStart(2, '0')}</small>
-        <strong>{meta.symbol}</strong>
+        <small className={s.symbolIndex}>{String(index).padStart(2, '0')}</small>
+        <strong className={s.symbolGlyph}>{meta.symbol}</strong>
       </div>
       {children}
       <ul className={s.tags}>

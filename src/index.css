@@ -31,6 +31,10 @@
   --grid-template-columns-sidebar: 220px 1fr;
   --tracking-eyebrow: 0.16em;
   --aspect-stage: 4 / 5;
+  /* Index number on the Projects symbol tile - smaller than text-xs (12px)
+     on purpose, to leave room for the centered symbol glyph in a 80px tile. */
+  --text-tile-index: 10px;
+  --text-tile-index--line-height: 1;
 }
 
 html {

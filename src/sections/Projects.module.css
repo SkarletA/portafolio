@@ -25,12 +25,16 @@
 }
 
 .symbol {
-  @apply relative mb-4 flex h-14 w-14 flex-col items-center justify-center rounded-lg border-2 bg-bg/40 font-mono text-2xl font-bold text-fg;
+  @apply mb-4 grid h-20 w-20 grid-rows-2 rounded-lg border-2 bg-bg/40 p-2 font-mono text-fg;
   border-color: var(--c);
 }
 
-.symbol small {
-  @apply absolute left-2 top-2 font-mono text-xs text-muted;
+.symbolIndex {
+  @apply row-start-1 self-start justify-self-start text-tile-index text-muted;
+}
+
+.symbolGlyph {
+  @apply row-span-2 row-start-1 flex items-center justify-center text-xl font-bold leading-none;
 }
 
 .cardTitle {
