@@ -3,8 +3,10 @@ import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import enCommon from './locales/en/common.json'
 import enLab from './locales/en/lab.json'
+import enLaboratoria from './locales/en/laboratoria.json'
 import esCommon from './locales/es/common.json'
 import esLab from './locales/es/lab.json'
+import esLaboratoria from './locales/es/laboratoria.json'
 
 export const LANGUAGE_STORAGE_KEY = 'portfolio-language'
 
@@ -21,13 +23,13 @@ portfolioI18n
   .use(initReactI18next)
   .init({
     resources: {
-      es: { common: esCommon, lab: esLab },
-      en: { common: enCommon, lab: enLab },
+      es: { common: esCommon, lab: esLab, laboratoria: esLaboratoria },
+      en: { common: enCommon, lab: enLab, laboratoria: enLaboratoria },
     },
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
     defaultNS: 'common',
-    ns: ['common', 'lab'],
+    ns: ['common', 'lab', 'laboratoria'],
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
