@@ -1,0 +1,24 @@
+{
+  "heading": "From the lab to the code",
+  "intro": "The way I think comes from chemistry. These are the equivalences I use every day.",
+  "items": {
+    "method": {
+      "from": "the scientific method",
+      "to": "A/B testing",
+      "title": "Hypothesis, measurement, conclusion",
+      "description": "Before deciding, I measure. Product experiments with clear metrics (OKRs, CSAT) instead of opinions."
+    },
+    "equations": {
+      "from": "balancing equations",
+      "to": "ADRs",
+      "title": "Nothing is created, everything is documented",
+      "description": "Every architecture decision has its reactants and its products: context, alternatives, and consequences in writing."
+    },
+    "catalysts": {
+      "from": "catalysts",
+      "to": "mentoring",
+      "title": "Speeding things up without burning out",
+      "description": "I'm part of a cross-functional squad and mentor 4 teammates through 1:1s and pair programming, so the team moves faster."
+    }
+  }
+}

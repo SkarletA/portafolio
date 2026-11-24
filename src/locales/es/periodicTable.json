@@ -1,0 +1,22 @@
+{
+  "heading": "Mi tabla periódica",
+  "intro": "Los elementos con los que trabajo, agrupados por color igual que en la tabla original.",
+  "flipLabel": "Voltear tarjeta de {{name}}",
+  "elements": {
+    "re": { "blurb": "Flujo de compra: colecciones, página de producto y carrito." },
+    "nx": { "blurb": "Framework del flujo de compra en Ben & Frank." },
+    "ts": { "blurb": "Tipos en el flujo de compra y en la arquitectura de Finora." },
+    "sb": { "blurb": "Documentación y pruebas visuales de componentes en Finora." },
+    "vt": { "blurb": "Pruebas unitarias en mis proyectos." },
+    "no": { "blurb": "Componentes del flujo de compra y la API REST de Burger Queen." },
+    "su": { "blurb": "Backend como servicio para proyectos propios." },
+    "al": { "blurb": "Integración para mejorar la búsqueda de productos." },
+    "bl": { "blurb": "Tracking, campañas, recomendaciones y experimentos A/B." },
+    "ct": { "blurb": "Plataforma de comercio que conocí como Frontend Jr." },
+    "od": { "blurb": "Personalizaciones en Python para catálogo, POS, pedidos y retail." },
+    "vc": { "blurb": "Despliegue del flujo de compra migrado desde Odoo." },
+    "ek": { "blurb": "Infraestructura donde corre el flujo de compra migrado." },
+    "se": { "blurb": "Monitoreo de errores en producción." },
+    "gr": { "blurb": "Monitoreo de procesos y métricas." }
+  }
+}

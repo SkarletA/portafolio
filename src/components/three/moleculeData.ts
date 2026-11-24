@@ -8,8 +8,8 @@ export interface MoleculeEdge {
   double?: boolean
 }
 
-const RING_RADIUS = 1.7
-const SUBSTITUENT_RADIUS = 3.15
+const RING_RADIUS = 2
+const SUBSTITUENT_RADIUS = 3.6
 const SUBSTITUENT_Z: Record<number, number> = { 6: 0.9, 7: -0.9, 8: 0.9 }
 
 function buildRingPositions(): Vector3[] {
@@ -48,6 +48,9 @@ function buildTreePositions(): Vector3[] {
 
 export const MOLECULE_POSITIONS: Vector3[] = buildRingPositions()
 export const TREE_POSITIONS: Vector3[] = buildTreePositions()
+
+/** Furthest any atom sits from the origin, in either layout - used to frame the camera so nothing overflows the canvas. */
+export const CONTENT_RADIUS = Math.max(...[...MOLECULE_POSITIONS, ...TREE_POSITIONS].map((v) => v.length()))
 
 export const MOLECULE_EDGES: MoleculeEdge[] = [
   { from: 0, to: 1, double: true },

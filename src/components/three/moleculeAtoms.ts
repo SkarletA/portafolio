@@ -1,4 +1,5 @@
 import type { Group } from '@portfolio-data/groups'
+import { profile } from '@portfolio-data/profile'
 
 export interface MoleculeAtom {
   symbol: string
@@ -28,3 +29,12 @@ export const MOLECULE_ATOMS: MoleculeAtom[] = [
 
 /** Índice del sustituyente -> índice del átomo del anillo al que está unido. */
 export const RING_SUBSTITUENT_PARENTS: Record<number, number> = { 6: 0, 7: 2, 8: 4 }
+
+/**
+ * Número de tile por símbolo = posición 1-based en profile.elements (la
+ * numeración de "Mi tabla periódica"), no el índice de este subconjunto de 9
+ * - así la molécula y la tabla siempre coinciden.
+ */
+export const ELEMENT_NUMBERS: Record<string, number> = Object.fromEntries(
+  profile.elements.map((element, i) => [element.symbol, i + 1])
+)

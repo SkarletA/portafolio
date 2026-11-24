@@ -15,7 +15,7 @@ describe('App', () => {
   it('shows Home at /', () => {
     renderAt('/')
 
-    expect(screen.getByRole('heading', { name: 'Contact' })).toBeInTheDocument()
+    expect(screen.getByTestId('contact-heading')).toBeInTheDocument()
     expect(screen.queryByText('Page not found')).not.toBeInTheDocument()
   })
 
@@ -23,6 +23,6 @@ describe('App', () => {
     renderAt('/does-not-exist')
 
     expect(screen.getByText('Page not found')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Contact' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('contact-heading')).not.toBeInTheDocument()
   })
 })

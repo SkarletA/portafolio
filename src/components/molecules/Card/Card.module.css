@@ -1,0 +1,9 @@
+@reference '../../../index.css';
+
+.card {
+  @apply relative block overflow-hidden rounded-2xl border border-line bg-panel p-6 text-left transition-transform duration-300 hover:-translate-y-1;
+}
+
+.card:hover {
+  border-color: var(--c, var(--color-teal));
+}

@@ -11,7 +11,7 @@ function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: n
 }
 
 /** Textura estilo "tile de tabla periódica" para un átomo del Hero: número, símbolo y nombre. */
-export function createTileTexture(symbol: string, name: string, index: number, color: string): CanvasTexture {
+export function createTileTexture(symbol: string, name: string, number: number, color: string): CanvasTexture {
   const canvas = document.createElement('canvas')
   canvas.width = 256
   canvas.height = 256
@@ -31,7 +31,7 @@ export function createTileTexture(symbol: string, name: string, index: number, c
 
   ctx.fillStyle = '#8a96a8'
   ctx.font = '500 26px "JetBrains Mono", monospace'
-  ctx.fillText(String(index + 1).padStart(2, '0'), 24, 50)
+  ctx.fillText(String(number).padStart(2, '0'), 24, 50)
 
   ctx.textAlign = 'center'
   ctx.fillStyle = '#ffffff'

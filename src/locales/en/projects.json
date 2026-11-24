@@ -1,0 +1,30 @@
+{
+  "heading": "Projects",
+  "tags": {
+    "react": "React",
+    "typescript": "TypeScript",
+    "storybook": "Storybook",
+    "ci": "CI",
+    "product": "Product",
+    "ecommerce": "E-commerce",
+    "odoo": "Odoo",
+    "nextjs": "Next.js",
+    "algolia": "Algolia",
+    "awsEks": "AWS / EKS"
+  },
+  "cards": {
+    "finora": {
+      "description": "A real personal finance app: typed React architecture, Atomic Design, tests, Storybook, ADRs, and CI on every PR. My evidence of good practices outside a work context.",
+      "cta": "open app →"
+    },
+    "salsasTovar": {
+      "description": "A platform to run an artisanal hot-sauce business with a recipe from Colonia Tovar. Portfolio project, currently in design.",
+      "cta": "in progress"
+    },
+    "benAndFrank": {
+      "subtitle": "Lentes Galileo",
+      "description": "Where I worked for 4 years (from Jr to Product Tech Lead) at an omnichannel eyewear retailer with 200+ stores and e-commerce in Mexico, Chile, and Colombia. I took part in migrating the purchase flow from Odoo to React, Vercel, and AWS EKS, the Algolia integration, and A/B experiments with Bloomreach.",
+      "cta": "experience · Aug 2022 – Aug 2026"
+    }
+  }
+}

@@ -1,25 +1,29 @@
 @reference '../index.css';
 
 .section {
-  @apply border-t border-paper/10;
+  @apply border-t border-line;
 }
 
 .inner {
-  @apply mx-auto max-w-6xl px-6 py-20;
+  @apply mx-auto max-w-6xl px-6 py-24;
 }
 
-.title {
-  @apply mb-6 font-display text-3xl text-paper md:text-4xl;
+.heading {
+  @apply max-w-2xl text-4xl font-bold leading-tight tracking-tight text-fg sm:text-5xl md:text-6xl;
 }
 
-.description {
-  @apply max-w-xl text-lg text-paper-muted;
+.highlight {
+  @apply font-bold not-italic text-scarlet;
 }
 
-.list {
-  @apply mt-8 flex flex-wrap gap-x-8 gap-y-3 text-paper;
+.links {
+  @apply mt-8 flex flex-wrap gap-3;
 }
 
-.link {
-  @apply underline decoration-ember/60 underline-offset-4 transition-colors hover:text-ember;
+.linkPrimary {
+  @apply rounded-xl border border-scarlet bg-scarlet px-5 py-3 font-mono text-sm text-fg transition-transform hover:-translate-y-0.5;
+}
+
+.linkSecondary {
+  @apply rounded-xl border border-line bg-panel px-5 py-3 font-mono text-sm text-fg transition-colors hover:border-teal;
 }

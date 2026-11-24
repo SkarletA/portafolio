@@ -1,0 +1,24 @@
+{
+  "heading": "Del laboratorio al código",
+  "intro": "Mi forma de pensar viene de la química. Estas son las equivalencias que uso todos los días.",
+  "items": {
+    "method": {
+      "from": "método científico",
+      "to": "A/B testing",
+      "title": "Hipótesis, medición, conclusión",
+      "description": "Antes de decidir, mido. Experimentos en producto con métricas claras (OKRs, CSAT) en lugar de opiniones."
+    },
+    "equations": {
+      "from": "balancear ecuaciones",
+      "to": "ADRs",
+      "title": "Nada se crea, todo se documenta",
+      "description": "Cada decisión de arquitectura tiene sus reactivos y sus productos: contexto, alternativas y consecuencias por escrito."
+    },
+    "catalysts": {
+      "from": "catalizadores",
+      "to": "mentoring",
+      "title": "Acelerar sin consumirse",
+      "description": "Participo en un squad multidisciplinario y hago mentoring de 4 compañeros con 1:1 y pair programming, para que el equipo avance más rápido."
+    }
+  }
+}

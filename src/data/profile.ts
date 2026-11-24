@@ -7,44 +7,39 @@ export interface ExperienceEntry {
   dates: string
   context?: string
   bullets: string[]
-  /** Resumen corto usado por la tarjeta "Ben & Frank" en la sección de Proyectos. */
-  cardSummary?: string
 }
 
-export interface EducationEntry {
-  title: string
-  org: string
-  dates: string
-}
-
+// Clave estable para la etiqueta de cada certificación/diploma; el texto
+// visible vive en locales/{es,en}/continuingEducation.json -> certifications.*
+// (algunos, como nombres de cursos de Platzi, son iguales en ambos idiomas;
+// otros, como la certificación interna, no).
 export interface CertificationEntry {
-  label: string
+  key: string
   issuer: string
   dates?: string
   kind: 'certification' | 'diploma'
 }
 
+// Igual que CertificationEntry: el nombre del idioma y el nivel ("Nativo"/
+// "Native") se traducen vía locales/{es,en}/continuingEducation.json ->
+// languageNames.*/languageLevels.*.
 export interface LanguageEntry {
-  name: string
-  level: string
+  key: 'es' | 'en'
+  levelKey: 'native' | 'b1'
 }
 
 export interface ElementEntry {
   symbol: string
   name: string
   group: Group
-}
-
-export interface LabAnalogy {
-  from: string
-  to: string
-  title: string
-  description: string
-}
-
-export interface LaboratoriaStep {
-  title: string
-  detail?: string
+  /**
+   * Slug for the matching `Si<PascalCase>` export of
+   * @icons-pack/react-simple-icons (see ElementTile's ICONS map), or null
+   * when simple-icons has no icon for the brand (checked once; AWS/EKS,
+   * Bloomreach and CommerceTools don't) - ElementTile falls back to a
+   * symbol monogram in that case.
+   */
+  icon: string | null
 }
 
 export interface Badge {
@@ -53,8 +48,12 @@ export interface Badge {
   year?: string
 }
 
-// El copy del Hero (tagline, texto de apoyo, CTAs) vive en locales/{es,en}/common.json
-// bajo "hero.*", no aquí, porque necesita una versión en cada idioma.
+// El copy del Hero (tagline, texto de apoyo, CTAs), de "Del laboratorio al
+// código" y de "Mi formación en Laboratoria" vive en
+// locales/{es,en}/{common,lab,laboratoria}.json, no aquí, porque necesita
+// una versión en cada idioma. Lo mismo aplica a la licenciatura en Química
+// (ver locales/{es,en}/continuingEducation.json -> education.*): ya no está
+// en este archivo.
 export interface Profile {
   name: string
   role: string
@@ -67,19 +66,12 @@ export interface Profile {
   summary: string[]
   competencies: string[]
   experience: ExperienceEntry[]
-  education: EducationEntry[]
   certifications: CertificationEntry[]
   languages: LanguageEntry[]
   credlyUrl: string
   /** Vacío hasta tener nombres reales de insignias - no se inventan. */
   badges: Badge[]
   elements: ElementEntry[]
-  labAnalogies: LabAnalogy[]
-  laboratoria: {
-    when: string
-    intro: string[]
-    timeline: LaboratoriaStep[]
-  }
 }
 
 export const profile: Profile = {
@@ -123,8 +115,6 @@ export const profile: Profile = {
         'Participé en la migración de páginas críticas del flujo de compra (categorías, carrito, checkout) de Odoo a una arquitectura React en Vercel y EKS, reemplazando un despliegue nocturno de varias horas por una arquitectura más rápida, basada en componentes y reutilizable, con A→B switching vía feature flags.',
         'Impulsé la integración de búsqueda con Algolia, implementé monitoreo con Sentry y Grafana, y colaboré en la gestión de Bloomreach y Google Analytics para dashboards, campañas, recomendaciones y experimentos A/B.',
       ],
-      cardSummary:
-        'Participé en la migración del flujo de compra de Odoo a React, Vercel y AWS EKS, la integración con Algolia y experimentos A/B con Bloomreach.',
     },
     {
       title: 'Frontend Developer (Mid)',
@@ -156,81 +146,36 @@ export const profile: Profile = {
       ],
     },
   ],
-  education: [
-    {
-      title: 'Licenciatura en Química (cursada 2009–2018)',
-      org: 'Universidad de Carabobo',
-      dates: '2009 – 2018',
-    },
-  ],
   certifications: [
-    { label: 'React', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'JavaScript', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'Git', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'Bases de datos y SQL Fundamentals', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
-    { label: 'Certificación interna de gestión del desempeño', issuer: 'Lentes Galileo', kind: 'certification' },
-    { label: 'AWS Essentials', issuer: 'AWS', kind: 'diploma' },
+    { key: 'react', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'javascript', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'git', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'databases', issuer: 'Platzi', dates: '2019 – 2022', kind: 'certification' },
+    { key: 'internalPerformance', issuer: 'Lentes Galileo', kind: 'certification' },
+    { key: 'awsEssentials', issuer: 'AWS', kind: 'diploma' },
   ],
   languages: [
-    { name: 'Español', level: 'Nativo' },
-    { name: 'Inglés', level: 'B1' },
+    { key: 'es', levelKey: 'native' },
+    { key: 'en', levelKey: 'b1' },
   ],
   credlyUrl: 'https://www.credly.com/users/skarlet-araque/badges/credly',
   badges: [],
   elements: [
-    { symbol: 'Re', name: 'React', group: 'frontend' },
-    { symbol: 'Nx', name: 'Next.js', group: 'frontend' },
-    { symbol: 'Ts', name: 'TypeScript', group: 'frontend' },
-    { symbol: 'Sb', name: 'Storybook', group: 'quality' },
-    { symbol: 'Vt', name: 'Vitest', group: 'quality' },
-    { symbol: 'No', name: 'Node.js', group: 'backend' },
-    { symbol: 'Su', name: 'Supabase', group: 'data' },
-    { symbol: 'Al', name: 'Algolia', group: 'data' },
-    { symbol: 'Bl', name: 'Bloomreach', group: 'data' },
-    { symbol: 'Ct', name: 'CommerceTools', group: 'backend' },
-    { symbol: 'Od', name: 'Odoo', group: 'backend' },
-    { symbol: 'Vc', name: 'Vercel', group: 'infra' },
-    { symbol: 'Ek', name: 'AWS / EKS', group: 'infra' },
-    { symbol: 'Se', name: 'Sentry', group: 'infra' },
-    { symbol: 'Gr', name: 'Grafana', group: 'infra' },
+    { symbol: 'Re', name: 'React', group: 'frontend', icon: 'react' },
+    { symbol: 'Nx', name: 'Next.js', group: 'frontend', icon: 'nextdotjs' },
+    { symbol: 'Ts', name: 'TypeScript', group: 'frontend', icon: 'typescript' },
+    { symbol: 'Sb', name: 'Storybook', group: 'quality', icon: 'storybook' },
+    { symbol: 'Vt', name: 'Vitest', group: 'quality', icon: 'vitest' },
+    { symbol: 'No', name: 'Node.js', group: 'backend', icon: 'nodedotjs' },
+    { symbol: 'Su', name: 'Supabase', group: 'data', icon: 'supabase' },
+    { symbol: 'Al', name: 'Algolia', group: 'data', icon: 'algolia' },
+    // Sin ícono en simple-icons al momento de revisar (ver ElementTile.tsx).
+    { symbol: 'Bl', name: 'Bloomreach', group: 'data', icon: null },
+    { symbol: 'Ct', name: 'CommerceTools', group: 'backend', icon: null },
+    { symbol: 'Od', name: 'Odoo', group: 'backend', icon: 'odoo' },
+    { symbol: 'Vc', name: 'Vercel', group: 'infra', icon: 'vercel' },
+    { symbol: 'Ek', name: 'AWS / EKS', group: 'infra', icon: null },
+    { symbol: 'Se', name: 'Sentry', group: 'infra', icon: 'sentry' },
+    { symbol: 'Gr', name: 'Grafana', group: 'infra', icon: 'grafana' },
   ],
-  labAnalogies: [
-    {
-      from: 'método científico',
-      to: 'A/B testing',
-      title: 'Hipótesis, medición, conclusión',
-      description:
-        'Antes de decidir, mido. Experimentos en producto con métricas claras (OKRs, CSAT) en lugar de opiniones.',
-    },
-    {
-      from: 'balancear ecuaciones',
-      to: 'ADRs',
-      title: 'Nada se crea, todo se documenta',
-      description:
-        'Cada decisión de arquitectura tiene sus reactivos y sus productos: contexto, alternativas y consecuencias por escrito.',
-    },
-    {
-      from: 'catalizadores',
-      to: 'mentoring',
-      title: 'Acelerar sin consumirse',
-      description:
-        'Participo en un squad multidisciplinario y hago mentoring de 4 compañeros con 1:1 y pair programming, para que el equipo avance más rápido.',
-    },
-  ],
-  laboratoria: {
-    when: 'Dic 2021 – Jul 2022 · Front-End Developer Student',
-    intro: [
-      'Pasé de los laboratorios de química a escribir mi primera línea de JavaScript en Laboratoria, un bootcamp intensivo de desarrollo web.',
-      'Ahí aprendí los fundamentos que hoy sostienen mi trabajo: JavaScript, React, Node.js, Git, APIs REST y apps con Firebase, construyendo proyectos de principio a fin, uno más complejo que el anterior.',
-    ],
-    timeline: [
-      { title: 'Trivia Conociendo México' },
-      { title: 'Card Validation' },
-      { title: 'Data Lovers' },
-      { title: 'Social Network', detail: 'Aplicación web con React y Firebase' },
-      { title: 'Lab Notes' },
-      { title: 'Burger Queen · cliente', detail: 'Cliente en React para gestión de pedidos' },
-      { title: 'Burger Queen · API', detail: 'API REST con Node.js' },
-    ],
-  },
 }

@@ -1,0 +1,15 @@
+{
+  "heading": "My training at Laboratoria",
+  "when": "Dec 2021 – Jul 2022 · Front-End Developer Student",
+  "intro1": "I went from chemistry labs to writing my first line of JavaScript at Laboratoria, an intensive web development bootcamp.",
+  "intro2": "There I learned the fundamentals that still support my work today: JavaScript, React, Node.js, Git, REST APIs, and apps with Firebase, building projects end-to-end, each one more complex than the last.",
+  "timeline": {
+    "trivia": { "title": "Trivia Conociendo México" },
+    "cardValidation": { "title": "Card Validation" },
+    "dataLovers": { "title": "Data Lovers" },
+    "socialNetwork": { "title": "Social Network", "detail": "Web app with React and Firebase" },
+    "labNotes": { "title": "Lab Notes" },
+    "burgerQueenClient": { "title": "Burger Queen · client", "detail": "React client for order management" },
+    "burgerQueenApi": { "title": "Burger Queen · API", "detail": "REST API with Node.js" }
+  }
+}

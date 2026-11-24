@@ -1,0 +1,71 @@
+@reference '../index.css';
+
+.section {
+  @apply border-t border-line;
+}
+
+.inner {
+  @apply mx-auto max-w-6xl px-6 py-20;
+}
+
+.heading {
+  @apply mb-8 flex items-baseline gap-3;
+}
+
+.number {
+  @apply font-mono text-sm text-scarlet;
+}
+
+.title {
+  @apply text-3xl font-bold tracking-tight text-fg md:text-4xl;
+}
+
+.grid {
+  @apply grid gap-9 md:grid-cols-2 md:items-start;
+}
+
+.story {
+  @apply max-w-prose;
+}
+
+.when {
+  @apply mb-3 font-mono text-xs text-teal;
+}
+
+.paragraph {
+  @apply mb-3 text-muted;
+}
+
+.timeline {
+  @apply relative ml-2 list-none border-l border-dashed border-line;
+}
+
+.step {
+  @apply relative pb-3 pl-6;
+}
+
+.dot {
+  @apply absolute -left-1.5 top-3.5 h-2.5 w-2.5 rounded-full;
+  background: var(--c);
+  box-shadow: 0 0 0 4px var(--color-bg);
+}
+
+.stepCard {
+  @apply flex items-baseline gap-3 rounded-xl border border-line bg-panel p-3 transition-transform duration-200 hover:translate-x-1;
+}
+
+.stepCard:hover {
+  border-color: var(--c);
+}
+
+.stepIndex {
+  @apply min-w-5 font-mono text-xs text-muted;
+}
+
+.stepTitle {
+  @apply font-medium text-fg;
+}
+
+.stepDetail {
+  @apply mt-0.5 text-sm text-muted;
+}

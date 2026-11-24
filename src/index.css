@@ -31,6 +31,14 @@
   --grid-template-columns-sidebar: 220px 1fr;
   --tracking-eyebrow: 0.16em;
   --aspect-stage: 4 / 5;
+  /* Taller than aspect-square so ElementTile's flipped-back face (icon +
+     blurb + group) has room without changing the periodic table's grid. */
+  --aspect-card: 4 / 5;
+  /* Tiny tile labels (the Projects symbol tile's index number, the periodic
+     table tile's back-face group tag) - smaller than text-xs (12px) on
+     purpose, to leave room for the rest of a small tile. */
+  --text-tile-index: 10px;
+  --text-tile-index--line-height: 1;
 }
 
 html {
