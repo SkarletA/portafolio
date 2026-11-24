@@ -5,7 +5,7 @@ import { profile } from '@portfolio-data/profile'
 import s from './PeriodicTable.module.css'
 
 export function PeriodicTable() {
-  const { t } = useTranslation('periodicTable')
+  const { t } = useTranslation(['periodicTable', 'common'])
 
   return (
     <section id="tabla" className={s.section}>
@@ -23,6 +23,10 @@ export function PeriodicTable() {
               symbol={element.symbol}
               name={element.name}
               accentColor={GROUP_COLORS[element.group]}
+              icon={element.icon}
+              blurb={t(`elements.${element.symbol.toLowerCase()}.blurb`)}
+              groupLabel={t(`groups.${element.group}`)}
+              flipLabel={t('flipLabel', { name: element.name })}
             />
           ))}
         </div>

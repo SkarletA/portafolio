@@ -32,6 +32,14 @@ export interface ElementEntry {
   symbol: string
   name: string
   group: Group
+  /**
+   * Slug for the matching `Si<PascalCase>` export of
+   * @icons-pack/react-simple-icons (see ElementTile's ICONS map), or null
+   * when simple-icons has no icon for the brand (checked once; AWS/EKS,
+   * Bloomreach and CommerceTools don't) - ElementTile falls back to a
+   * symbol monogram in that case.
+   */
+  icon: string | null
 }
 
 export interface Badge {
@@ -153,20 +161,21 @@ export const profile: Profile = {
   credlyUrl: 'https://www.credly.com/users/skarlet-araque/badges/credly',
   badges: [],
   elements: [
-    { symbol: 'Re', name: 'React', group: 'frontend' },
-    { symbol: 'Nx', name: 'Next.js', group: 'frontend' },
-    { symbol: 'Ts', name: 'TypeScript', group: 'frontend' },
-    { symbol: 'Sb', name: 'Storybook', group: 'quality' },
-    { symbol: 'Vt', name: 'Vitest', group: 'quality' },
-    { symbol: 'No', name: 'Node.js', group: 'backend' },
-    { symbol: 'Su', name: 'Supabase', group: 'data' },
-    { symbol: 'Al', name: 'Algolia', group: 'data' },
-    { symbol: 'Bl', name: 'Bloomreach', group: 'data' },
-    { symbol: 'Ct', name: 'CommerceTools', group: 'backend' },
-    { symbol: 'Od', name: 'Odoo', group: 'backend' },
-    { symbol: 'Vc', name: 'Vercel', group: 'infra' },
-    { symbol: 'Ek', name: 'AWS / EKS', group: 'infra' },
-    { symbol: 'Se', name: 'Sentry', group: 'infra' },
-    { symbol: 'Gr', name: 'Grafana', group: 'infra' },
+    { symbol: 'Re', name: 'React', group: 'frontend', icon: 'react' },
+    { symbol: 'Nx', name: 'Next.js', group: 'frontend', icon: 'nextdotjs' },
+    { symbol: 'Ts', name: 'TypeScript', group: 'frontend', icon: 'typescript' },
+    { symbol: 'Sb', name: 'Storybook', group: 'quality', icon: 'storybook' },
+    { symbol: 'Vt', name: 'Vitest', group: 'quality', icon: 'vitest' },
+    { symbol: 'No', name: 'Node.js', group: 'backend', icon: 'nodedotjs' },
+    { symbol: 'Su', name: 'Supabase', group: 'data', icon: 'supabase' },
+    { symbol: 'Al', name: 'Algolia', group: 'data', icon: 'algolia' },
+    // Sin ícono en simple-icons al momento de revisar (ver ElementTile.tsx).
+    { symbol: 'Bl', name: 'Bloomreach', group: 'data', icon: null },
+    { symbol: 'Ct', name: 'CommerceTools', group: 'backend', icon: null },
+    { symbol: 'Od', name: 'Odoo', group: 'backend', icon: 'odoo' },
+    { symbol: 'Vc', name: 'Vercel', group: 'infra', icon: 'vercel' },
+    { symbol: 'Ek', name: 'AWS / EKS', group: 'infra', icon: null },
+    { symbol: 'Se', name: 'Sentry', group: 'infra', icon: 'sentry' },
+    { symbol: 'Gr', name: 'Grafana', group: 'infra', icon: 'grafana' },
   ],
 }

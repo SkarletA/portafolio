@@ -1,4 +1,22 @@
 {
   "heading": "My periodic table",
-  "intro": "The elements I work with, grouped by color just like the original table."
+  "intro": "The elements I work with, grouped by color just like the original table.",
+  "flipLabel": "Flip {{name}} card",
+  "elements": {
+    "re": { "blurb": "Checkout flow: collections, product page, and cart." },
+    "nx": { "blurb": "Framework behind the checkout flow at Ben & Frank." },
+    "ts": { "blurb": "Types across the checkout flow and Finora's architecture." },
+    "sb": { "blurb": "Component docs and visual testing in Finora." },
+    "vt": { "blurb": "Unit tests across my projects." },
+    "no": { "blurb": "Checkout flow components and Burger Queen's REST API." },
+    "su": { "blurb": "Backend as a service for my own projects." },
+    "al": { "blurb": "Integration to improve product search." },
+    "bl": { "blurb": "Tracking, campaigns, recommendations, and A/B experiments." },
+    "ct": { "blurb": "Commerce platform I worked with as a Frontend Jr." },
+    "od": { "blurb": "Python customizations for catalog, POS, orders, and retail." },
+    "vc": { "blurb": "Deployment for the checkout flow migrated from Odoo." },
+    "ek": { "blurb": "Infrastructure running the migrated checkout flow." },
+    "se": { "blurb": "Error monitoring in production." },
+    "gr": { "blurb": "Process and metrics monitoring." }
+  }
 }
