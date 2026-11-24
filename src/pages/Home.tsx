@@ -1,7 +1,5 @@
-import { About } from '@portfolio-sections/About'
 import { Contact } from '@portfolio-sections/Contact'
 import { ContinuingEducation } from '@portfolio-sections/ContinuingEducation'
-import { Experience } from '@portfolio-sections/Experience'
 import { Hero } from '@portfolio-sections/Hero'
 import { LabAnalogies } from '@portfolio-sections/LabAnalogies'
 import { Laboratoria } from '@portfolio-sections/Laboratoria'
@@ -15,8 +13,6 @@ export function Home() {
       <LabAnalogies />
       <Laboratoria />
       <ContinuingEducation />
-      <About />
-      <Experience />
       <Projects />
       <PeriodicTable />
       <Contact />
