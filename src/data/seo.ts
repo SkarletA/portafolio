@@ -5,9 +5,13 @@
 export const siteUrl = 'https://portafolio-skarlet-a.vercel.app'
 
 export const portfolioSeo = {
-  title: 'Skarlet Araque — Building scalable, accessible, user-centered products',
+  title: 'Skarlet Araque · Frontend Developer y Product Tech Lead',
   description:
-    'Frontend engineer and product-minded builder with a background in e-commerce and fintech. Explore case studies, including Finora, a full-stack personal finance app.',
+    'Frontend Developer y Product Tech Lead con 4 años en e-commerce. Estudié química y ahora hago que el código reaccione. Conoce mis proyectos.',
   url: `${siteUrl}/`,
   imageUrl: `${siteUrl}/og-image.png`,
+  imageWidth: '1200',
+  imageHeight: '630',
+  imageAlt: 'Skarlet Araque, Frontend Developer y Product Tech Lead, con una molécula de tecnologías',
+  locale: 'es_MX',
 }
