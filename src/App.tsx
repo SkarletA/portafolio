@@ -4,18 +4,17 @@ import { I18nextProvider, useTranslation } from 'react-i18next'
 import { Footer } from '@portfolio-components/atoms/Footer'
 import { Header } from '@portfolio-components/atoms/Header'
 import { useDocumentMeta } from './hooks/useDocumentMeta'
-import { portfolioSeo } from './data/seo'
 import { portfolioI18n } from './i18n'
 import { Home } from './pages/Home'
 import { NotFound } from './pages/NotFound'
 import s from './App.module.css'
 
 function AppShell() {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation('seo')
 
   useDocumentMeta({
-    title: portfolioSeo.title,
-    description: portfolioSeo.description,
+    title: t('title'),
+    description: t('description'),
     favicon: '/favicon.svg',
   })
 
